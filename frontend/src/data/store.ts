@@ -81,7 +81,7 @@ export async function initializeStore() {
   save(STORAGE_KEYS.rolePermissions, rolePerms);
 
   const adminHash = await hashPassword('admin');
-  const admin: User = { id: generateId(), username: 'admin', password_hash: adminHash, role_id: adminRole.id, email: 'admin@example.com', nom: 'Admin', prenom: 'Admin', estActif: true, dateCreation: new Date(), dateConnection: new Date(), DerniereConnectionIP: '' };
+  const admin: User = { id: generateId(), username: 'admin', password_hash: adminHash, role_id: adminRole.id, email: 'admin@example.com', nom: 'Admin', prenom: 'Admin', estActif: false, dateCreation: new Date(), dateConnection: new Date(), DerniereConnectionIP: '' };
   save(STORAGE_KEYS.users, [admin]);
 
   localStorage.setItem(STORAGE_KEYS.initialized, 'true');
@@ -113,7 +113,7 @@ export async function createUser(username: string, password: string, role_id: st
   return user;
 }
 
-export async function updateUser(id: string, data: { username?: string; password?: string; role_id?: string }) {
+export async function updateUser(id: string, data: { username?: string; password?: string; role_id?: string; email?: string; nom?: string; prenom?: string; estActif?: boolean }) {
   const users = load<User>(STORAGE_KEYS.users);
   const idx = users.findIndex(u => u.id === id);
   if (idx === -1) throw new Error('User not found');

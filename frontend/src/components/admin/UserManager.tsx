@@ -25,13 +25,14 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, CheckCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "../ui/switch";
 
 const UsersManager = () => {
   const [users, setUsers] = useState<User[]>(getUsers);
   const [roles] = useState<Role[]>(getRoles);
+  const [estActif, setEstActif] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
   const [form, setForm] = useState({
@@ -90,6 +91,7 @@ const UsersManager = () => {
           username: form.username,
           password: form.password || undefined,
           role_id: form.role_id,
+          estActif: form.estActif,
         });
         toast.success("Utilisateur modifié");
       } else {
@@ -134,6 +136,13 @@ const UsersManager = () => {
             <tr>
               <th>Username</th>
               <th>Rôle</th>
+              <th>Actif</th>
+              <th>Email</th>
+              <th>Nom</th>
+              <th>Prénom</th>
+              <th>Date de création</th>
+              <th>Date de dernière connexion</th>
+              <th>Dernière IP</th>
               <th className="text-right">Actions</th>
             </tr>
           </thead>
@@ -148,6 +157,19 @@ const UsersManager = () => {
                       {role?.name || "N/A"}
                     </span>
                   </td>
+                  <td>
+                    {user.estActif ? (
+                      <CheckCheck className="bg-green-100 text-green-800" />
+                    ) : (
+                      <Check className="destructive" />
+                    )}
+                  </td>
+                  <td>{user.email}</td>
+                  <td>{user.nom}</td>
+                  <td>{user.prenom}</td>
+                  <td>{new Date(user.dateCreation).toLocaleDateString()}</td>
+                  <td>{new Date(user.dateConnection).toLocaleDateString()}</td>
+                  <td>{user.DerniereConnectionIP}</td>
                   <td className="inline-flex text-center items-center space-x-2">
                     <Button
                       variant="ghost"

@@ -11,6 +11,7 @@ import DashboardOverview from "./components/admin/DashboardOverview";
 import UsersManager from "./components/admin/UserManager";
 import RolesManager from "./components/admin/RolesManager";
 import PermissionsManager from "./components/admin/PermissionsManager";
+import ManagerUserGenerale from "./components/admin/ManagerUserGenerale";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,10 @@ const App = () => (
               <Route path="users" element={<UsersManager />} />
               <Route path="roles" element={<RolesManager />} />
               <Route path="permissions" element={<PermissionsManager />} />
+              <Route
+                path="ManagerUserGenerale"
+                element={<ManagerUserGenerale />}
+              />
             </Route>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="*" element={<Navigate to="/login" replace />} />

@@ -7,13 +7,18 @@ import {
   Key,
   LogOut,
   Shield,
+  Logs,
 } from "lucide-react";
 
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/admin/users", label: "Users", icon: Users },
-  { to: "/admin/roles", label: "Roles", icon: ShieldCheck },
-  { to: "/admin/permissions", label: "Permissions", icon: Key },
+  { to: "/admin/Audit", label: "Audit", icon: Logs },
+  { to: "/admin/session", label: "Sessions", icon: Shield },
+  {
+    to: "/admin/ManagerUserGenerale",
+    label: "ManagerUserGenerale",
+    icon: Shield,
+  },
 ];
 
 const AdminSidebar = () => {
