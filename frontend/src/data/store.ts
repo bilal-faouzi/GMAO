@@ -31,9 +31,16 @@ export interface RolePermission {
 
 export interface User {
   id: string;
+  nom: string;
+  prenom: string;
+  email: string;
   username: string;
   password_hash: string;
   role_id: string;
+  estActif: boolean;
+  dateCreation: Date;
+  dateConnection: Date;
+  DerniereConnectionIP: string;
 }
 
 const STORAGE_KEYS = {
@@ -74,7 +81,7 @@ export async function initializeStore() {
   save(STORAGE_KEYS.rolePermissions, rolePerms);
 
   const adminHash = await hashPassword('admin');
-  const admin: User = { id: generateId(), username: 'admin', password_hash: adminHash, role_id: adminRole.id };
+  const admin: User = { id: generateId(), username: 'admin', password_hash: adminHash, role_id: adminRole.id, email: 'admin@example.com', nom: 'Admin', prenom: 'Admin', estActif: true, dateCreation: new Date(), dateConnection: new Date(), DerniereConnectionIP: '' };
   save(STORAGE_KEYS.users, [admin]);
 
   localStorage.setItem(STORAGE_KEYS.initialized, 'true');
@@ -100,7 +107,7 @@ export async function createUser(username: string, password: string, role_id: st
   const users = load<User>(STORAGE_KEYS.users);
   if (users.find(u => u.username === username)) throw new Error('Username already exists');
   const hash = await hashPassword(password);
-  const user: User = { id: generateId(), username, password_hash: hash, role_id };
+  const user: User = { id: generateId(), username, password_hash: hash, role_id, email: '', nom: '', prenom: '', estActif: true, dateCreation: new Date(), dateConnection: new Date(), DerniereConnectionIP: '' };
   users.push(user);
   save(STORAGE_KEYS.users, users);
   return user;

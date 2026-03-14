@@ -27,25 +27,59 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { Switch } from "../ui/switch";
 
 const UsersManager = () => {
   const [users, setUsers] = useState<User[]>(getUsers);
   const [roles] = useState<Role[]>(getRoles);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
-  const [form, setForm] = useState({ username: "", password: "", role_id: "" });
+  const [form, setForm] = useState({
+    username: "",
+    password: "",
+    role_id: "",
+    email: "",
+    nom: "",
+    prenom: "",
+    estActif: true,
+    dateCreation: new Date(),
+    dateConnection: new Date(),
+    DerniereConnectionIP: "",
+  });
 
   const refresh = () => setUsers(getUsers());
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ username: "", password: "", role_id: roles[0]?.id || "" });
+    setForm({
+      username: "",
+      password: "",
+      role_id: roles[0]?.id || "",
+      email: "",
+      nom: "",
+      prenom: "",
+      estActif: true,
+      dateCreation: new Date(),
+      dateConnection: new Date(),
+      DerniereConnectionIP: "",
+    });
     setDialogOpen(true);
   };
 
   const openEdit = (user: User) => {
     setEditing(user);
-    setForm({ username: user.username, password: "", role_id: user.role_id });
+    setForm({
+      username: user.username,
+      password: "",
+      role_id: user.role_id,
+      email: user.email,
+      nom: user.nom,
+      prenom: user.prenom,
+      estActif: user.estActif,
+      dateCreation: user.dateCreation,
+      dateConnection: user.dateConnection,
+      DerniereConnectionIP: user.DerniereConnectionIP,
+    });
     setDialogOpen(true);
   };
 
@@ -114,7 +148,7 @@ const UsersManager = () => {
                       {role?.name || "N/A"}
                     </span>
                   </td>
-                  <td className="text-right space-x-2">
+                  <td className="inline-flex text-center items-center space-x-2">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -159,6 +193,44 @@ const UsersManager = () => {
                 value={form.username}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, username: e.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input
+                value={form.email}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, email: e.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Nom</Label>
+              <Input
+                value={form.nom}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, nom: e.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Prénom</Label>
+              <Input
+                value={form.prenom}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, prenom: e.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-2 flex items-center space-x-4">
+              <Label>Actif</Label>
+              <Switch
+                className="data-[state=checked]:border-primary data-[state=checked]:bg-primary"
+                size="sm"
+                checked={form.estActif}
+                onCheckedChange={(checked) =>
+                  setForm((f) => ({ ...f, estActif: checked }))
                 }
               />
             </div>
