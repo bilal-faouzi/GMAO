@@ -1,6 +1,5 @@
 from django.apps import AppConfig
 
-
-class SecuriteConfig(AppConfig):
+class CoreConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'securite'
+    name = 'apps.core'

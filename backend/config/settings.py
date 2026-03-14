@@ -23,8 +23,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     # GMAO apps
-    'core',
-    'securite',
+'apps.core',
+'apps.securite',
 ]
 
 MIDDLEWARE = [
@@ -77,7 +77,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'securite.authentication.GMaoJWTAuthentication',  # our custom auth
+        'apps.securite.authentication.GMaoJWTAuthentication',  # our custom auth
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
