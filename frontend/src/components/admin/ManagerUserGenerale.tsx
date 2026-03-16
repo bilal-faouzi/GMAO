@@ -8,34 +8,9 @@ import {
   type User,
   type Role,
 } from "../../data/store";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Check, CheckCheck } from "lucide-react";
 import { toast } from "sonner";
-import { Switch } from "../ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
+import { Card } from "../ui/card";
 import UsersManager from "./UserManager";
 import PermissionsManager from "./PermissionsManager";
 import RolesManager from "./RolesManager";
@@ -138,7 +113,7 @@ const ManagerUserGenerale = () => {
         </div>
       </div>
       <div className="flex flex-col gap-4">
-        <Tabs defaultValue="overview" className="flex flex-col ">
+        <Tabs defaultValue="Users" className="flex flex-col ">
           <TabsList>
             <TabsTrigger value="Users">Users</TabsTrigger>
             <TabsTrigger value="Roles">Roles</TabsTrigger>

@@ -25,7 +25,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Check, CheckCheck } from "lucide-react";
+import { Plus, Pencil, Trash2, X, CheckCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "../ui/switch";
 
@@ -90,6 +90,9 @@ const UsersManager = () => {
         await updateUser(editing.id, {
           username: form.username,
           password: form.password || undefined,
+          email: form.email,
+          nom: form.nom,
+          prenom: form.prenom,
           role_id: form.role_id,
           estActif: form.estActif,
         });
@@ -159,9 +162,9 @@ const UsersManager = () => {
                   </td>
                   <td>
                     {user.estActif ? (
-                      <CheckCheck className="bg-green-100 text-green-800" />
+                      <CheckCheck className=" text-green-500" />
                     ) : (
-                      <Check className="destructive" />
+                      <X className="text-destructive" />
                     )}
                   </td>
                   <td>{user.email}</td>
