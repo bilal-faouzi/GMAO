@@ -5,7 +5,8 @@ from .views import (
     UtilisateurListCreateView, UtilisateurDetailView,
     RoleListCreateView, RoleDetailView,
     PermissionListCreateView,
-    AssignRoleToUserView, AssignPermissionToRoleView
+    AssignRoleToUserView, AssignPermissionToRoleView,
+    SessionListView, JournalAuditListView,
 )
 
 urlpatterns = [
@@ -27,4 +28,6 @@ urlpatterns = [
 
     # Permissions
     path('permissions/', PermissionListCreateView.as_view(), name='permissions'),
+    path('sessions/',      SessionListView.as_view(),     name='sessions'),
+    path('journal-audits/', JournalAuditListView.as_view(), name='journal-audits'),
 ]

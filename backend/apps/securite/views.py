@@ -556,3 +556,93 @@ class AssignPermissionToRoleView(APIView):
             )
 
         return Response({'detail': 'Permission retirée avec succès.'})
+    
+
+    # ─────────────────────────────────────────
+# SESSIONS ACTIVES
+# ─────────────────────────────────────────
+
+class SessionListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        sessions = SessionActive.objects.all().order_by('-date_creation')
+        data = []
+        for s in sessions:
+            data.append({
+                'id': str(s.id),
+                'utilisateur': f"{s.id_utilisateur.prenom} {s.id_utilisateur.nom}",
+                'nom_utilisateur': s.id_utilisateur.nom_utilisateur,
+                'adresse_ip': s.adresse_ip,
+                'date_creation': s.date_creation,
+                'date_expiration': s.date_expiration,
+                'est_active': s.est_active,
+            })
+        return Response({'count': len(data), 'results': data})
+
+
+# ─────────────────────────────────────────
+# JOURNAL AUDIT
+# ─────────────────────────────────────────
+
+class JournalAuditListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        logs = JournalAudit.objects.all().order_by('-horodatage')
+
+        # Filtres optionnels
+        action = request.query_params.get('action')
+        module = request.query_params.get('module')
+        if action:
+            logs = logs.filter(action__iexact=action)
+        if module:
+            logs = logs.filter(module__iexact=module)
+
+        data = []
+        for log in logs:
+            data.append({
+                'id': str(log.id),
+                'utilisateur': f"{log.id_utilisateur.prenom} {log.id_utilisateur.nom}",
+                'nom_utilisateur': log.id_utilisateur.nom_utilisateur,
+                'action': log.action,
+                'module': log.module,
+                'type_entite': log.type_entite,
+                'adresse_ip': log.adresse_ip,
+                'horodatage': log.horodatage,
+            })
+        return Response({'count': len(data), 'results': data})
+class SessionForceLogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, session_id):
+        try:
+            session = SessionActive.objects.get(id=uuid.UUID(str(session_id)))
+        except (SessionActive.DoesNotExist, ValueError):
+            return Response(
+                {'detail': 'Session non trouvée.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Désactiver la session
+        session.est_active = False
+        session.save(update_fields=['est_active'])
+
+        # Blacklister le token
+        try:
+            refresh = RefreshToken(session.token)
+            refresh.blacklist()
+        except Exception:
+            pass
+
+        # Journal audit
+        JournalAudit.objects.create(
+            id_utilisateur=request.user,
+            action='FORCE_LOGOUT',
+            module='AUTH',
+            type_entite='Session',
+            id_entite=session.id,
+            adresse_ip=get_client_ip(request)
+        )
+
+        return Response({'detail': 'Session déconnectée avec succès.'})    
