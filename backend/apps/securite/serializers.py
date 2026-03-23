@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Utilisateur, Role, Permission, UtilisateurRole, RolePermission
+from .models import JournalAudit, Utilisateur, Role, Permission, UtilisateurRole, RolePermission
 
 
 class PermissionSerializer(serializers.ModelSerializer):
@@ -117,3 +117,20 @@ class AssignPermissionSerializer(serializers.Serializer):
         if not Permission.objects.filter(id=value, est_actif=True).exists():
             raise serializers.ValidationError("Permission non trouvée ou inactive.")
         return value
+    
+class JournalAuditSerializer(serializers.ModelSerializer):
+    utilisateur = serializers.SerializerMethodField()
+
+    class Meta:
+        model = JournalAudit
+        fields = [
+            'id', 'utilisateur', 'horodatage', 'action',
+            'module', 'type_entite', 'id_entite',
+            'ancienne_valeur', 'nouvelle_valeur', 'adresse_ip'
+        ]
+
+    def get_utilisateur(self, obj):
+        return {
+            'id': str(obj.id_utilisateur.id),
+            'nom_utilisateur': obj.id_utilisateur.nom_utilisateur,
+        }

@@ -8,10 +8,12 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.db.models import Q
+
 
 from .models import Utilisateur, SessionActive, JournalAudit, Role, Permission, UtilisateurRole, RolePermission
 from .serializers import (
-    LoginSerializer, UtilisateurSerializer,
+    JournalAuditSerializer, LoginSerializer, UtilisateurSerializer,
     CreateUtilisateurSerializer, UpdateUtilisateurSerializer,
     CreateRoleSerializer, CreatePermissionSerializer,
     AssignRoleSerializer, AssignPermissionSerializer,
@@ -645,4 +647,116 @@ class SessionForceLogoutView(APIView):
             adresse_ip=get_client_ip(request)
         )
 
-        return Response({'detail': 'Session déconnectée avec succès.'})    
+        return Response({'detail': 'Session déconnectée avec succès.'}) 
+
+
+class SessionForceLogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, session_id):
+        try:
+            session = SessionActive.objects.get(id=uuid.UUID(str(session_id)))
+        except (SessionActive.DoesNotExist, ValueError):
+            return Response(
+                {'detail': 'Session non trouvée.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Désactiver la session
+        session.est_active = False
+        session.save(update_fields=['est_active'])
+
+        # Blacklister le token
+        try:
+            refresh = RefreshToken(session.token)
+            refresh.blacklist()
+        except Exception:
+            pass
+
+        # Journal audit
+        JournalAudit.objects.create(
+            id_utilisateur=request.user,
+            action='FORCE_LOGOUT',
+            module='AUTH',
+            type_entite='Session',
+            id_entite=session.id,
+            adresse_ip=get_client_ip(request)
+        )
+
+        return Response({'detail': 'Session déconnectée avec succès.'})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class JournalAuditView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        queryset = JournalAudit.objects.select_related('id_utilisateur').order_by('-horodatage')
+
+        # Filtres
+        action = request.query_params.get('action')
+        module = request.query_params.get('module')
+        utilisateur = request.query_params.get('utilisateur')
+        date_debut = request.query_params.get('date_debut')
+        date_fin = request.query_params.get('date_fin')
+        search = request.query_params.get('search')
+
+        if action:
+            queryset = queryset.filter(action=action)
+        if module:
+            queryset = queryset.filter(module=module)
+        if utilisateur:
+            queryset = queryset.filter(
+                id_utilisateur__nom_utilisateur__icontains=utilisateur
+            )
+        if date_debut:
+            queryset = queryset.filter(horodatage__date__gte=date_debut)
+        if date_fin:
+            queryset = queryset.filter(horodatage__date__lte=date_fin)
+        if search:
+            queryset = queryset.filter(
+                Q(action__icontains=search) |
+                Q(module__icontains=search) |
+                Q(type_entite__icontains=search) |
+                Q(id_utilisateur__nom_utilisateur__icontains=search) |
+                Q(adresse_ip__icontains=search)
+            )
+
+        # Pagination manuelle
+        page = int(request.query_params.get('page', 1))
+        page_size = int(request.query_params.get('page_size', 10))
+        total = queryset.count()
+        start = (page - 1) * page_size
+        end = start + page_size
+
+        serializer = JournalAuditSerializer(queryset[start:end], many=True)
+
+        return Response({
+            'count': total,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': (total + page_size - 1) // page_size,
+            'results': serializer.data
+        })

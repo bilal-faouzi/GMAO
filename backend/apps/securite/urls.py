@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
-    LoginView, LogoutView, MeView,
+    JournalAuditView, LoginView, LogoutView, MeView, SessionForceLogoutView,
     UtilisateurListCreateView, UtilisateurDetailView,
     RoleListCreateView, RoleDetailView,
     PermissionListCreateView,
@@ -28,6 +28,14 @@ urlpatterns = [
 
     # Permissions
     path('permissions/', PermissionListCreateView.as_view(), name='permissions'),
+
+    # Sessions et Journal d'audit
     path('sessions/',      SessionListView.as_view(),     name='sessions'),
     path('journal-audits/', JournalAuditListView.as_view(), name='journal-audits'),
+    path('journal-audits/v2/', JournalAuditView.as_view(), name='journal-audit-detail'),
+    
+    
+    path('sessions/<uuid:session_id>/logout/', SessionForceLogoutView.as_view(), name='session-logout'),  # ← ajouter
+   
+
 ]
