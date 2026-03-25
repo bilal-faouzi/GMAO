@@ -1,44 +1,45 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import api from '@/services/api'
-import useAuthStore from '@/store/authStore'
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import api from "@/services/api";
+import useAuthStore from "@/store/authStore";
 
 export default function Login() {
-  const navigate = useNavigate()
-  const { login } = useAuthStore()
-  const [form, setForm] = useState({ nom_utilisateur: '', mot_de_passe: '' })
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate();
+  const { login } = useAuthStore();
+  const [form, setForm] = useState({ nom_utilisateur: "", mot_de_passe: "" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+    e.preventDefault();
+    setLoading(true);
+    setError("");
     try {
-      const res = await api.post('/auth/login/', form)
-      login(res.data.utilisateur, res.data.access, res.data.refresh)
-      navigate('/dashboard')
+      const res = await api.post("/auth/login/", form);
+      login(res.data.utilisateur, res.data.access, res.data.refresh);
+      navigate("/dashboard");
     } catch {
-      setError('Identifiants incorrects. Veuillez réessayer.')
+      setError("Identifiants incorrects. Veuillez réessayer.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
             <span className="text-white text-2xl font-bold">G</span>
           </div>
           <h1 className="text-3xl font-bold text-slate-900">GMAO</h1>
-          <p className="text-slate-500 mt-1">Gestion de Maintenance Assistée par Ordinateur</p>
+          <p className="text-slate-500 mt-1">
+            Gestion de Maintenance Assistée par Ordinateur
+          </p>
         </div>
 
         {/* Card */}
@@ -48,7 +49,6 @@ export default function Login() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
                   Nom d'utilisateur
@@ -56,7 +56,9 @@ export default function Login() {
                 <Input
                   placeholder="Entrez votre nom d'utilisateur"
                   value={form.nom_utilisateur}
-                  onChange={(e) => setForm({ ...form, nom_utilisateur: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, nom_utilisateur: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -69,7 +71,9 @@ export default function Login() {
                   type="password"
                   placeholder="Entrez votre mot de passe"
                   value={form.mot_de_passe}
-                  onChange={(e) => setForm({ ...form, mot_de_passe: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, mot_de_passe: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -83,11 +87,9 @@ export default function Login() {
               <Button
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-700"
-                disabled={loading}
-              >
-                {loading ? 'Connexion...' : 'Se connecter'}
+                disabled={loading}>
+                {loading ? "Connexion..." : "Se connecter"}
               </Button>
-
             </form>
           </CardContent>
         </Card>
@@ -97,5 +99,5 @@ export default function Login() {
         </p>
       </div>
     </div>
-  )
+  );
 }

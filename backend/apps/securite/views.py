@@ -3,6 +3,8 @@ import uuid
 from datetime import datetime, timezone
 
 from django.utils import timezone as dj_timezone
+
+from .permissions import IsSessionActive
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -30,6 +32,7 @@ def get_client_ip(request):
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
+
 
 
 class LoginView(APIView):
@@ -60,12 +63,6 @@ class LoginView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-        # Generate JWT tokens
-        refresh = RefreshToken()
-        refresh['user_id'] = str(utilisateur.id)
-        refresh['nom_utilisateur'] = utilisateur.nom_utilisateur
-        access = refresh.access_token
-
         ip = get_client_ip(request)
 
         # Update last login
@@ -73,13 +70,20 @@ class LoginView(APIView):
         utilisateur.derniere_connexion_ip = ip
         utilisateur.save(update_fields=['derniere_connexion', 'derniere_connexion_ip'])
 
-        # Save session
-        SessionActive.objects.create(
+        # 1. Create session first
+        refresh = RefreshToken()
+        refresh['user_id'] = str(utilisateur.id)
+        refresh['nom_utilisateur'] = utilisateur.nom_utilisateur
+
+        session = SessionActive.objects.create(
             id_utilisateur=utilisateur,
-            token=str(refresh),
             date_expiration=dj_timezone.now() + refresh.lifetime,
             adresse_ip=ip
         )
+
+        # 2. Now set session_id on refresh BEFORE generating access token
+        refresh['session_id'] = str(session.id)
+        access = refresh.access_token  # ← access token inherits session_id from refresh
 
         # Audit log
         JournalAudit.objects.create(
@@ -96,10 +100,8 @@ class LoginView(APIView):
             'refresh': str(refresh),
             'utilisateur': UtilisateurSerializer(utilisateur).data
         })
-
-
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSessionActive]
 
     def post(self, request):
         token = request.data.get('refresh')
@@ -110,7 +112,8 @@ class LogoutView(APIView):
             )
 
         # Deactivate session
-        SessionActive.objects.filter(token=token).update(est_active=False)
+        session_id = request.auth.get('session_id')
+        SessionActive.objects.filter(id=session_id).update(est_active=False)
 
         # Blacklist token
         try:
@@ -123,7 +126,7 @@ class LogoutView(APIView):
 
 
 class MeView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSessionActive]
 
     def get(self, request):
         # Get user_id from JWT payload
@@ -149,7 +152,7 @@ class MeView(APIView):
             )
 
 class UtilisateurListCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSessionActive]
 
     def get(self, request):
         """List all users"""
@@ -200,7 +203,7 @@ class UtilisateurListCreateView(APIView):
 
 
 class UtilisateurDetailView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSessionActive]
 
     def get_object(self, user_id):
         try:
@@ -300,7 +303,7 @@ class UtilisateurDetailView(APIView):
 # ─────────────────────────────────────────
 
 class RoleListCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSessionActive]
 
     def get(self, request):
         """List all roles"""
@@ -335,7 +338,7 @@ class RoleListCreateView(APIView):
 
 
 class RoleDetailView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSessionActive]
 
     def get_object(self, role_id):
         try:
@@ -381,7 +384,7 @@ class RoleDetailView(APIView):
 # ─────────────────────────────────────────
 
 class PermissionListCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSessionActive]
 
     def get(self, request):
         """List all permissions, optionally filter by module"""
@@ -417,7 +420,7 @@ class PermissionListCreateView(APIView):
 # ─────────────────────────────────────────
 
 class AssignRoleToUserView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSessionActive]
 
     def post(self, request, user_id):
         """Assign a role to a user"""
@@ -498,7 +501,7 @@ class AssignRoleToUserView(APIView):
 # ─────────────────────────────────────────
 
 class AssignPermissionToRoleView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSessionActive]
 
     def post(self, request, role_id):
         """Assign a permission to a role"""
@@ -565,7 +568,7 @@ class AssignPermissionToRoleView(APIView):
 # ─────────────────────────────────────────
 
 class SessionListView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSessionActive]
 
     def get(self, request):
         sessions = SessionActive.objects.all().order_by('-date_creation')
@@ -588,7 +591,7 @@ class SessionListView(APIView):
 # ─────────────────────────────────────────
 
 class JournalAuditListView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSessionActive]
 
     def get(self, request):
         logs = JournalAudit.objects.all().order_by('-horodatage')
@@ -614,8 +617,10 @@ class JournalAuditListView(APIView):
                 'horodatage': log.horodatage,
             })
         return Response({'count': len(data), 'results': data})
+
+
 class SessionForceLogoutView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsSessionActive]
 
     def delete(self, request, session_id):
         try:
@@ -648,63 +653,6 @@ class SessionForceLogoutView(APIView):
         )
 
         return Response({'detail': 'Session déconnectée avec succès.'}) 
-
-
-class SessionForceLogoutView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def delete(self, request, session_id):
-        try:
-            session = SessionActive.objects.get(id=uuid.UUID(str(session_id)))
-        except (SessionActive.DoesNotExist, ValueError):
-            return Response(
-                {'detail': 'Session non trouvée.'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        # Désactiver la session
-        session.est_active = False
-        session.save(update_fields=['est_active'])
-
-        # Blacklister le token
-        try:
-            refresh = RefreshToken(session.token)
-            refresh.blacklist()
-        except Exception:
-            pass
-
-        # Journal audit
-        JournalAudit.objects.create(
-            id_utilisateur=request.user,
-            action='FORCE_LOGOUT',
-            module='AUTH',
-            type_entite='Session',
-            id_entite=session.id,
-            adresse_ip=get_client_ip(request)
-        )
-
-        return Response({'detail': 'Session déconnectée avec succès.'})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

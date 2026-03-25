@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Monitor, Wifi, WifiOff, LogOut, RefreshCw } from "lucide-react";
-import { getSessions } from "@/services/securiteService";
+import { getSessions, forcedLogout } from "@/services/securiteService";
 import api from "@/services/api";
 
 const formatDate = (d) =>
@@ -38,7 +38,8 @@ export default function Sessions() {
     if (!confirm(`Forcer la déconnexion de ${session.utilisateur} ?`)) return;
     try {
       setForcing(session.id);
-      await api.delete(`/auth/sessions/${session.id}/logout/`);
+      console.log(session);
+      await forcedLogout(session.id);
       fetchSessions();
     } catch (err) {
       alert(err.response?.data?.detail || "Erreur lors de la déconnexion.");

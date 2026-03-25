@@ -1,13 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Users,
-  Plus,
-  Pencil,
-  Trash2,
-  UserPlus,
-  UserMinus,
-  ChevronDown,
-} from "lucide-react";
+import { Users, Plus, Pencil, Trash2, UserPlus, UserMinus } from "lucide-react";
 import {
   getEquipes,
   createEquipe,
@@ -21,8 +13,15 @@ import {
 } from "@/services/organisationService";
 import { getUtilisateurs } from "@/services/securiteService";
 import { Modal } from "@/components/Modal";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-// ─── Badge niveau rôle ────────────────────────────────────────────────────────
 function RoleBadge({ role }) {
   const styles = {
     CHEF: "bg-amber-500/10 text-amber-400",
@@ -37,7 +36,6 @@ function RoleBadge({ role }) {
   );
 }
 
-// ─── Panel membres ────────────────────────────────────────────────────────────
 function MembresPanel({ equipe, onClose }) {
   const [membres, setMembres] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -107,29 +105,44 @@ function MembresPanel({ equipe, onClose }) {
 
       {showAdd ? (
         <div className="space-y-3 border-t border-white/10 pt-4">
-          <select
+          {/* Utilisateur */}
+          <Select
             value={newMembre.utilisateur}
-            onChange={(e) =>
-              setNewMembre({ ...newMembre, utilisateur: e.target.value })
-            }
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white">
-            <option value="">Sélectionner un utilisateur</option>
-            {utilisateurs.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.prenom} {u.nom}
-              </option>
-            ))}
-          </select>
-          <select
+            onValueChange={(v) =>
+              setNewMembre({ ...newMembre, utilisateur: v })
+            }>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Sélectionner un utilisateur" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {utilisateurs.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.prenom} {u.nom}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+
+          {/* Rôle */}
+          <Select
             value={newMembre.niveauRole}
-            onChange={(e) =>
-              setNewMembre({ ...newMembre, niveauRole: e.target.value })
-            }
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white">
-            <option value="MEMBRE">Membre</option>
-            <option value="CHEF">Chef</option>
-            <option value="REMPLACANT">Remplaçant</option>
-          </select>
+            onValueChange={(v) =>
+              setNewMembre({ ...newMembre, niveauRole: v })
+            }>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Rôle" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="MEMBRE">Membre</SelectItem>
+                <SelectItem value="CHEF">Chef</SelectItem>
+                <SelectItem value="REMPLACANT">Remplaçant</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+
           <div className="flex gap-2">
             <button
               onClick={handleAdd}
@@ -155,7 +168,6 @@ function MembresPanel({ equipe, onClose }) {
   );
 }
 
-// ─── Modal équipe ─────────────────────────────────────────────────────────────
 function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
   const [form, setForm] = useState({
     libelle: equipe?.libelle || "",
@@ -170,11 +182,7 @@ function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
     if (!form.libelle || !form.site) return;
     try {
       setSaving(true);
-      if (equipe) {
-        await updateEquipe(equipe.id, form);
-      } else {
-        await createEquipe(form);
-      }
+      equipe ? await updateEquipe(equipe.id, form) : await createEquipe(form);
       onSaved();
       onClose();
     } catch (err) {
@@ -202,37 +210,51 @@ function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
             required
           />
         </div>
+
+        {/* Site */}
         <div>
           <label className="text-xs text-gray-400 mb-1 block">Site *</label>
-          <select
-            className={inputClass}
+          <Select
             value={form.site}
-            onChange={(e) => setForm({ ...form, site: e.target.value })}
+            onValueChange={(v) => setForm({ ...form, site: v })}
             required>
-            <option value="">Sélectionner un site</option>
-            {sites.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.libelle}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Sélectionner un site" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {sites.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.libelle}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
+
+        {/* Spécialité */}
         <div>
           <label className="text-xs text-gray-400 mb-1 block">Spécialité</label>
-          <select
-            className={inputClass}
-            value={form.specialite}
-            onChange={(e) =>
-              setForm({ ...form, specialite: e.target.value || null })
-            }>
-            <option value="">Aucune spécialité</option>
-            {specialites.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.libelle}
-              </option>
-            ))}
-          </select>
+          <Select
+            value={form.specialite || ""}
+            onValueChange={(v) => setForm({ ...form, specialite: v || null })}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Aucune spécialité" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="__none__">Aucune spécialité</SelectItem>
+                {specialites.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.libelle}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
+
         <div className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -245,6 +267,7 @@ function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
             Active
           </label>
         </div>
+
         <div className="flex gap-3 pt-2">
           <button
             type="submit"
@@ -264,13 +287,12 @@ function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
   );
 }
 
-// ─── Page principale ──────────────────────────────────────────────────────────
 export default function Equipes() {
   const [equipes, setEquipes] = useState([]);
   const [sites, setSites] = useState([]);
   const [specialites, setSpecialites] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalEquipe, setModalEquipe] = useState(null); // null | 'new' | equipe
+  const [modalEquipe, setModalEquipe] = useState(null);
   const [panelMembres, setPanelMembres] = useState(null);
   const [filterSite, setFilterSite] = useState("");
 
@@ -286,9 +308,7 @@ export default function Equipes() {
         getSites(),
         getSpecialites(),
       ]);
-      const eqs = eqRes.data.results || eqRes.data;
-      console.log("Équipes reçues:", eqs); // ← ajoute ça
-      setEquipes(eqs);
+      setEquipes(eqRes.data.results || eqRes.data);
       setSites(siRes.data.results || siRes.data);
       setSpecialites(spRes.data.results || spRes.data);
     } finally {
@@ -308,7 +328,6 @@ export default function Equipes() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* En-tête */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Équipes</h1>
@@ -324,22 +343,26 @@ export default function Equipes() {
         </button>
       </div>
 
-      {/* Filtre */}
+      {/* Filtre site */}
       <div className="flex gap-3">
-        <select
-          value={filterSite}
-          onChange={(e) => setFilterSite(e.target.value)}
-          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white min-w-[180px]">
-          <option value="">Tous les sites</option>
-          {sites.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.libelle}
-            </option>
-          ))}
-        </select>
+        <Select value={filterSite} onValueChange={setFilterSite}>
+          <SelectTrigger className="min-w-[180px]">
+            <SelectValue placeholder="Tous les sites" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="__none__">Tous les sites</SelectItem>
+              {sites.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.libelle}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Tableau */}
+      {/* Tableau — inchangé */}
       <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
@@ -424,7 +447,6 @@ export default function Equipes() {
         </table>
       </div>
 
-      {/* Modals */}
       {modalEquipe && (
         <EquipeModal
           equipe={modalEquipe === "new" ? null : modalEquipe}
@@ -434,7 +456,6 @@ export default function Equipes() {
           onSaved={fetchAll}
         />
       )}
-
       {panelMembres && (
         <MembresPanel
           equipe={panelMembres}

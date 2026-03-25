@@ -42,6 +42,9 @@ export const deletePermissionfromRole = (roleId, { id_permission: permId }) =>
 export const getSessions = (params = {}) =>
   api.get("/auth/sessions/", { params });
 
+export const forcedLogout = (session_id) =>
+  api.delete(`/auth/sessions/${session_id}/logout/`);
+
 // ─── Journal d'audit ────────────────────────────────────────────
 export const getJournalAudits = (params = {}) =>
   api.get("/auth/journal-audits/", { params });

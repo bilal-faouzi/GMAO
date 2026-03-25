@@ -96,7 +96,7 @@ class SessionActive(models.Model):
         Utilisateur, on_delete=models.CASCADE,
         db_column='id_utilisateur', related_name='sessions'
     )
-    token = models.TextField(unique=True)
+    # token = models.TextField(unique=True)
     date_creation = models.DateTimeField(auto_now_add=True)
     date_expiration = models.DateTimeField()
     adresse_ip = models.GenericIPAddressField()

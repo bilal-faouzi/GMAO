@@ -35,7 +35,7 @@ urlpatterns = [
     path('journal-audits/v2/', JournalAuditView.as_view(), name='journal-audit-detail'),
     
     
-    path('sessions/<uuid:session_id>/logout/', SessionForceLogoutView.as_view(), name='session-logout'),  # ← ajouter
+    path('sessions/<uuid:session_id>/logout/', SessionForceLogoutView.as_view(), name='session-logout'),  
    
 
 ]

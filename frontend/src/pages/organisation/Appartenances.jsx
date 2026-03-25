@@ -11,6 +11,14 @@ import {
 } from "@/services/organisationService";
 import { getUtilisateurs } from "@/services/securiteService";
 import { Modal } from "@/components/Modal";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 function AddAppartenanceModal({ onClose, onSaved }) {
   const [societes, setSocietes] = useState([]);
@@ -86,94 +94,127 @@ function AddAppartenanceModal({ onClose, onSaved }) {
     }
   }
 
-  const sel =
-    "w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500";
-
   return (
     <Modal title="Nouvelle appartenance" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
+        {/* Utilisateur */}
         <div>
           <label className="text-xs text-gray-400 mb-1 block">
             Utilisateur *
           </label>
-          <select
-            className={sel}
+          <Select
             value={form.utilisateur}
-            onChange={(e) => setForm({ ...form, utilisateur: e.target.value })}
+            onValueChange={(v) => setForm({ ...form, utilisateur: v })}
             required>
-            <option value="">Sélectionner</option>
-            {utilisateurs.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.prenom} {u.nom}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white">
+              <SelectValue placeholder="Sélectionner un utilisateur" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {utilisateurs.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.prenom} {u.nom}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
+
+        {/* Société */}
         <div>
           <label className="text-xs text-gray-400 mb-1 block">Société *</label>
-          <select
-            className={sel}
+          <Select
             value={form.societe}
-            onChange={(e) => setForm({ ...form, societe: e.target.value })}
+            onValueChange={(v) => setForm({ ...form, societe: v })}
             required>
-            <option value="">Sélectionner</option>
-            {societes.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.raisonSociale}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white">
+              <SelectValue placeholder="Sélectionner une société" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {societes.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.raisonSociale}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
+
+        {/* Site */}
         <div>
           <label className="text-xs text-gray-400 mb-1 block">Site *</label>
-          <select
-            className={sel}
+          <Select
             value={form.site}
-            onChange={(e) => setForm({ ...form, site: e.target.value })}
-            required
-            disabled={!form.societe}>
-            <option value="">Sélectionner</option>
-            {sites.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.libelle}
-              </option>
-            ))}
-          </select>
+            onValueChange={(v) => setForm({ ...form, site: v })}
+            disabled={!form.societe}
+            required>
+            <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white disabled:opacity-50">
+              <SelectValue placeholder="Sélectionner un site" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {sites.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.libelle}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
+
+        {/* Secteur */}
         <div>
           <label className="text-xs text-gray-400 mb-1 block">
             Secteur (optionnel)
           </label>
-          <select
-            className={sel}
+          <Select
             value={form.secteur}
-            onChange={(e) => setForm({ ...form, secteur: e.target.value })}
+            onValueChange={(v) => setForm({ ...form, secteur: v })}
             disabled={!form.site}>
-            <option value="">Aucun</option>
-            {secteurs.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.libelle}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white disabled:opacity-50">
+              <SelectValue placeholder="Aucun" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {secteurs.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.libelle}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
+
+        {/* Unité */}
         <div>
           <label className="text-xs text-gray-400 mb-1 block">
             Unité (optionnel)
           </label>
-          <select
-            className={sel}
+          <Select
             value={form.unite}
-            onChange={(e) => setForm({ ...form, unite: e.target.value })}
+            onValueChange={(v) => setForm({ ...form, unite: v })}
             disabled={!form.secteur}>
-            <option value="">Aucune</option>
-            {unites.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.libelle}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white disabled:opacity-50">
+              <SelectValue placeholder="Aucune" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {unites.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.libelle}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
+
+        {/* Principale */}
         <div className="flex items-center gap-2 pt-1">
           <input
             type="checkbox"
@@ -188,6 +229,7 @@ function AddAppartenanceModal({ onClose, onSaved }) {
             Appartenance principale
           </label>
         </div>
+
         <div className="flex gap-3 pt-2">
           <button
             type="submit"
