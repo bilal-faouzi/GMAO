@@ -26,6 +26,7 @@ INSTALLED_APPS = [
 'apps.core',
 'apps.securite',
 'apps.organisation',
+'apps.actif',
 'django_filters',
 ]
 

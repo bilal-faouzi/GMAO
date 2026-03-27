@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, X, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, X } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const inputCls =
   "w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 disabled:opacity-40";
@@ -54,27 +61,37 @@ function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
                 {f.label}
                 {f.required && " *"}
               </label>
+
               {f.type === "select" ? (
-                <select
-                  className={inputCls}
+                <Select
                   value={form[f.name]}
-                  onChange={(e) =>
-                    setForm({ ...form, [f.name]: e.target.value })
+                  onValueChange={(value) =>
+                    setForm({ ...form, [f.name]: value })
                   }
-                  required={f.required}
-                  disabled={f.disabled}>
-                  <option className="text-black" value="">
-                    — Sélectionner —
-                  </option>
-                  {f.options?.map((o) => (
-                    <option
-                      className="text-black"
-                      key={o.value}
-                      value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
+                  disabled={f.disabled}
+                  required={f.required}>
+                  <SelectTrigger
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white
+                               focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500
+                               disabled:opacity-40 data-[placeholder]:text-gray-500
+                               [&>span]:flex [&>span]:items-center">
+                    <SelectValue placeholder="— Sélectionner —" />
+                  </SelectTrigger>
+                  <SelectContent
+                    className="bg-slate-900 border border-white/10 rounded-lg shadow-xl
+                               text-white z-[60]">
+                    {f.options?.map((o) => (
+                      <SelectItem
+                        key={o.value}
+                        value={String(o.value)}
+                        className="text-sm text-gray-300 px-3 py-2 cursor-pointer rounded
+                                   focus:bg-white/10 focus:text-white
+                                   data-[state=checked]:text-blue-400">
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               ) : f.type === "checkbox" ? (
                 <div className="flex items-center gap-2">
                   <input
@@ -103,6 +120,7 @@ function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
               )}
             </div>
           ))}
+
           <div className="flex gap-3 pt-2">
             <button
               type="submit"
@@ -136,7 +154,7 @@ export default function CrudPage({
   onDelete,
   loading,
 }) {
-  const [modal, setModal] = useState(null); // null | 'create' | rowObject
+  const [modal, setModal] = useState(null);
 
   return (
     <div className="p-6 space-y-6">
