@@ -11,10 +11,9 @@ import {
 } from "@/services/securiteService";
 
 import { Modal } from "@/components/Modal";
-
-const inputCls =
-  "w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500";
-const labelCls = "text-xs text-gray-400 mb-1 block";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 const niveauColor = (n) => {
   if (n === 1) return "bg-red-500/10 text-red-400";
@@ -138,14 +137,14 @@ export default function Roles() {
             Gérer les rôles et leurs permissions
           </p>
         </div>
-        <button
+        <Button
           onClick={() => {
             setError("");
             setOpenCreate(true);
           }}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors">
+          variant="custom">
           <Plus size={15} /> Nouveau rôle
-        </button>
+        </Button>
       </div>
 
       {/* Search */}
@@ -154,9 +153,9 @@ export default function Roles() {
           size={15}
           className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
         />
-        <input
+        <Input
           placeholder="Rechercher un rôle..."
-          className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+          className="  pl-9 "
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -182,18 +181,18 @@ export default function Roles() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <button
+                  <Button
                     onClick={() => openPermsModal(role)}
                     title="Permissions"
                     className="p-1.5 rounded hover:bg-emerald-500/10 text-gray-500 hover:text-emerald-400 transition-colors">
                     <Shield size={13} />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => handleDelete(role.id)}
                     title="Désactiver"
                     className="p-1.5 rounded hover:bg-red-500/10 text-gray-500 hover:text-red-400 transition-colors">
                     <Trash2 size={13} />
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -240,9 +239,8 @@ export default function Roles() {
         <Modal title="Nouveau rôle" onClose={() => setOpenCreate(false)}>
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
-              <label className={labelCls}>Code</label>
-              <input
-                className={inputCls}
+              <Label>Code</Label>
+              <Input
                 placeholder="ex: TECHNICIEN"
                 value={form.code}
                 onChange={(e) =>
@@ -252,9 +250,8 @@ export default function Roles() {
               />
             </div>
             <div>
-              <label className={labelCls}>Libellé</label>
-              <input
-                className={inputCls}
+              <Label>Libellé</Label>
+              <Input
                 placeholder="ex: Technicien de maintenance"
                 value={form.libelle}
                 onChange={(e) => setForm({ ...form, libelle: e.target.value })}
@@ -262,12 +259,11 @@ export default function Roles() {
               />
             </div>
             <div>
-              <label className={labelCls}>Niveau hiérarchique</label>
-              <input
+              <Label>Niveau hiérarchique</Label>
+              <Input
                 type="number"
                 min="1"
                 max="10"
-                className={inputCls}
                 placeholder="ex: 3"
                 value={form.niveau}
                 onChange={(e) => setForm({ ...form, niveau: e.target.value })}
@@ -279,17 +275,16 @@ export default function Roles() {
             </div>
             {error && <p className="text-red-400 text-xs">{error}</p>}
             <div className="flex gap-3 pt-2">
-              <button
-                type="submit"
-                className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">
+              <Button type="submit" className="flex-1 py-2 " variant="custom">
                 Créer
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => setOpenCreate(false)}
-                className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-sm">
+                className="flex-1 py-2 "
+                variant="customOutline">
                 Annuler
-              </button>
+              </Button>
             </div>
           </form>
         </Modal>
@@ -320,11 +315,11 @@ export default function Roles() {
                           {p.code}
                         </span>
                       </div>
-                      <button
+                      <Button
                         onClick={() => handleRemovePermission(p.id)}
                         className="text-gray-500 hover:text-red-400 transition-colors text-lg leading-none">
                         ×
-                      </button>
+                      </Button>
                     </div>
                   ))
                 ) : (
@@ -357,11 +352,11 @@ export default function Roles() {
                           {p.code}
                         </span>
                       </div>
-                      <button
+                      <Button
                         onClick={() => handleAssignPermission(p.id)}
-                        className="text-xs px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors">
+                        variant="custom">
                         Ajouter
-                      </button>
+                      </Button>
                     </div>
                   ))}
                 {allPermissions.filter(

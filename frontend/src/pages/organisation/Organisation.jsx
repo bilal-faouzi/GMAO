@@ -1,28 +1,36 @@
-import { useState, useEffect } from 'react'
-import { Building2, MapPin, Grid3x3, Factory, ChevronRight, ChevronDown, RefreshCw } from 'lucide-react'
-import { getSocietes, getArborescence } from '@/services/organisationService'
+import { useState, useEffect } from "react";
+import {
+  Building2,
+  MapPin,
+  Grid3x3,
+  Factory,
+  ChevronRight,
+  ChevronDown,
+  RefreshCw,
+} from "lucide-react";
+import { getSocietes, getArborescence } from "@/services/organisationService";
+import { Button } from "@/components/ui/button";
 
 // ─── Nœud de l'arbre ─────────────────────────────────────────────────────────
 function TreeNode({ node, level = 0, icon: Icon, color }) {
-  const [open, setOpen] = useState(level < 2)
-  const children = node.sites || node.secteurs || node.unites || []
-  const hasChildren = children.length > 0
+  const [open, setOpen] = useState(level < 2);
+  const children = node.sites || node.secteurs || node.unites || [];
+  const hasChildren = children.length > 0;
 
   const icons = {
-    0: { Icon: Building2, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-    1: { Icon: MapPin,     color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    2: { Icon: Grid3x3,   color: 'text-violet-400', bg: 'bg-violet-500/10' },
-    3: { Icon: Factory,   color: 'text-amber-400', bg: 'bg-amber-500/10' },
-  }
-  const { Icon: NodeIcon, color: nodeColor, bg } = icons[level] || icons[3]
+    0: { Icon: Building2, color: "text-blue-400", bg: "bg-blue-500/10" },
+    1: { Icon: MapPin, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+    2: { Icon: Grid3x3, color: "text-violet-400", bg: "bg-violet-500/10" },
+    3: { Icon: Factory, color: "text-amber-400", bg: "bg-amber-500/10" },
+  };
+  const { Icon: NodeIcon, color: nodeColor, bg } = icons[level] || icons[3];
 
   return (
     <div className="select-none">
       <div
-        className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-white/5 transition-colors ${level === 0 ? 'mb-1' : ''}`}
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-white/5 transition-colors ${level === 0 ? "mb-1" : ""}`}
         style={{ paddingLeft: `${level * 20 + 12}px` }}
-        onClick={() => hasChildren && setOpen(!open)}
-      >
+        onClick={() => hasChildren && setOpen(!open)}>
         {hasChildren ? (
           <span className="text-gray-500 w-4">
             {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -56,64 +64,64 @@ function TreeNode({ node, level = 0, icon: Icon, color }) {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 // ─── Page principale ──────────────────────────────────────────────────────────
 export default function Organisation() {
-  const [societes, setSocietes] = useState([])
-  const [arbres, setArbres] = useState({})
-  const [loading, setLoading] = useState(true)
-  const [loadingArbres, setLoadingArbres] = useState({})
-  const [expanded, setExpanded] = useState({})
+  const [societes, setSocietes] = useState([]);
+  const [arbres, setArbres] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [loadingArbres, setLoadingArbres] = useState({});
+  const [expanded, setExpanded] = useState({});
 
   useEffect(() => {
-    fetchSocietes()
-  }, [])
+    fetchSocietes();
+  }, []);
 
   async function fetchSocietes() {
     try {
-      setLoading(true)
-      const res = await getSocietes()
-      const list = res.data.results || res.data
-      setSocietes(list)
+      setLoading(true);
+      const res = await getSocietes();
+      const list = res.data.results || res.data;
+      setSocietes(list);
       // Charger automatiquement l'arborescence de chaque société
-      list.forEach((s) => fetchArborescence(s.id))
+      list.forEach((s) => fetchArborescence(s.id));
     } catch (e) {
-      console.error(e)
+      console.error(e);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   async function fetchArborescence(societeId) {
     try {
-      setLoadingArbres((prev) => ({ ...prev, [societeId]: true }))
-      const res = await getArborescence(societeId)
-      setArbres((prev) => ({ ...prev, [societeId]: res.data }))
+      setLoadingArbres((prev) => ({ ...prev, [societeId]: true }));
+      const res = await getArborescence(societeId);
+      setArbres((prev) => ({ ...prev, [societeId]: res.data }));
     } catch (e) {
-      console.error(e)
+      console.error(e);
     } finally {
-      setLoadingArbres((prev) => ({ ...prev, [societeId]: false }))
+      setLoadingArbres((prev) => ({ ...prev, [societeId]: false }));
     }
   }
 
   // Statistiques
   const stats = societes.reduce(
     (acc, s) => {
-      const arbre = arbres[s.id]
-      if (!arbre) return acc
-      const sites = arbre.sites || []
-      const secteurs = sites.flatMap((si) => si.secteurs || [])
-      const unites = secteurs.flatMap((se) => se.unites || [])
+      const arbre = arbres[s.id];
+      if (!arbre) return acc;
+      const sites = arbre.sites || [];
+      const secteurs = sites.flatMap((si) => si.secteurs || []);
+      const unites = secteurs.flatMap((se) => se.unites || []);
       return {
         sites: acc.sites + sites.length,
         secteurs: acc.secteurs + secteurs.length,
         unites: acc.unites + unites.length,
-      }
+      };
     },
-    { sites: 0, secteurs: 0, unites: 0 }
-  )
+    { sites: 0, secteurs: 0, unites: 0 },
+  );
 
   return (
     <div className="p-6 space-y-6">
@@ -125,29 +133,54 @@ export default function Organisation() {
             Structure hiérarchique de l'entreprise
           </p>
         </div>
-        <button
-          onClick={fetchSocietes}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-sm transition-colors"
-        >
+        <Button onClick={fetchSocietes} variant="customOutline">
           <RefreshCw size={14} />
           Actualiser
-        </button>
+        </Button>
       </div>
 
       {/* Cartes stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Sociétés',  value: societes.length,   icon: Building2, color: 'text-blue-400',    bg: 'bg-blue-500/10' },
-          { label: 'Sites',     value: stats.sites,        icon: MapPin,    color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-          { label: 'Secteurs',  value: stats.secteurs,     icon: Grid3x3,   color: 'text-violet-400',  bg: 'bg-violet-500/10' },
-          { label: 'Unités',    value: stats.unites,       icon: Factory,   color: 'text-amber-400',   bg: 'bg-amber-500/10' },
+          {
+            label: "Sociétés",
+            value: societes.length,
+            icon: Building2,
+            color: "text-blue-400",
+            bg: "bg-blue-500/10",
+          },
+          {
+            label: "Sites",
+            value: stats.sites,
+            icon: MapPin,
+            color: "text-emerald-400",
+            bg: "bg-emerald-500/10",
+          },
+          {
+            label: "Secteurs",
+            value: stats.secteurs,
+            icon: Grid3x3,
+            color: "text-violet-400",
+            bg: "bg-violet-500/10",
+          },
+          {
+            label: "Unités",
+            value: stats.unites,
+            icon: Factory,
+            color: "text-amber-400",
+            bg: "bg-amber-500/10",
+          },
         ].map(({ label, value, icon: Icon, color, bg }) => (
-          <div key={label} className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-3">
+          <div
+            key={label}
+            className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-3">
             <div className={`p-2 rounded-lg ${bg}`}>
               <Icon size={20} className={color} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">{loading ? '—' : value}</p>
+              <p className="text-2xl font-bold text-white">
+                {loading ? "—" : value}
+              </p>
               <p className="text-xs text-gray-400">{label}</p>
             </div>
           </div>
@@ -176,11 +209,11 @@ export default function Organisation() {
                 <div key={s.id} className="px-3 py-2 text-sm text-gray-500">
                   {s.raisonSociale} — chargement...
                 </div>
-              )
+              ),
             )}
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }

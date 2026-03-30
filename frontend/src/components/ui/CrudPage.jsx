@@ -7,9 +7,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const inputCls =
-  "w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 disabled:opacity-40";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 function Badge({ active }) {
   return (
@@ -50,17 +50,20 @@ function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
       <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-md p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-white font-semibold text-lg">{title}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            className="text-gray-400 hover:text-white">
             <X size={18} />
-          </button>
+          </Button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           {fields.map((f) => (
             <div key={f.name}>
-              <label className="text-xs text-gray-400 mb-1 block">
+              <Label className="text-xs text-gray-400 mb-1 block">
                 {f.label}
                 {f.required && " *"}
-              </label>
+              </Label>
 
               {f.type === "select" ? (
                 <Select
@@ -94,7 +97,7 @@ function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
                 </Select>
               ) : f.type === "checkbox" ? (
                 <div className="flex items-center gap-2">
-                  <input
+                  <Input
                     type="checkbox"
                     id={f.name}
                     checked={!!form[f.name]}
@@ -108,8 +111,7 @@ function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
                   </label>
                 </div>
               ) : (
-                <input
-                  className={inputCls}
+                <Input
                   placeholder={f.placeholder}
                   value={form[f.name]}
                   onChange={(e) =>
@@ -122,18 +124,12 @@ function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
           ))}
 
           <div className="flex gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium disabled:opacity-50">
+            <Button type="submit" disabled={saving} variant="custom">
               {saving ? "Enregistrement..." : initial.id ? "Modifier" : "Créer"}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-sm">
+            </Button>
+            <Button type="button" onClick={onClose} variant="customOutline">
               Annuler
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -141,7 +137,7 @@ function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
   );
 }
 
-export { Badge, ModalForm, inputCls };
+export { Badge, ModalForm };
 
 export default function CrudPage({
   title,
@@ -164,12 +160,10 @@ export default function CrudPage({
           <h1 className="text-2xl font-bold text-white">{title}</h1>
           {subtitle && <p className="text-gray-400 text-sm mt-1">{subtitle}</p>}
         </div>
-        <button
-          onClick={() => setModal("create")}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors">
+        <Button onClick={() => setModal("create")} variant="custom">
           <Plus size={15} />
           Ajouter
-        </button>
+        </Button>
       </div>
 
       {/* Tableau */}
@@ -184,7 +178,7 @@ export default function CrudPage({
                   {c.label}
                 </th>
               ))}
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -215,20 +209,20 @@ export default function CrudPage({
                     </td>
                   ))}
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center gap-2">
                       {onEdit && (
-                        <button
+                        <Button
                           onClick={() => setModal(row._raw)}
-                          className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+                          className=" rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
                           <Pencil size={13} />
-                        </button>
+                        </Button>
                       )}
                       {onDelete && (
-                        <button
+                        <Button
                           onClick={() => onDelete(row.id)}
-                          className="p-1.5 rounded hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors">
+                          className=" rounded hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors">
                           <Trash2 size={13} />
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </td>

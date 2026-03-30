@@ -21,6 +21,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { FieldLabel } from "@/components/ui/field";
 
 function RoleBadge({ role }) {
   const styles = {
@@ -93,11 +98,11 @@ function MembresPanel({ equipe, onClose }) {
                 <p className="text-sm text-white">{m.utilisateur_nom}</p>
                 <RoleBadge role={m.niveauRole} />
               </div>
-              <button
+              <Button
                 onClick={() => handleRemove(m.id)}
                 className="p-1.5 rounded hover:bg-red-500/10 text-gray-500 hover:text-red-400 transition-colors">
                 <UserMinus size={14} />
-              </button>
+              </Button>
             </div>
           ))
         )}
@@ -144,25 +149,19 @@ function MembresPanel({ equipe, onClose }) {
           </Select>
 
           <div className="flex gap-2">
-            <button
-              onClick={handleAdd}
-              className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">
+            <Button onClick={handleAdd} variant="custom">
               Confirmer
-            </button>
-            <button
-              onClick={() => setShowAdd(false)}
-              className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-sm">
+            </Button>
+            <Button onClick={() => setShowAdd(false)} variant="customOutline">
               Annuler
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
-        <button
-          onClick={() => setShowAdd(true)}
-          className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-sm border border-white/10 border-dashed">
+        <Button onClick={() => setShowAdd(true)} variant="customOutline">
           <UserPlus size={14} />
           Ajouter un membre
-        </button>
+        </Button>
       )}
     </Modal>
   );
@@ -201,9 +200,8 @@ function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
       onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="text-xs text-gray-400 mb-1 block">Libellé *</label>
-          <input
-            className={inputClass}
+          <Label className="text-xs text-gray-400 mb-1 block">Libellé *</Label>
+          <Input
             value={form.libelle}
             onChange={(e) => setForm({ ...form, libelle: e.target.value })}
             placeholder="Ex: Équipe Électricité Nord"
@@ -213,7 +211,7 @@ function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
 
         {/* Site */}
         <div>
-          <label className="text-xs text-gray-400 mb-1 block">Site *</label>
+          <Label className="text-xs text-gray-400 mb-1 block">Site *</Label>
           <Select
             value={form.site}
             onValueChange={(v) => setForm({ ...form, site: v })}
@@ -235,7 +233,7 @@ function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
 
         {/* Spécialité */}
         <div>
-          <label className="text-xs text-gray-400 mb-1 block">Spécialité</label>
+          <Label className="text-xs text-gray-400 mb-1 block">Spécialité</Label>
           <Select
             value={form.specialite || ""}
             onValueChange={(v) => setForm({ ...form, specialite: v || null })}>
@@ -256,31 +254,33 @@ function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
+          <Checkbox
             id="estActif"
+            // On utilise 'checked' pour l'état actuel
             checked={form.estActif}
-            onChange={(e) => setForm({ ...form, estActif: e.target.checked })}
-            className="accent-blue-500"
+            // On utilise 'onCheckedChange' qui donne directement le booléen
+            onCheckedChange={(e) =>
+              setForm({ ...form, estActif: e.target.checked })
+            }
           />
-          <label htmlFor="estActif" className="text-sm text-gray-300">
-            Active
-          </label>
+          <FieldLabel>Active</FieldLabel>
         </div>
 
         <div className="flex gap-3 pt-2">
-          <button
+          <Button
             type="submit"
             disabled={saving}
-            className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium disabled:opacity-50">
+            className="flex-1 py-2  disabled:opacity-50"
+            variant="custom">
             {saving ? "Enregistrement..." : equipe ? "Modifier" : "Créer"}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-sm">
+            className="flex-1 py-2 rounded-lg "
+            variant="customOutline">
             Annuler
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>
@@ -335,12 +335,10 @@ export default function Equipes() {
             {equipes.length} équipe(s) au total
           </p>
         </div>
-        <button
-          onClick={() => setModalEquipe("new")}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors">
+        <Button onClick={() => setModalEquipe("new")} variant="custom">
           <Plus size={15} />
           Nouvelle équipe
-        </button>
+        </Button>
       </div>
 
       {/* Filtre site */}
@@ -374,7 +372,6 @@ export default function Equipes() {
                 "Chef",
                 "Membres",
                 "Statut",
-                "Actions",
               ].map((h) => (
                 <th
                   key={h}
@@ -382,6 +379,11 @@ export default function Equipes() {
                   {h}
                 </th>
               ))}
+              <th
+                key="actions"
+                className="px-4 py-3 text-center  text-xs font-medium text-gray-400 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
@@ -413,12 +415,12 @@ export default function Equipes() {
                     {eq.chef_nom || "—"}
                   </td>
                   <td className="px-4 py-3">
-                    <button
+                    <Button
                       onClick={() => setPanelMembres(eq)}
                       className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 transition-colors">
                       <Users size={13} />
                       <span>{eq.membres_count ?? 0}</span>
-                    </button>
+                    </Button>
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -427,17 +429,17 @@ export default function Equipes() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <button
+                    <div className="flex items-center justify-center gap-2">
+                      <Button
                         onClick={() => setModalEquipe(eq)}
-                        className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+                        className="rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
                         <Pencil size={13} />
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => handleDelete(eq)}
-                        className="p-1.5 rounded hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors">
+                        className="rounded hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors">
                         <Trash2 size={13} />
-                      </button>
+                      </Button>
                     </div>
                   </td>
                 </tr>

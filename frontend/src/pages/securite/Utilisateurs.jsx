@@ -11,6 +11,9 @@ import {
   removeRoleFromUser,
 } from "@/services/securiteService";
 import { Modal } from "@/components/Modal";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 // ─── Modal générique ──────────────────────────────────────────────────────────
 
 const inputCls =
@@ -148,14 +151,14 @@ export default function Utilisateurs() {
             Gérer les comptes utilisateurs
           </p>
         </div>
-        <button
+        <Button
           onClick={() => {
             setError("");
             setOpenCreate(true);
           }}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors">
+          variant="custom">
           <Plus size={15} /> Nouvel utilisateur
-        </button>
+        </Button>
       </div>
 
       {/* Search */}
@@ -164,9 +167,9 @@ export default function Utilisateurs() {
           size={15}
           className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
         />
-        <input
+        <Input
           placeholder="Rechercher un utilisateur..."
-          className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+          className="pl-9"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -177,15 +180,18 @@ export default function Utilisateurs() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-white/10">
-              {["Utilisateur", "Email", "Rôles", "Statut", "Actions"].map(
-                (h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                    {h}
-                  </th>
-                ),
-              )}
+              {["Utilisateur", "Email", "Rôles", "Statut"].map((h) => (
+                <th
+                  key={h}
+                  className="px-4 py-3 text-left  text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  {h}
+                </th>
+              ))}
+              <th
+                key="actions"
+                className="px-4 py-3 text-center  text-xs font-medium text-gray-400 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
@@ -256,24 +262,24 @@ export default function Utilisateurs() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
-                      <button
+                      <Button
                         onClick={() => openRolesModal(u)}
                         title="Gérer les rôles"
-                        className="p-1.5 rounded hover:bg-emerald-500/10 text-gray-400 hover:text-emerald-400 transition-colors">
+                        className=" rounded hover:bg-emerald-500/10 text-gray-400 hover:text-emerald-400 transition-colors">
                         <Shield size={13} />
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => openEditModal(u)}
                         title="Modifier"
-                        className="p-1.5 rounded hover:bg-blue-500/10 text-gray-400 hover:text-blue-400 transition-colors">
+                        className=" rounded hover:bg-blue-500/10 text-gray-400 hover:text-blue-400 transition-colors">
                         <Pencil size={13} />
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => handleDelete(u.id)}
                         title="Désactiver"
-                        className="p-1.5 rounded hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors">
+                        className=" rounded hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors">
                         <Trash2 size={13} />
-                      </button>
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -289,8 +295,8 @@ export default function Utilisateurs() {
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={labelCls}>Prénom</label>
-                <input
+                <Label className={labelCls}>Prénom</Label>
+                <Input
                   className={inputCls}
                   value={form.prenom}
                   onChange={(e) => setForm({ ...form, prenom: e.target.value })}
@@ -298,8 +304,8 @@ export default function Utilisateurs() {
                 />
               </div>
               <div>
-                <label className={labelCls}>Nom</label>
-                <input
+                <Label className={labelCls}>Nom</Label>
+                <Input
                   className={inputCls}
                   value={form.nom}
                   onChange={(e) => setForm({ ...form, nom: e.target.value })}
@@ -308,8 +314,8 @@ export default function Utilisateurs() {
               </div>
             </div>
             <div>
-              <label className={labelCls}>Nom d'utilisateur</label>
-              <input
+              <Label className={labelCls}>Nom d'utilisateur</Label>
+              <Input
                 className={inputCls}
                 value={form.nom_utilisateur}
                 onChange={(e) =>
@@ -319,8 +325,8 @@ export default function Utilisateurs() {
               />
             </div>
             <div>
-              <label className={labelCls}>Email</label>
-              <input
+              <Label className={labelCls}>Email</Label>
+              <Input
                 type="email"
                 className={inputCls}
                 value={form.email}
@@ -329,8 +335,8 @@ export default function Utilisateurs() {
               />
             </div>
             <div>
-              <label className={labelCls}>Mot de passe</label>
-              <input
+              <Label className={labelCls}>Mot de passe</Label>
+              <Input
                 type="password"
                 className={inputCls}
                 value={form.mot_de_passe}
@@ -342,17 +348,19 @@ export default function Utilisateurs() {
             </div>
             {error && <p className="text-red-400 text-xs">{error}</p>}
             <div className="flex gap-3 pt-2">
-              <button
+              <Button
                 type="submit"
-                className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">
+                variant="custom"
+                className="flex-1 py-2 rounded-lg">
                 Créer
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => setOpenCreate(false)}
-                className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-sm">
+                variant="customOutline"
+                className="flex-1 py-2 rounded-lg">
                 Annuler
-              </button>
+              </Button>
             </div>
           </form>
         </Modal>
@@ -366,16 +374,16 @@ export default function Utilisateurs() {
           <form onSubmit={handleEdit} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={labelCls}>Prénom</label>
-                <input
+                <Label className={labelCls}>Prénom</Label>
+                <Input
                   className={inputCls}
                   value={form.prenom}
                   onChange={(e) => setForm({ ...form, prenom: e.target.value })}
                 />
               </div>
               <div>
-                <label className={labelCls}>Nom</label>
-                <input
+                <Label className={labelCls}>Nom</Label>
+                <Input
                   className={inputCls}
                   value={form.nom}
                   onChange={(e) => setForm({ ...form, nom: e.target.value })}
@@ -383,8 +391,8 @@ export default function Utilisateurs() {
               </div>
             </div>
             <div>
-              <label className={labelCls}>Email</label>
-              <input
+              <Label className={labelCls}>Email</Label>
+              <Input
                 type="email"
                 className={inputCls}
                 value={form.email}
@@ -392,10 +400,10 @@ export default function Utilisateurs() {
               />
             </div>
             <div>
-              <label className={labelCls}>
+              <Label className={labelCls}>
                 Nouveau mot de passe (optionnel)
-              </label>
-              <input
+              </Label>
+              <Input
                 type="password"
                 className={inputCls}
                 value={form.mot_de_passe}
@@ -406,17 +414,19 @@ export default function Utilisateurs() {
             </div>
             {error && <p className="text-red-400 text-xs">{error}</p>}
             <div className="flex gap-3 pt-2">
-              <button
+              <Button
                 type="submit"
-                className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">
+                variant="custom"
+                className="flex-1 py-2 rounded-lg">
                 Enregistrer
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => setOpenEdit(false)}
-                className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-sm">
+                variant="customOutline"
+                className="flex-1 py-2 rounded-lg">
                 Annuler
-              </button>
+              </Button>
             </div>
           </form>
         </Modal>
@@ -446,11 +456,11 @@ export default function Utilisateurs() {
                           {r.libelle}
                         </span>
                       </div>
-                      <button
+                      <Button
                         onClick={() => handleRemoveRole(r.id)}
                         className="text-gray-500 hover:text-red-400 transition-colors text-lg leading-none">
                         ×
-                      </button>
+                      </Button>
                     </div>
                   ))
                 ) : (
@@ -481,11 +491,12 @@ export default function Utilisateurs() {
                           {r.libelle}
                         </span>
                       </div>
-                      <button
+                      <Button
                         onClick={() => handleAssignRole(r.id)}
-                        className="text-xs px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors">
+                        variant="custom"
+                        className="flex-1 py-2 rounded-lg">
                         Assigner
-                      </button>
+                      </Button>
                     </div>
                   ))}
                 {allRoles.filter(

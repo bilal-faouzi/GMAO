@@ -59,37 +59,72 @@ class ActifListSerializer(serializers.ModelSerializer):
 # Actif — détail complet
 # ---------------------------------------------------------------------------
 
-class ActifDetailSerializer(serializers.ModelSerializer):
-    """Représentation complète avec enfants directs et historique récent."""
+# class ActifDetailSerializer(serializers.ModelSerializer):
+#     """Représentation complète avec enfants directs et historique récent."""
 
-    enfants         = ActifListSerializer(many=True, read_only=True)
+#     enfants         = ActifListSerializer(many=True, read_only=True)
+#     historiqueRecent = serializers.SerializerMethodField(read_only=True)
+
+#     class Meta:
+#         model  = Actif
+#         fields = [
+#             'id',
+#             'codeActif',
+#             'designation',
+#             'idUnite',
+#             'idParent',
+#             'type',
+#             'criticite',
+#             'statut',
+#             'numeroSerie',
+#             'fabricant',
+#             'modele',
+#             'enfants',
+#             'historiqueRecent',
+#             'createdAt',
+#             'updatedAt',
+#         ]
+#         read_only_fields = ['id', 'createdAt', 'updatedAt']
+
+#     def get_historiqueRecent(self, obj):
+#         qs = obj.historique_statuts.select_related('idUtilisateur').order_by('-dateChangement')[:10]
+#         return HistoriqueStatutActifSerializer(qs, many=True).data
+
+
+class ActifDetailSerializer(serializers.ModelSerializer):
+    enfants = serializers.SerializerMethodField(read_only=True)
     historiqueRecent = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
-        model  = Actif
+        model = Actif
         fields = [
-            'id',
-            'codeActif',
-            'designation',
-            'idUnite',
-            'idParent',
-            'type',
-            'criticite',
-            'statut',
-            'numeroSerie',
-            'fabricant',
-            'modele',
-            'enfants',
-            'historiqueRecent',
-            'createdAt',
-            'updatedAt',
+            'id', 'codeActif', 'designation', 'idUnite', 'idParent',
+            'type', 'criticite', 'statut', 'numeroSerie', 'fabricant',
+            'modele', 'enfants', 'historiqueRecent', 'createdAt', 'updatedAt',
         ]
         read_only_fields = ['id', 'createdAt', 'updatedAt']
 
-    def get_historiqueRecent(self, obj):
-        qs = obj.historique_statuts.select_related('idUtilisateur').order_by('-dateChangement')[:10]
-        return HistoriqueStatutActifSerializer(qs, many=True).data
+    def get_enfants(self, obj):
+        depth     = self.context.get('depth', 0)
+        max_depth = self.context.get('max_depth', 10)  # sécurité anti-boucle
 
+        if depth >= max_depth:
+            # On retourne quand même les infos de base sans récursion
+            return ActifListSerializer(
+                obj.enfants.all(), many=True,
+                context=self.context
+            ).data
+
+        return ActifDetailSerializer(
+            obj.enfants.select_related('idUnite', 'idParent'),
+            many=True,
+            context={**self.context, 'depth': depth + 1}
+        ).data
+
+    def get_historiqueRecent(self, obj):
+        qs = obj.historique_statuts.select_related('idUtilisateur') \
+                                   .order_by('-dateChangement')[:10]
+        return HistoriqueStatutActifSerializer(qs, many=True).data
 
 # ---------------------------------------------------------------------------
 # Actif — création / modification

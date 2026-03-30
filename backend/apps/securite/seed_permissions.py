@@ -1,6 +1,9 @@
 """
 Seed des permissions et role GMAO — à exécuter via : exec(open('apps/securite/seed_permissions.py', encoding='utf-8').read())
 Supprime toutes les anciennes permissions et RolePermission, puis recrée tout.
+run
+python manage.py shell
+exec(open("apps/actif/actifexemple.py", encoding="utf-8").read())
 """
 
 
@@ -43,80 +46,80 @@ Permission.objects.all().delete()
 PERMISSIONS = [
 
     # ── MODULE : ADMIN ──────────────────────────────────────────
-    ("ADMIN_UTILISATEUR_CREER",     "ADMIN", "CREER",     "Utilisateur"),
-    ("ADMIN_UTILISATEUR_LIRE",      "ADMIN", "LIRE",      "Utilisateur"),
-    ("ADMIN_UTILISATEUR_MODIFIER",  "ADMIN", "MODIFIER",  "Utilisateur"),
-    ("ADMIN_UTILISATEUR_SUPPRIMER", "ADMIN", "SUPPRIMER", "Utilisateur"),
+    ("ADMIN_UTILISATEUR_CREATE",     "ADMIN", "CREATE",     "Utilisateur"),
+    ("ADMIN_UTILISATEUR_READ",      "ADMIN", "READ",      "Utilisateur"),
+    ("ADMIN_UTILISATEUR_UPDATE",  "ADMIN", "UPDATE",  "Utilisateur"),
+    ("ADMIN_UTILISATEUR_DELETE", "ADMIN", "DELETE", "Utilisateur"),
 
-    ("ADMIN_ROLE_CREER",            "ADMIN", "CREER",     "Role"),
-    ("ADMIN_ROLE_LIRE",             "ADMIN", "LIRE",      "Role"),
-    ("ADMIN_ROLE_MODIFIER",         "ADMIN", "MODIFIER",  "Role"),
+    ("ADMIN_ROLE_CREATE",            "ADMIN", "CREATE",     "Role"),
+    ("ADMIN_ROLE_READ",             "ADMIN", "READ",      "Role"),
+    ("ADMIN_ROLE_UPDATE",         "ADMIN", "UPDATE",  "Role"),
 
-    ("ADMIN_PERMISSION_LIRE",       "ADMIN", "LIRE",      "Permission"),
-    ("ADMIN_PERMISSION_MODIFIER",   "ADMIN", "MODIFIER",  "Permission"),
+    ("ADMIN_PERMISSION_READ",       "ADMIN", "READ",      "Permission"),
+    ("ADMIN_PERMISSION_UPDATE",   "ADMIN", "UPDATE",  "Permission"),
 
-    ("ADMIN_ORGANISATION_CREER",    "ADMIN", "CREER",     "Organisation"),
-    ("ADMIN_ORGANISATION_MODIFIER", "ADMIN", "MODIFIER",  "Organisation"),
-    ("ADMIN_ORGANISATION_LIRE",     "ADMIN", "LIRE",      "Organisation"),
+    ("ADMIN_ORGANISATION_CREATE",    "ADMIN", "CREATE",     "Organisation"),
+    ("ADMIN_ORGANISATION_UPDATE", "ADMIN", "UPDATE",  "Organisation"),
+    ("ADMIN_ORGANISATION_READ",     "ADMIN", "READ",      "Organisation"),
 
-    ("ADMIN_EQUIPE_CREER",          "ADMIN", "CREER",     "Equipe"),
-    ("ADMIN_EQUIPE_MODIFIER",       "ADMIN", "MODIFIER",  "Equipe"),
-    ("ADMIN_EQUIPE_LIRE",           "ADMIN", "LIRE",      "Equipe"),
+    ("ADMIN_EQUIPE_CREATE",          "ADMIN", "CREATE",     "Equipe"),
+    ("ADMIN_EQUIPE_UPDATE",       "ADMIN", "UPDATE",  "Equipe"),
+    ("ADMIN_EQUIPE_READ",           "ADMIN", "READ",      "Equipe"),
 
-    ("ADMIN_JOURNAL_LIRE",          "ADMIN", "LIRE",      "JournalAudit"),
+    ("ADMIN_JOURNAL_READ",          "ADMIN", "READ",      "JournalAudit"),
 
     # ── MODULE : ACTIFS ─────────────────────────────────────────
-    ("ACTIF_CREER",                 "ACTIFS", "CREER",     "Actif"),
-    ("ACTIF_LIRE",                  "ACTIFS", "LIRE",      "Actif"),
-    ("ACTIF_MODIFIER",              "ACTIFS", "MODIFIER",  "Actif"),
-    ("ACTIF_SUPPRIMER",             "ACTIFS", "SUPPRIMER", "Actif"),
-    ("ACTIF_CHANGER_STATUT",        "ACTIFS", "MODIFIER",  "ActifStatut"),
-    ("ACTIF_HISTORIQUE_LIRE",       "ACTIFS", "LIRE",      "HistoriqueStatutActif"),
+    ("ACTIF_CREATE",                 "ACTIFS", "CREATE",     "Actif"),
+    ("ACTIF_READ",                  "ACTIFS", "READ",      "Actif"),
+    ("ACTIF_UPDATE",              "ACTIFS", "UPDATE",  "Actif"),
+    ("ACTIF_DELETE",             "ACTIFS", "DELETE", "Actif"),
+    ("ACTIF_CHANGER_STATUT",        "ACTIFS", "UPDATE",  "ActifStatut"),
+    ("ACTIF_HISTORIQUE_READ",       "ACTIFS", "READ",      "HistoriqueStatutActif"),
 
     # ── MODULE : INTERVENTIONS — Demandes d'Intervention (DI) ───
-    ("DI_CREER",                    "INTERVENTIONS", "CREER",    "DemandeIntervention"),
-    ("DI_LIRE",                     "INTERVENTIONS", "LIRE",     "DemandeIntervention"),
-    ("DI_MODIFIER",                 "INTERVENTIONS", "MODIFIER", "DemandeIntervention"),
+    ("DI_CREATE",                    "INTERVENTIONS", "CREATE",    "DemandeIntervention"),
+    ("DI_READ",                     "INTERVENTIONS", "READ",     "DemandeIntervention"),
+    ("DI_UPDATE",                 "INTERVENTIONS", "UPDATE", "DemandeIntervention"),
     ("DI_VALIDER",                  "INTERVENTIONS", "VALIDER",  "DemandeIntervention"),
-    ("DI_REJETER",                  "INTERVENTIONS", "MODIFIER", "DemandeIntervention"),  # motifRejet
+    ("DI_REJETER",                  "INTERVENTIONS", "UPDATE", "DemandeIntervention"),  # motifRejet
 
     # ── MODULE : INTERVENTIONS — Ordres de Travail (OT) ─────────
-    ("OT_CREER",                    "INTERVENTIONS", "CREER",    "OrdreTravail"),
-    ("OT_LIRE",                     "INTERVENTIONS", "LIRE",     "OrdreTravail"),
-    ("OT_MODIFIER",                 "INTERVENTIONS", "MODIFIER", "OrdreTravail"),
-    ("OT_AFFECTER_EQUIPE",          "INTERVENTIONS", "MODIFIER", "AffectationEquipe"),
-    ("OT_AFFECTER_SOUSTRAIT",       "INTERVENTIONS", "MODIFIER", "AffectationSousTraitant"),
-    ("OT_SAISIR_COMPTE_RENDU",      "INTERVENTIONS", "MODIFIER", "CompteRenduOT"),
+    ("OT_CREATE",                    "INTERVENTIONS", "CREATE",    "OrdreTravail"),
+    ("OT_READ",                     "INTERVENTIONS", "READ",     "OrdreTravail"),
+    ("OT_UPDATE",                 "INTERVENTIONS", "UPDATE", "OrdreTravail"),
+    ("OT_AFFECTER_EQUIPE",          "INTERVENTIONS", "UPDATE", "AffectationEquipe"),
+    ("OT_AFFECTER_SOUSTRAIT",       "INTERVENTIONS", "UPDATE", "AffectationSousTraitant"),
+    ("OT_SAISIR_COMPTE_RENDU",      "INTERVENTIONS", "UPDATE", "CompteRenduOT"),
     ("OT_CLOTURER",                 "INTERVENTIONS", "CLOTURER", "OrdreTravail"),
     ("OT_VALIDER_CLOTURE",          "INTERVENTIONS", "VALIDER",  "OrdreTravail"),   # confirmation opérateur
-    ("OT_REJETER_CONFIRMATION",     "INTERVENTIONS", "MODIFIER", "OrdreTravail"),   # résultat = REJETE
+    ("OT_REJETER_CONFIRMATION",     "INTERVENTIONS", "UPDATE", "OrdreTravail"),   # résultat = REJETE
 
     # ── MODULE : MAGASIN ────────────────────────────────────────
-    ("STOCK_PIECE_CREER",           "MAGASIN", "CREER",     "Piece"),
-    ("STOCK_PIECE_LIRE",            "MAGASIN", "LIRE",      "Piece"),
-    ("STOCK_PIECE_MODIFIER",        "MAGASIN", "MODIFIER",  "Piece"),
+    ("STOCK_PIECE_CREATE",           "MAGASIN", "CREATE",     "Piece"),
+    ("STOCK_PIECE_READ",            "MAGASIN", "READ",      "Piece"),
+    ("STOCK_PIECE_UPDATE",        "MAGASIN", "UPDATE",  "Piece"),
     # Règle critique CDC : SEUL le MAGASINIER peut faire une sortie
-    ("STOCK_SORTIE",                "MAGASIN", "CREER",     "MouvementStockSortie"),
-    ("STOCK_ENTREE",                "MAGASIN", "CREER",     "MouvementStockEntree"),
-    ("STOCK_MOUVEMENT_LIRE",        "MAGASIN", "LIRE",      "MouvementStock"),
+    ("STOCK_SORTIE",                "MAGASIN", "CREATE",     "MouvementStockSortie"),
+    ("STOCK_ENTREE",                "MAGASIN", "CREATE",     "MouvementStockEntree"),
+    ("STOCK_MOUVEMENT_READ",        "MAGASIN", "READ",      "MouvementStock"),
 
     # ── MODULE : SOUS-TRAITANCE ──────────────────────────────────
-    ("ST_CREER",                    "SOUS_TRAITANCE", "CREER",     "SousTraitant"),
-    ("ST_LIRE",                     "SOUS_TRAITANCE", "LIRE",      "SousTraitant"),
-    ("ST_MODIFIER",                 "SOUS_TRAITANCE", "MODIFIER",  "SousTraitant"),
-    ("ST_SUSPENDRE",                "SOUS_TRAITANCE", "MODIFIER",  "SousTraitantStatut"),
+    ("ST_CREATE",                    "SOUS_TRAITANCE", "CREATE",     "SousTraitant"),
+    ("ST_READ",                     "SOUS_TRAITANCE", "READ",      "SousTraitant"),
+    ("ST_UPDATE",                 "SOUS_TRAITANCE", "UPDATE",  "SousTraitant"),
+    ("ST_SUSPENDRE",                "SOUS_TRAITANCE", "UPDATE",  "SousTraitantStatut"),
 
     # ── MODULE : REPORTING / KPI ─────────────────────────────────
-    ("KPI_LIRE",                    "REPORTING", "LIRE",  "KPI"),
-    ("KPI_TABLEAU_BORD_LIRE",       "REPORTING", "LIRE",  "TableauBord"),
-    ("KPI_RAPPORT_EXPORT",          "REPORTING", "LIRE",  "Rapport"),
-    ("KPI_COUT_LIRE",               "REPORTING", "LIRE",  "CoutMaintenance"),
-    ("KPI_BUDGET_LIRE",             "REPORTING", "LIRE",  "Budget"),
+    ("KPI_READ",                    "REPORTING", "READ",  "KPI"),
+    ("KPI_TABLEAU_BORD_READ",       "REPORTING", "READ",  "TableauBord"),
+    ("KPI_RAPPORT_EXPORT",          "REPORTING", "READ",  "Rapport"),
+    ("KPI_COUT_READ",               "REPORTING", "READ",  "CoutMaintenance"),
+    ("KPI_BUDGET_READ",             "REPORTING", "READ",  "Budget"),
 
     # ── MODULE : NOTIFICATIONS ───────────────────────────────────
-    ("NOTIF_LIRE",                  "NOTIFICATIONS", "LIRE",     "Notification"),
-    ("NOTIF_REGLE_CREER",           "NOTIFICATIONS", "CREER",    "RegleNotification"),
-    ("NOTIF_REGLE_MODIFIER",        "NOTIFICATIONS", "MODIFIER", "RegleNotification"),
+    ("NOTIF_READ",                  "NOTIFICATIONS", "READ",     "Notification"),
+    ("NOTIF_REGLE_CREATE",           "NOTIFICATIONS", "CREATE",    "RegleNotification"),
+    ("NOTIF_REGLE_UPDATE",        "NOTIFICATIONS", "UPDATE", "RegleNotification"),
 ]
 
 # ─────────────────────────────────────────────
@@ -155,160 +158,160 @@ ROLE_PERMISSIONS = {
 
     "OPERATEUR": [
         # Peut créer une DI et suivre ses propres DI/OT
-        "DI_CREER",
-        "DI_LIRE",
+        "DI_CREATE",
+        "DI_READ",
         # Confirme que l'équipement fonctionne après intervention
         "OT_VALIDER_CLOTURE",
         "OT_REJETER_CONFIRMATION",
-        "OT_LIRE",
+        "OT_READ",
         # Lecture actifs de sa zone
-        "ACTIF_LIRE",
+        "ACTIF_READ",
         # Ses notifications
-        "NOTIF_LIRE",
+        "NOTIF_READ",
         # Tableau de bord limité (ses DI, statuts équipements)
-        "KPI_TABLEAU_BORD_LIRE",
+        "KPI_TABLEAU_BORD_READ",
     ],
 
     "MAGASINIER": [
         # Gestion complète du stock
-        "STOCK_PIECE_CREER",
-        "STOCK_PIECE_LIRE",
-        "STOCK_PIECE_MODIFIER",
+        "STOCK_PIECE_CREATE",
+        "STOCK_PIECE_READ",
+        "STOCK_PIECE_UPDATE",
         "STOCK_SORTIE",        # ← EXCLUSIF MAGASINIER (règle CDC)
         "STOCK_ENTREE",
-        "STOCK_MOUVEMENT_LIRE",
+        "STOCK_MOUVEMENT_READ",
         # Lecture OT pour savoir quelles pièces sortir
-        "OT_LIRE",
-        "DI_LIRE",
-        "ACTIF_LIRE",
-        "NOTIF_LIRE",
+        "OT_READ",
+        "DI_READ",
+        "ACTIF_READ",
+        "NOTIF_READ",
     ],
 
     "RESP_TECH": [
         # DI
-        "DI_LIRE",
+        "DI_READ",
         "DI_VALIDER",
         "DI_REJETER",
         # OT — gestion complète
-        "OT_CREER",
-        "OT_LIRE",
-        "OT_MODIFIER",
+        "OT_CREATE",
+        "OT_READ",
+        "OT_UPDATE",
         "OT_AFFECTER_EQUIPE",
         "OT_AFFECTER_SOUSTRAIT",
         "OT_SAISIR_COMPTE_RENDU",
         "OT_CLOTURER",
         # Actifs
-        "ACTIF_LIRE",
+        "ACTIF_READ",
         "ACTIF_CHANGER_STATUT",
-        "ACTIF_HISTORIQUE_LIRE",
+        "ACTIF_HISTORIQUE_READ",
         # Stock (lecture pour planification)
-        "STOCK_PIECE_LIRE",
-        "STOCK_MOUVEMENT_LIRE",
+        "STOCK_PIECE_READ",
+        "STOCK_MOUVEMENT_READ",
         # Sous-traitance (lecture + affectation via OT)
-        "ST_LIRE",
+        "ST_READ",
         # KPI propres à son périmètre
-        "KPI_TABLEAU_BORD_LIRE",
-        "KPI_LIRE",
+        "KPI_TABLEAU_BORD_READ",
+        "KPI_READ",
         # Notifications
-        "NOTIF_LIRE",
+        "NOTIF_READ",
         # Équipes (lecture)
-        "ADMIN_EQUIPE_LIRE",
+        "ADMIN_EQUIPE_READ",
     ],
 
     "RESP_MAINT": [
         # DI
-        "DI_LIRE",
+        "DI_READ",
         "DI_VALIDER",
         "DI_REJETER",
         # OT — supervision complète
-        "OT_CREER",
-        "OT_LIRE",
-        "OT_MODIFIER",
+        "OT_CREATE",
+        "OT_READ",
+        "OT_UPDATE",
         "OT_AFFECTER_EQUIPE",
         "OT_AFFECTER_SOUSTRAIT",
         "OT_SAISIR_COMPTE_RENDU",
         "OT_CLOTURER",
         # Actifs — gestion complète
-        "ACTIF_CREER",
-        "ACTIF_LIRE",
-        "ACTIF_MODIFIER",
+        "ACTIF_CREATE",
+        "ACTIF_READ",
+        "ACTIF_UPDATE",
         "ACTIF_CHANGER_STATUT",
-        "ACTIF_HISTORIQUE_LIRE",
+        "ACTIF_HISTORIQUE_READ",
         # Stock (lecture)
-        "STOCK_PIECE_LIRE",
-        "STOCK_MOUVEMENT_LIRE",
+        "STOCK_PIECE_READ",
+        "STOCK_MOUVEMENT_READ",
         # Sous-traitance
-        "ST_CREER",
-        "ST_LIRE",
-        "ST_MODIFIER",
+        "ST_CREATE",
+        "ST_READ",
+        "ST_UPDATE",
         "ST_SUSPENDRE",
         # KPI complets
-        "KPI_LIRE",
-        "KPI_TABLEAU_BORD_LIRE",
+        "KPI_READ",
+        "KPI_TABLEAU_BORD_READ",
         "KPI_RAPPORT_EXPORT",
-        "KPI_COUT_LIRE",
+        "KPI_COUT_READ",
         # Notifications + règles
-        "NOTIF_LIRE",
-        "NOTIF_REGLE_CREER",
-        "NOTIF_REGLE_MODIFIER",
+        "NOTIF_READ",
+        "NOTIF_REGLE_CREATE",
+        "NOTIF_REGLE_UPDATE",
         # Admin équipes
-        "ADMIN_EQUIPE_CREER",
-        "ADMIN_EQUIPE_MODIFIER",
-        "ADMIN_EQUIPE_LIRE",
-        "ADMIN_ORGANISATION_LIRE",
+        "ADMIN_EQUIPE_CREATE",
+        "ADMIN_EQUIPE_UPDATE",
+        "ADMIN_EQUIPE_READ",
+        "ADMIN_ORGANISATION_READ",
     ],
 
     "RESP_PROD": [
         # Lecture DI/OT — suivi impact production
-        "DI_LIRE",
-        "OT_LIRE",
+        "DI_READ",
+        "OT_READ",
         # Actifs de sa zone
-        "ACTIF_LIRE",
-        "ACTIF_HISTORIQUE_LIRE",
+        "ACTIF_READ",
+        "ACTIF_HISTORIQUE_READ",
         # KPI production
-        "KPI_LIRE",
-        "KPI_TABLEAU_BORD_LIRE",
+        "KPI_READ",
+        "KPI_TABLEAU_BORD_READ",
         # Notifications
-        "NOTIF_LIRE",
+        "NOTIF_READ",
     ],
 
     "DIR_TECH": [
         # Vision globale — tout en lecture + actions stratégiques
-        "DI_LIRE",
-        "OT_LIRE",
-        "OT_MODIFIER",        # peut intervenir sur escalades
-        "ACTIF_LIRE",
-        "ACTIF_HISTORIQUE_LIRE",
-        "STOCK_PIECE_LIRE",
-        "STOCK_MOUVEMENT_LIRE",
-        "ST_LIRE",
+        "DI_READ",
+        "OT_READ",
+        "OT_UPDATE",        # peut intervenir sur escalades
+        "ACTIF_READ",
+        "ACTIF_HISTORIQUE_READ",
+        "STOCK_PIECE_READ",
+        "STOCK_MOUVEMENT_READ",
+        "ST_READ",
         # KPI complets + budget
-        "KPI_LIRE",
-        "KPI_TABLEAU_BORD_LIRE",
+        "KPI_READ",
+        "KPI_TABLEAU_BORD_READ",
         "KPI_RAPPORT_EXPORT",
-        "KPI_COUT_LIRE",
-        "KPI_BUDGET_LIRE",
+        "KPI_COUT_READ",
+        "KPI_BUDGET_READ",
         # Notifications
-        "NOTIF_LIRE",
-        "NOTIF_REGLE_CREER",
-        "NOTIF_REGLE_MODIFIER",
+        "NOTIF_READ",
+        "NOTIF_REGLE_CREATE",
+        "NOTIF_REGLE_UPDATE",
         # Admin — gestion utilisateurs et organisation
-        "ADMIN_UTILISATEUR_CREER",
-        "ADMIN_UTILISATEUR_LIRE",
-        "ADMIN_UTILISATEUR_MODIFIER",
-        "ADMIN_UTILISATEUR_SUPPRIMER",
-        "ADMIN_ROLE_CREER",
-        "ADMIN_ROLE_LIRE",
-        "ADMIN_ROLE_MODIFIER",
-        "ADMIN_PERMISSION_LIRE",
-        "ADMIN_PERMISSION_MODIFIER",
-        "ADMIN_ORGANISATION_CREER",
-        "ADMIN_ORGANISATION_MODIFIER",
-        "ADMIN_ORGANISATION_LIRE",
-        "ADMIN_EQUIPE_CREER",
-        "ADMIN_EQUIPE_MODIFIER",
-        "ADMIN_EQUIPE_LIRE",
-        "ADMIN_JOURNAL_LIRE",
+        "ADMIN_UTILISATEUR_CREATE",
+        "ADMIN_UTILISATEUR_READ",
+        "ADMIN_UTILISATEUR_UPDATE",
+        "ADMIN_UTILISATEUR_DELETE",
+        "ADMIN_ROLE_CREATE",
+        "ADMIN_ROLE_READ",
+        "ADMIN_ROLE_UPDATE",
+        "ADMIN_PERMISSION_READ",
+        "ADMIN_PERMISSION_UPDATE",
+        "ADMIN_ORGANISATION_CREATE",
+        "ADMIN_ORGANISATION_UPDATE",
+        "ADMIN_ORGANISATION_READ",
+        "ADMIN_EQUIPE_CREATE",
+        "ADMIN_EQUIPE_UPDATE",
+        "ADMIN_EQUIPE_READ",
+        "ADMIN_JOURNAL_READ",
     ],
 }
 

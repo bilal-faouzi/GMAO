@@ -1,3 +1,5 @@
+from urllib import request
+
 from django.shortcuts import render
 
 # Create your views here.
@@ -145,14 +147,17 @@ class ActifViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='arborescence')
     def arborescence(self, request):
+        max_depth = int(request.query_params.get('max_depth', 10))
         racines = (
             Actif.objects
             .filter(idParent__isnull=True)
             .select_related('idUnite')
-            .prefetch_related('enfants__idUnite')
+            .prefetch_related('enfants')   # 1 niveau préchargé, le reste lazy
         )
-        sz = ActifDetailSerializer(racines, many=True, context=self.get_serializer_context())
-        return Response(sz.data)
+        ctx = {**self.get_serializer_context(), 'max_depth': max_depth}
+        return Response(
+        ActifDetailSerializer(racines, many=True, context=ctx).data
+    )
 
 
 # ---------------------------------------------------------------------------

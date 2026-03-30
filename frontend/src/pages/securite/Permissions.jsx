@@ -4,10 +4,16 @@ import api from "@/services/api";
 import { getPermissions, createPermission } from "@/services/securiteService";
 
 import { Modal } from "@/components/Modal";
-
-const inputCls =
-  "w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500";
-const labelCls = "text-xs text-gray-400 mb-1 block";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const actionColor = (action) => {
   if (action === "READ") return "bg-blue-500/10 text-blue-400";
@@ -96,14 +102,14 @@ export default function Permissions() {
             Gérer les permissions du système
           </p>
         </div>
-        <button
+        <Button
           onClick={() => {
             setError("");
             setOpenCreate(true);
           }}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors">
+          variant="custom">
           <Plus size={15} /> Nouvelle permission
-        </button>
+        </Button>
       </div>
 
       {/* Stats */}
@@ -132,9 +138,9 @@ export default function Permissions() {
           size={15}
           className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
         />
-        <input
+        <Input
           placeholder="Rechercher une permission..."
-          className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+          className="  pl-9 "
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -148,11 +154,11 @@ export default function Permissions() {
           Aucune permission trouvée
         </p>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 bento-grid">
           {Object.entries(grouped).map(([module, perms], idx) => (
             <div
               key={module}
-              className="bg-white/5 border border-white/10 rounded-xl p-5">
+              className="bg-white/5 border border-white/10 rounded-xl p-5 bento-card">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center">
                   <Shield size={15} className="text-gray-400" />
@@ -195,9 +201,8 @@ export default function Permissions() {
         <Modal title="Nouvelle permission" onClose={() => setOpenCreate(false)}>
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
-              <label className={labelCls}>Module</label>
-              <input
-                className={inputCls}
+              <Label>Module</Label>
+              <Input
                 placeholder="ex: ACTIFS"
                 value={form.module}
                 onChange={(e) =>
@@ -207,24 +212,29 @@ export default function Permissions() {
               />
             </div>
             <div>
-              <label className={labelCls}>Action</label>
-              <select
-                className={inputCls}
+              <Label>Action</Label>
+              <Select
                 value={form.action}
-                onChange={(e) => setForm({ ...form, action: e.target.value })}
+                onValueChange={(value) => setForm({ ...form, action: value })}
                 required>
-                <option value="">Sélectionner</option>
-                {["READ", "CREATE", "UPDATE", "DELETE"].map((a) => (
-                  <option key={a} value={a}>
-                    {a}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner" />
+                </SelectTrigger>
+                <SelectContent
+                  position="popper"
+                  className="z-[100]"
+                  sideoffset={4}>
+                  {["READ", "CREATE", "UPDATE", "DELETE"].map((a) => (
+                    <SelectItem key={a} value={a}>
+                      {a}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
-              <label className={labelCls}>Ressource</label>
-              <input
-                className={inputCls}
+              <Label>Ressource</Label>
+              <Input
                 placeholder="ex: ALL ou PROPRE"
                 value={form.ressource}
                 onChange={(e) =>
@@ -243,17 +253,19 @@ export default function Permissions() {
             )}
             {error && <p className="text-red-400 text-xs">{error}</p>}
             <div className="flex gap-3 pt-2">
-              <button
+              <Button
                 type="submit"
-                className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">
+                variant="custom"
+                className="flex-1 py-2 rounded-lg">
                 Créer
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => setOpenCreate(false)}
-                className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-sm">
+                variant="outline"
+                className="flex-1 py-2 rounded-lg ">
                 Annuler
-              </button>
+              </Button>
             </div>
           </form>
         </Modal>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Monitor, Wifi, WifiOff, LogOut, RefreshCw } from "lucide-react";
 import { getSessions, forcedLogout } from "@/services/securiteService";
 import api from "@/services/api";
+import { Button } from "@/components/ui/button";
 
 const formatDate = (d) =>
   new Date(d).toLocaleString("fr-FR", {
@@ -74,12 +75,9 @@ export default function Sessions() {
               {inactives.length} expirées
             </span>
           </div>
-          <button
-            onClick={fetchSessions}
-            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors border border-white/10"
-            title="Actualiser">
+          <Button onClick={fetchSessions} title="Actualiser" variant="outline">
             <RefreshCw size={15} />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -167,13 +165,13 @@ export default function Sessions() {
 
                   <td className="px-4 py-3">
                     {s.est_active ? (
-                      <button
+                      <Button
                         onClick={() => handleForceLogout(s)}
                         disabled={forcing === s.id}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium transition-colors disabled:opacity-50">
                         <LogOut size={12} />
                         {forcing === s.id ? "En cours..." : "Déconnecter"}
-                      </button>
+                      </Button>
                     ) : (
                       <span className="text-xs text-gray-600">—</span>
                     )}

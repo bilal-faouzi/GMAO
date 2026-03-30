@@ -19,6 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+
+import { Checkbox } from "@/components/ui/checkbox";
 
 function AddAppartenanceModal({ onClose, onSaved }) {
   const [societes, setSocietes] = useState([]);
@@ -99,9 +105,9 @@ function AddAppartenanceModal({ onClose, onSaved }) {
       <form onSubmit={handleSubmit} className="space-y-3">
         {/* Utilisateur */}
         <div>
-          <label className="text-xs text-gray-400 mb-1 block">
+          <Label className="text-xs text-gray-400 mb-1 block">
             Utilisateur *
-          </label>
+          </Label>
           <Select
             value={form.utilisateur}
             onValueChange={(v) => setForm({ ...form, utilisateur: v })}
@@ -123,7 +129,7 @@ function AddAppartenanceModal({ onClose, onSaved }) {
 
         {/* Société */}
         <div>
-          <label className="text-xs text-gray-400 mb-1 block">Société *</label>
+          <Label className="text-xs text-gray-400 mb-1 block">Société *</Label>
           <Select
             value={form.societe}
             onValueChange={(v) => setForm({ ...form, societe: v })}
@@ -145,7 +151,7 @@ function AddAppartenanceModal({ onClose, onSaved }) {
 
         {/* Site */}
         <div>
-          <label className="text-xs text-gray-400 mb-1 block">Site *</label>
+          <Label className="text-xs text-gray-400 mb-1 block">Site *</Label>
           <Select
             value={form.site}
             onValueChange={(v) => setForm({ ...form, site: v })}
@@ -168,9 +174,9 @@ function AddAppartenanceModal({ onClose, onSaved }) {
 
         {/* Secteur */}
         <div>
-          <label className="text-xs text-gray-400 mb-1 block">
+          <Label className="text-xs text-gray-400 mb-1 block">
             Secteur (optionnel)
-          </label>
+          </Label>
           <Select
             value={form.secteur}
             onValueChange={(v) => setForm({ ...form, secteur: v })}
@@ -192,9 +198,9 @@ function AddAppartenanceModal({ onClose, onSaved }) {
 
         {/* Unité */}
         <div>
-          <label className="text-xs text-gray-400 mb-1 block">
+          <Label className="text-xs text-gray-400 mb-1 block">
             Unité (optionnel)
-          </label>
+          </Label>
           <Select
             value={form.unite}
             onValueChange={(v) => setForm({ ...form, unite: v })}
@@ -215,34 +221,34 @@ function AddAppartenanceModal({ onClose, onSaved }) {
         </div>
 
         {/* Principale */}
-        <div className="flex items-center gap-2 pt-1">
-          <input
-            type="checkbox"
+        <div className="flex items-left gap-2 pt-1">
+          <Checkbox
             id="principale"
+            // On utilise 'checked' pour l'état actuel
             checked={form.estPrincipale}
-            onChange={(e) =>
-              setForm({ ...form, estPrincipale: e.target.checked })
+            // On utilise 'onCheckedChange' qui donne directement le booléen
+            onCheckedChange={(checked) =>
+              setForm({ ...form, estPrincipale: checked })
             }
-            className="accent-amber-500"
           />
-          <label htmlFor="principale" className="text-sm text-gray-300">
-            Appartenance principale
-          </label>
+          <FieldLabel>Appartenance principale</FieldLabel>
         </div>
 
         <div className="flex gap-3 pt-2">
-          <button
+          <Button
             type="submit"
             disabled={saving}
-            className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium disabled:opacity-50">
+            variant="custom"
+            className="flex-1 py-2 rounded-lg ">
             {saving ? "Enregistrement..." : "Créer"}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-sm">
+            variant="customOutline"
+            className="flex-1 py-2 rounded-lg">
             Annuler
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>
@@ -283,12 +289,13 @@ export default function Appartenances() {
             Périmètre organisationnel des utilisateurs
           </p>
         </div>
-        <button
+        <Button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">
+          variant="custom"
+          className="flex items-center gap-2 py-2 rounded-lg">
           <Plus size={15} />
           Nouvelle appartenance
-        </button>
+        </Button>
       </div>
 
       <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
@@ -302,7 +309,6 @@ export default function Appartenances() {
                 "Secteur",
                 "Unité",
                 "Type",
-                "Actions",
               ].map((h) => (
                 <th
                   key={h}
@@ -310,6 +316,11 @@ export default function Appartenances() {
                   {h}
                 </th>
               ))}
+              <th
+                key="actions"
+                className="px-4 py-3 text-center  text-xs font-medium text-gray-400 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
@@ -355,11 +366,11 @@ export default function Appartenances() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <button
+                    <Button
                       onClick={() => handleDelete(a.id)}
                       className="p-1.5 rounded hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors">
                       <Trash2 size={13} />
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))

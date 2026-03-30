@@ -1,347 +1,477 @@
 import { useEffect, useState, useCallback } from "react";
-import { Search, Activity } from "lucide-react";
+import { RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { getJournalAuditv2 } from "../../services/securiteService";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
-const ACTION_COLORS = {
-  CREATE: "bg-emerald-500/10 text-emerald-400",
-  UPDATE: "bg-orange-500/10 text-orange-400",
-  DELETE: "bg-red-500/10 text-red-400",
-  LOGIN: "bg-blue-500/10 text-blue-400",
-  LOGOUT: "bg-white/5 text-gray-400",
-  ASSIGN_ROLE: "bg-purple-500/10 text-purple-400",
-  DEACTIVATE: "bg-red-500/10 text-red-400",
-};
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-const MODULES = ["UTILISATEURS", "ROLES", "PERMISSIONS", "INTERVENTIONS"];
+const ACTION_OPTIONS = [
+  {
+    value: "CREATE",
+    label: "CREATE",
+    bg: "#052e16",
+    text: "#4ade80",
+    dot: "#22c55e",
+  },
+  {
+    value: "UPDATE",
+    label: "UPDATE",
+    bg: "#431407",
+    text: "#fdba74",
+    dot: "#f97316",
+  },
+  {
+    value: "DELETE",
+    label: "DELETE",
+    bg: "#450a0a",
+    text: "#f87171",
+    dot: "#ef4444",
+  },
+  {
+    value: "LOGIN",
+    label: "LOGIN",
+    bg: "#0c1a4b",
+    text: "#93c5fd",
+    dot: "#3b82f6",
+  },
+  {
+    value: "LOGOUT",
+    label: "LOGOUT",
+    bg: "#111827",
+    text: "#9ca3af",
+    dot: "#6b7280",
+  },
+  {
+    value: "FORCE_LOGOUT",
+    label: "FORCE_LOGOUT",
+    bg: "#1c1917",
+    text: "#a8a29e",
+    dot: "#78716c",
+  },
+  {
+    value: "ASSIGN_ROLE",
+    label: "ASSIGN_ROLE",
+    bg: "#2e1065",
+    text: "#c4b5fd",
+    dot: "#a855f7",
+  },
+  {
+    value: "DEACTIVATE",
+    label: "DEACTIVATE",
+    bg: "#450a0a",
+    text: "#f87171",
+    dot: "#ef4444",
+  },
+];
+
 const ACTIONS = [
   "CREATE",
   "UPDATE",
   "DELETE",
   "LOGIN",
   "LOGOUT",
+  "FORCE_LOGOUT",
   "ASSIGN_ROLE",
+  "DEACTIVATE",
 ];
+const MODULES = [
+  "AUTH",
+  "UTILISATEURS",
+  "ROLES",
+  "PERMISSIONS",
+  "INTERVENTIONS",
+];
+
+const ALL_ACTIONS = "__ALL_ACTIONS__";
+const ALL_MODULES = "__ALL_MODULES__";
+
+// ─── Badge Action ─────────────────────────────────────────────────────────────
+
+function ActionBadge({ action }) {
+  const opt = ACTION_OPTIONS.find((a) => a.value === action);
+  if (!opt)
+    return (
+      <span
+        className="badge"
+        style={{ background: "#1f1f23", color: "#71717a" }}>
+        {action}
+      </span>
+    );
+  return (
+    <span className="badge" style={{ background: opt.bg, color: opt.text }}>
+      <span className="bdot" style={{ background: opt.dot }} />
+      {opt.label}
+    </span>
+  );
+}
+
+// ─── User Cell ────────────────────────────────────────────────────────────────
+
+function UserCell({ entry }) {
+  const display =
+    entry.utilisateur?.nom_utilisateur ||
+    entry.utilisateur?.username ||
+    entry.nom_utilisateur ||
+    entry.username;
+
+  if (!display)
+    return <span style={{ fontSize: 13, color: "var(--text-muted)" }}>—</span>;
+
+  const initials = display
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: "50%",
+          background: "#1d4ed8",
+          color: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 11,
+          fontWeight: 700,
+          flexShrink: 0,
+          letterSpacing: "0.03em",
+        }}>
+        {initials}
+      </div>
+      <span style={{ fontSize: 13, color: "var(--text-primary)" }}>
+        {display}
+      </span>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function JournalAudit() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
 
-  const [filters, setFilters] = useState({
-    search: "",
-    action: "",
-    module: "",
-    date_debut: "",
-    date_fin: "",
-  });
-  const [appliedFilters, setAppliedFilters] = useState(filters);
+  const [search, setSearch] = useState("");
+  const [filterAction, setFilterAction] = useState("");
+  const [filterModule, setFilterModule] = useState("");
+  const [dateDebut, setDateDebut] = useState("");
+  const [dateFin, setDateFin] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
 
   const fetchAudit = useCallback(async () => {
     setLoading(true);
     try {
-      const params = {
-        page: String(page),
-        page_size: "10",
-      };
-      if (appliedFilters.search) params.search = appliedFilters.search;
-      if (appliedFilters.action) params.action = appliedFilters.action;
-      if (appliedFilters.module) params.module = appliedFilters.module;
-      if (appliedFilters.date_debut)
-        params.date_debut = appliedFilters.date_debut;
-      if (appliedFilters.date_fin) params.date_fin = appliedFilters.date_fin;
+      const params = { page: String(page), page_size: "10" };
+      if (search) params.search = search;
+      if (filterAction) params.action = filterAction;
+      if (filterModule) params.module = filterModule;
+      if (dateDebut) params.date_debut = dateDebut;
+      if (dateFin) params.date_fin = dateFin;
 
       const res = await getJournalAuditv2(params);
-      setEntries(res.data.results);
-      setTotal(res.data.count);
-      setTotalPages(res.data.total_pages);
-    } catch (e) {
+      setEntries(res.data?.results ?? []);
+      setTotalPages(res.data?.total_pages ?? 1);
+    } catch {
       toast.error("Erreur lors du chargement de l'audit");
     } finally {
       setLoading(false);
     }
-  }, [page, appliedFilters]);
+  }, [page, search, filterAction, filterModule, dateDebut, dateFin]);
 
   useEffect(() => {
-    fetchAudit();
+    const t = setTimeout(fetchAudit, 300);
+    return () => clearTimeout(t);
   }, [fetchAudit]);
 
-  const applyFilters = () => {
-    setPage(1);
-    setAppliedFilters(filters);
-  };
+  const hasFilters = !!(filterAction || filterModule || dateDebut || dateFin);
+  const filterCount = [filterAction, filterModule, dateDebut, dateFin].filter(
+    Boolean,
+  ).length;
 
   const resetFilters = () => {
-    const empty = {
-      search: "",
-      action: "",
-      module: "",
-      date_debut: "",
-      date_fin: "",
-    };
-    setFilters(empty);
-    setAppliedFilters(empty);
+    setFilterAction("");
+    setFilterModule("");
+    setDateDebut("");
+    setDateFin("");
+    setSearch("");
     setPage(1);
   };
 
-  const hasActiveFilters = Object.values(appliedFilters).some((v) => v !== "");
+  const creates = entries.filter((e) => e.action === "CREATE").length;
+  const updates = entries.filter((e) => e.action === "UPDATE").length;
+  const deletes = entries.filter((e) => e.action === "DELETE").length;
+  const logins = entries.filter((e) => e.action === "LOGIN").length;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="page">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Journal d'Audit</h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Historique des actions effectuées dans le système
-          </p>
+      <div className="hdr">
+        <div className="hdr-l">
+          <h1>Journal d'Audit</h1>
+          <p>Historique des actions de sécurité et d'administration</p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-          <Activity size={15} className="text-emerald-400" />
-          <span className="text-sm font-medium text-emerald-400">
-            {total} entrée{total !== 1 ? "s" : ""} enregistrée
-            {total !== 1 ? "s" : ""}
-          </span>
+      </div>
+
+      {/* Stats */}
+      <div className="stats-row">
+        <div className="stat-chip">
+          <span className="dot" style={{ background: "#22c55e" }} />
+          <strong>{creates}</strong> créations
+        </div>
+        <div className="stat-chip">
+          <span className="dot" style={{ background: "#f97316" }} />
+          <strong>{updates}</strong> modifications
+        </div>
+        <div className="stat-chip">
+          <span className="dot" style={{ background: "#ef4444" }} />
+          <strong>{deletes}</strong> suppressions
+        </div>
+        <div className="stat-chip">
+          <span className="dot" style={{ background: "#3b82f6" }} />
+          <strong>{logins}</strong> connexions
+        </div>
+        <div className="stat-chip">
+          <strong>{entries.length}</strong>&nbsp;sur cette page
         </div>
       </div>
 
       {/* Filtres */}
-      <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="space-y-1 lg:col-span-2">
-            <Label className="text-xs text-slate-400">Recherche</Label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <Input
-                className="pl-9"
-                placeholder="Action, module, utilisateur, IP..."
-                value={filters.search}
-                onChange={(e) =>
-                  setFilters((f) => ({ ...f, search: e.target.value }))
-                }
-                onKeyDown={(e) => e.key === "Enter" && applyFilters()}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <Label className="text-xs text-slate-400">Action</Label>
-            <Select
-              value={filters.action}
-              onValueChange={(v) =>
-                setFilters((f) => ({ ...f, action: v === "all" ? "" : v }))
-              }>
-              <SelectTrigger>
-                <SelectValue placeholder="Toutes" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes</SelectItem>
-                {ACTIONS.map((a) => (
-                  <SelectItem key={a} value={a}>
-                    {a}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1">
-            <Label className="text-xs text-slate-400">Module</Label>
-            <Select
-              value={filters.module}
-              onValueChange={(v) =>
-                setFilters((f) => ({ ...f, module: v === "all" ? "" : v }))
-              }>
-              <SelectTrigger>
-                <SelectValue placeholder="Tous" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous</SelectItem>
-                {MODULES.map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {m}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1">
-            <Label className="text-xs text-slate-400">Date début</Label>
+      <div className="filter-card">
+        <div className="filter-row">
+          <div className="search-wrap">
+            <svg
+              className="search-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
             <Input
-              type="date"
-              value={filters.date_debut}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, date_debut: e.target.value }))
-              }
+              className="search-input"
+              placeholder="Rechercher par utilisateur ou description..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
 
-          <div className="space-y-1">
-            <Label className="text-xs text-slate-400">Date fin</Label>
-            <Input
-              type="date"
-              value={filters.date_fin}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, date_fin: e.target.value }))
-              }
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <Button onClick={applyFilters} variant="outline_secondary" size="sm">
-            <Search className="w-4 h-4 mr-2" /> Filtrer
+          <Button
+            className={`pill ${showFilters ? "active" : ""}`}
+            onClick={() => setShowFilters((v) => !v)}>
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+            </svg>
+            Filtres avancés
+            {hasFilters && <span className="pill-count">{filterCount}</span>}
           </Button>
-          {hasActiveFilters && (
-            <Button
-              variant="outline_secondary"
-              size="sm"
-              onClick={resetFilters}>
-              <X className="w-4 h-4 mr-2" /> Réinitialiser
+
+          {hasFilters && (
+            <Button className="pill" onClick={resetFilters}>
+              ✕ Effacer
             </Button>
           )}
+
+          <Button
+            className="btn btn-ghost btn-icon"
+            style={{ marginLeft: "auto" }}
+            title="Rafraîchir"
+            onClick={fetchAudit}>
+            <RotateCcw size={13} />
+          </Button>
         </div>
+
+        {showFilters && (
+          <div className="filters-exp">
+            <Select
+              value={filterAction === "" ? ALL_ACTIONS : filterAction}
+              onValueChange={(value) => {
+                setFilterAction(value === ALL_ACTIONS ? "" : value);
+                setPage(1);
+              }}>
+              <SelectTrigger className="sel-mini">
+                <SelectValue placeholder="Toutes les actions" />
+              </SelectTrigger>
+              <SelectContent className="z-[9999]">
+                <SelectItem value={ALL_ACTIONS}>Toutes les actions</SelectItem>
+                {ACTIONS.map((act) => (
+                  <SelectItem key={act} value={act}>
+                    {act}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={filterModule === "" ? ALL_MODULES : filterModule}
+              onValueChange={(value) => {
+                setFilterModule(value === ALL_MODULES ? "" : value);
+                setPage(1);
+              }}>
+              <SelectTrigger className="sel-mini">
+                <SelectValue placeholder="Tous les modules" />
+              </SelectTrigger>
+              <SelectContent className="z-[9999]">
+                <SelectItem value={ALL_MODULES}>Tous les modules</SelectItem>
+                {MODULES.map((mod) => (
+                  <SelectItem key={mod} value={mod}>
+                    {mod}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Input
+              type="date"
+              className="sel-mini"
+              style={{ color: "var(--text-secondary)" }}
+              value={dateDebut}
+              onChange={(e) => {
+                setDateDebut(e.target.value);
+                setPage(1);
+              }}
+            />
+
+            <Input
+              type="date"
+              className="sel-mini"
+              style={{ color: "var(--text-secondary)" }}
+              value={dateFin}
+              onChange={(e) => {
+                setDateFin(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Table */}
-      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-white/10">
-              {[
-                "Horodatage",
-                "Utilisateur",
-                "Action",
-                "Module",
-                "Entité",
-                "Adresse IP",
-              ].map((h) => (
-                <th
-                  key={h}
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            {loading ? (
+      <div className="tbl-card">
+        <div className="tbl-head">
+          <span className="tbl-title">Historique des événements</span>
+          <span className="tbl-count">
+            {loading ? "Chargement…" : `Page ${page} sur ${totalPages}`}
+          </span>
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          <table>
+            <thead>
               <tr>
-                <td
-                  colSpan={6}
-                  className="px-4 py-10 text-center text-gray-500">
-                  Chargement...
-                </td>
+                <th style={{ width: 170 }}>Date / Heure</th>
+                <th style={{ width: 180 }}>Utilisateur</th>
+                <th style={{ width: 150 }}>Action</th>
+                <th style={{ width: 130 }}>Module</th>
+                <th>Type entité</th>
+                <th style={{ width: 130 }}>Adresse IP</th>
               </tr>
-            ) : entries.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="px-4 py-10 text-center text-gray-500">
-                  Aucune entrée
-                </td>
-              </tr>
-            ) : (
-              entries.map((entry) => (
-                <tr
-                  key={entry.id}
-                  className="hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
-                    {new Date(entry.horodatage).toLocaleString("fr-FR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </td>
-
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-blue-500/10 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-blue-400 text-xs font-bold">
-                          {entry.utilisateur?.nom_utilisateur?.[0]?.toUpperCase() ||
-                            "?"}
-                        </span>
-                      </div>
-                      <span className="text-sm text-white">
-                        {entry.utilisateur?.nom_utilisateur || "—"}
-                      </span>
-                    </div>
-                  </td>
-
-                  <td className="px-4 py-3">
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${ACTION_COLORS[entry.action] || "bg-white/5 text-gray-400"}`}>
-                      {entry.action}
-                    </span>
-                  </td>
-
-                  <td className="px-4 py-3">
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-white/5 text-gray-400">
-                      {entry.module}
-                    </span>
-                  </td>
-
-                  <td className="px-4 py-3 text-sm text-gray-400">
-                    <span className="font-medium text-white">
-                      {entry.type_entite}
-                    </span>
-                    {entry.id_entite && (
-                      <span className="text-gray-600 text-xs ml-1">
-                        #{entry.id_entite.slice(0, 8)}
-                      </span>
-                    )}
-                  </td>
-
-                  <td className="px-4 py-3">
-                    <span className="text-xs font-mono text-gray-600">
-                      {entry.adresse_ip || "—"}
-                    </span>
+            </thead>
+            <tbody>
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i}>
+                    {Array.from({ length: 6 }).map((_, j) => (
+                      <td key={j}>
+                        <div className="skeleton" style={{ width: "70%" }} />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : entries.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="empty">
+                    Aucune entrée trouvée
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                entries.map((entry) => (
+                  <tr key={entry.id}>
+                    <td>
+                      <span className="code-mono">
+                        {entry.horodatage
+                          ? new Date(entry.horodatage).toLocaleString()
+                          : "—"}
+                      </span>
+                    </td>
+                    <td>
+                      <UserCell entry={entry} />
+                    </td>
+                    <td>
+                      <ActionBadge action={entry.action} />
+                    </td>
+                    <td className="desig">{entry.module}</td>
+                    <td
+                      style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+                      {entry.type_entite || "—"}
+                    </td>
+                    <td>
+                      <span className="code-mono" style={{ fontSize: 12 }}>
+                        {entry.adresse_ip || "—"}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-slate-400">
-            Page {page} sur {totalPages}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline_secondary"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}>
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline_secondary"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}>
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 8,
+            marginTop: 12,
+          }}>
+          <Button
+            className="btn btn-outline btn-icon"
+            disabled={page === 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}>
+            <ChevronLeft size={16} />
+          </Button>
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              fontSize: 13,
+              color: "var(--text-secondary)",
+            }}>
+            {page} / {totalPages}
+          </span>
+          <Button
+            className="btn btn-outline btn-icon"
+            disabled={page === totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+            <ChevronRight size={16} />
+          </Button>
         </div>
       )}
     </div>
