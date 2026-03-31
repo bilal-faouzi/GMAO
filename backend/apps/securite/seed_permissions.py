@@ -3,7 +3,7 @@ Seed des permissions et role GMAO — à exécuter via : exec(open('apps/securit
 Supprime toutes les anciennes permissions et RolePermission, puis recrée tout.
 run
 python manage.py shell
-exec(open("apps/actif/actifexemple.py", encoding="utf-8").read())
+exec(open("apps/securite/seed_permissions.py", encoding="utf-8").read())
 """
 
 

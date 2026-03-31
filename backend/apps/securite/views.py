@@ -282,12 +282,13 @@ class UtilisateurDetailView(APIView):
                 {'detail': 'Vous ne pouvez pas désactiver votre propre compte.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        if  utilisateur.est_actif:
 
-        utilisateur.est_actif = False
-        utilisateur.save(update_fields=['est_actif'])
+            utilisateur.est_actif = False
+            utilisateur.save(update_fields=['est_actif'])
 
-        # Audit log
-        JournalAudit.objects.create(
+            # Journal audit
+            JournalAudit.objects.create(
             id_utilisateur=request.user,
             action='DEACTIVATE',
             module='UTILISATEURS',
@@ -295,6 +296,23 @@ class UtilisateurDetailView(APIView):
             id_entite=utilisateur.id,
             adresse_ip=get_client_ip(request)
         )
+        else:
+
+            utilisateur.est_actif = True
+            utilisateur.save(update_fields=['est_actif'])
+
+
+            # Journal audit
+            JournalAudit.objects.create(
+            id_utilisateur=request.user,
+            action='ACTIVATE',
+            module='UTILISATEURS',
+            type_entite='Utilisateur',
+            id_entite=utilisateur.id,
+            adresse_ip=get_client_ip(request)
+        )
+
+        
 
         return Response({'detail': 'Utilisateur désactivé avec succès.'})
     
@@ -694,12 +712,13 @@ class JournalAuditView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        queryset = JournalAudit.objects.select_related('id_utilisateur').order_by('-horodatage')
+        queryset = JournalAudit.objects.order_by('-horodatage')
 
         # Filtres
         action = request.query_params.get('action')
         module = request.query_params.get('module')
         utilisateur = request.query_params.get('utilisateur')
+        print("utilisateur:", utilisateur)
         date_debut = request.query_params.get('date_debut')
         date_fin = request.query_params.get('date_fin')
         search = request.query_params.get('search')

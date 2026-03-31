@@ -4,7 +4,7 @@ from .models import (
     Specialite, Equipe, EquipeUtilisateur,
     AppartenanceOrganisationnelle
 )
-
+from apps.securite.models import Utilisateur
 
 class SpecialiteSerializer(serializers.ModelSerializer):
     class Meta:
@@ -131,8 +131,14 @@ class EquipeUtilisateurSerializer(serializers.ModelSerializer):
 # ─── AppartenanceOrganisationnelle ────────────────────────────────────────────
 
 class AppartenanceOrganisationnelleSerializer(serializers.ModelSerializer):
+    # ← pk_field=UUIDField() dit à DRF d'accepter/retourner des UUIDs
+    utilisateur = serializers.PrimaryKeyRelatedField(
+        queryset=Utilisateur.objects.all(),
+        pk_field=serializers.UUIDField()
+    )
+    utilisateur_nom = serializers.SerializerMethodField()
     societe_libelle = serializers.CharField(source='societe.raisonSociale', read_only=True)
-    site_libelle = serializers.CharField(source='site.libelle', read_only=True)
+    site_libelle    = serializers.CharField(source='site.libelle', read_only=True)
     secteur_libelle = serializers.CharField(
         source='secteur.libelle', read_only=True, default=None
     )
@@ -144,3 +150,8 @@ class AppartenanceOrganisationnelleSerializer(serializers.ModelSerializer):
         model = AppartenanceOrganisationnelle
         fields = '__all__'
         read_only_fields = ['id']
+
+    def get_utilisateur_nom(self, obj):
+        prenom = getattr(obj.utilisateur, 'prenom', '') or ''
+        nom    = getattr(obj.utilisateur, 'nom', '')    or ''
+        return f"{prenom} {nom}".strip() or str(obj.utilisateur)

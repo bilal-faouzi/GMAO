@@ -3,6 +3,7 @@ from django.db import models
 from django.conf import settings
 from django.db.models import UniqueConstraint, Q
 from apps.core.models import BaseModel
+from apps.securite.models import Utilisateur
 
 
 # ─── SOCIETE ──────────────────────────────────────────────────────────────────
@@ -100,7 +101,7 @@ class Equipe(BaseModel):
         null=True, blank=True, related_name='equipes'
     )
     chefEquipe = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        Utilisateur, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='equipes_chef'
     )
     libelle = models.CharField(max_length=200)
@@ -125,7 +126,7 @@ class EquipeUtilisateur(BaseModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     equipe = models.ForeignKey(Equipe, on_delete=models.CASCADE, related_name='membres')
     utilisateur = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        Utilisateur, on_delete=models.CASCADE,
         related_name='equipes_membre'
     )
     niveauRole = models.CharField(max_length=20, choices=NIVEAU_CHOICES, default='MEMBRE')
@@ -145,7 +146,7 @@ class EquipeUtilisateur(BaseModel):
 class AppartenanceOrganisationnelle(BaseModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     utilisateur = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        Utilisateur, on_delete=models.CASCADE,
         related_name='appartenances'
     )
     societe = models.ForeignKey(Societe, on_delete=models.CASCADE)

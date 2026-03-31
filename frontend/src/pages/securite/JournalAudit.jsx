@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
 import { RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
-import { getJournalAuditv2 } from "../../services/securiteService";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getJournalAuditv2, getUtilisateurs } from "@/services/securiteService";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -91,10 +91,11 @@ const MODULES = [
   "INTERVENTIONS",
 ];
 
+const ALL_USERS = "__ALL_USERS__";
 const ALL_ACTIONS = "__ALL_ACTIONS__";
 const ALL_MODULES = "__ALL_MODULES__";
 
-// ─── Badge Action ─────────────────────────────────────────────────────────────
+// ─── ActionBadge ──────────────────────────────────────────────────────────────
 
 function ActionBadge({ action }) {
   const opt = ACTION_OPTIONS.find((a) => a.value === action);
@@ -114,7 +115,7 @@ function ActionBadge({ action }) {
   );
 }
 
-// ─── User Cell ────────────────────────────────────────────────────────────────
+// ─── UserCell ─────────────────────────────────────────────────────────────────
 
 function UserCell({ entry }) {
   const display =
@@ -159,26 +160,43 @@ function UserCell({ entry }) {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Page principale ──────────────────────────────────────────────────────────
 
 export default function JournalAudit() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
+  const [users, setUsers] = useState([]); // liste { id, nom_utilisateur, prenom, nom }
 
   const [search, setSearch] = useState("");
+  const [filterUtilisateur, setFilterUtilisateur] = useState("");
   const [filterAction, setFilterAction] = useState("");
   const [filterModule, setFilterModule] = useState("");
   const [dateDebut, setDateDebut] = useState("");
   const [dateFin, setDateFin] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
+  // ── Charger la liste complète des utilisateurs pour le Select ──────────────
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await getUtilisateurs();
+        setUsers(res.data?.results || res.data || []);
+      } catch {
+        toast.error("Erreur lors du chargement des utilisateurs");
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  // ── Charger l'audit — filterUtilisateur est maintenant dans les deps ────────
   const fetchAudit = useCallback(async () => {
     setLoading(true);
     try {
       const params = { page: String(page), page_size: "10" };
       if (search) params.search = search;
+      if (filterUtilisateur) params.utilisateur = filterUtilisateur; // ← nom_utilisateur envoyé au backend
       if (filterAction) params.action = filterAction;
       if (filterModule) params.module = filterModule;
       if (dateDebut) params.date_debut = dateDebut;
@@ -192,19 +210,40 @@ export default function JournalAudit() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, filterAction, filterModule, dateDebut, dateFin]);
+    // ← filterUtilisateur ajouté ici — c'était le bug
+  }, [
+    page,
+    search,
+    filterUtilisateur,
+    filterAction,
+    filterModule,
+    dateDebut,
+    dateFin,
+  ]);
 
   useEffect(() => {
     const t = setTimeout(fetchAudit, 300);
     return () => clearTimeout(t);
   }, [fetchAudit]);
 
-  const hasFilters = !!(filterAction || filterModule || dateDebut || dateFin);
-  const filterCount = [filterAction, filterModule, dateDebut, dateFin].filter(
-    Boolean,
-  ).length;
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  const hasFilters = !!(
+    filterUtilisateur ||
+    filterAction ||
+    filterModule ||
+    dateDebut ||
+    dateFin
+  );
+  const filterCount = [
+    filterUtilisateur,
+    filterAction,
+    filterModule,
+    dateDebut,
+    dateFin,
+  ].filter(Boolean).length;
 
   const resetFilters = () => {
+    setFilterUtilisateur("");
     setFilterAction("");
     setFilterModule("");
     setDateDebut("");
@@ -308,6 +347,32 @@ export default function JournalAudit() {
 
         {showFilters && (
           <div className="filters-exp">
+            {/* ── Filtre Utilisateur ── */}
+            <Select
+              value={filterUtilisateur === "" ? ALL_USERS : filterUtilisateur}
+              onValueChange={(value) => {
+                setFilterUtilisateur(value === ALL_USERS ? "" : value);
+                setPage(1);
+              }}>
+              <SelectTrigger className="sel-mini">
+                <SelectValue placeholder="Tous les utilisateurs" />
+              </SelectTrigger>
+              <SelectContent className="z-[9999]">
+                <SelectItem value={ALL_USERS}>Tous les utilisateurs</SelectItem>
+                {users.map((u) => (
+                  // On envoie nom_utilisateur au backend (icontains sur nom_utilisateur)
+                  <SelectItem key={u.id} value={u.nom_utilisateur}>
+                    {u.prenom} {u.nom}
+                    <span
+                      style={{ color: "#6b7280", fontSize: 11, marginLeft: 6 }}>
+                      @{u.nom_utilisateur}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* ── Filtre Action ── */}
             <Select
               value={filterAction === "" ? ALL_ACTIONS : filterAction}
               onValueChange={(value) => {
@@ -327,6 +392,7 @@ export default function JournalAudit() {
               </SelectContent>
             </Select>
 
+            {/* ── Filtre Module ── */}
             <Select
               value={filterModule === "" ? ALL_MODULES : filterModule}
               onValueChange={(value) => {
@@ -346,6 +412,7 @@ export default function JournalAudit() {
               </SelectContent>
             </Select>
 
+            {/* ── Dates ── */}
             <Input
               type="date"
               className="sel-mini"
@@ -356,7 +423,6 @@ export default function JournalAudit() {
                 setPage(1);
               }}
             />
-
             <Input
               type="date"
               className="sel-mini"

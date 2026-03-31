@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Key, Shield, Copy, PowerOff, Power } from "lucide-react";
+import { Plus, Search, Key, Shield, PowerOff, Power } from "lucide-react";
 import {
   getRoles,
-  getRole,
   getPermissions,
   createRole,
   updateRole,
@@ -15,6 +14,8 @@ import { Modal } from "@/components/Modal";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { FieldError, GlobalError } from "@/components/FieldError";
+import { useFormErrors } from "@/hooks/useFormErrors";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -59,6 +60,8 @@ const actionColor = (action) => {
   return "bg-white/5 text-gray-400";
 };
 
+const niveaux = [1, 2, 3, 4, 5];
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Roles() {
@@ -70,9 +73,9 @@ export default function Roles() {
   const [selectedRole, setSelectedRole] = useState(null);
   const [allPermissions, setAllPermissions] = useState([]);
   const [form, setForm] = useState({ code: "", libelle: "", niveau: "" });
-  const [error, setError] = useState("");
-
   const [selectedNiveau, setSelectedNiveau] = useState(null);
+
+  const { errors, setApiErrors, clearErrors, inputCls } = useFormErrors();
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
@@ -102,15 +105,15 @@ export default function Roles() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    setError("");
+    clearErrors();
     try {
       await createRole(form);
       setOpenCreate(false);
       setForm({ code: "", libelle: "", niveau: "" });
-
+      setSelectedNiveau(null);
       fetchRoles();
     } catch (err) {
-      setError(err.response?.data?.detail || "Erreur lors de la création.");
+      setApiErrors(err);
     }
   };
 
@@ -171,7 +174,7 @@ export default function Roles() {
       console.error(err);
     }
   };
-  const niveau = [1, 2, 3, 4, 5];
+
   const filtered = roles.filter(
     (r) =>
       r.code.toLowerCase().includes(search.toLowerCase()) ||
@@ -192,9 +195,9 @@ export default function Roles() {
         </div>
         <Button
           onClick={() => {
-            setError("");
+            clearErrors();
             setForm({ code: "", libelle: "", niveau: "" });
-
+            setSelectedNiveau(null);
             setOpenCreate(true);
           }}
           variant="custom">
@@ -233,11 +236,7 @@ export default function Roles() {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                      role.est_actif !== false
-                        ? "bg-blue-500/10"
-                        : "bg-gray-500/10"
-                    }`}>
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${role.est_actif !== false ? "bg-blue-500/10" : "bg-gray-500/10"}`}>
                     <Key
                       size={18}
                       className={
@@ -268,7 +267,6 @@ export default function Roles() {
                     className="p-2 rounded hover:bg-emerald-500/10 text-gray-500 hover:text-emerald-400 transition-colors">
                     <Shield size={13} />
                   </Button>
-
                   <Button
                     onClick={() => handleDesactive(role.id)}
                     title={
@@ -324,39 +322,42 @@ export default function Roles() {
         </div>
       )}
 
-      {/* Modal Création / Duplication */}
+      {/* ── Modal Création ── */}
       {openCreate && (
-        <Modal
-          title="Nouveau rôle"
-          onClose={() => {
-            setOpenCreate(false);
-          }}>
+        <Modal title="Nouveau rôle" onClose={() => setOpenCreate(false)}>
           <form onSubmit={handleCreate} className="space-y-4">
+            <GlobalError errors={errors} />
+
             <div>
               <Label>Code</Label>
               <Input
                 placeholder="ex: TECHNICIEN"
+                className={inputCls("code")}
                 value={form.code}
                 onChange={(e) =>
                   setForm({ ...form, code: e.target.value.toUpperCase() })
                 }
                 required
               />
+              <FieldError errors={errors} field="code" />
             </div>
+
             <div>
               <Label>Libellé</Label>
               <Input
                 placeholder="ex: Technicien de maintenance"
+                className={inputCls("libelle")}
                 value={form.libelle}
                 onChange={(e) => setForm({ ...form, libelle: e.target.value })}
                 required
               />
+              <FieldError errors={errors} field="libelle" />
             </div>
-            <div className="space-y-1 gap-2 ">
-              <Label>Niveau hiérarchique</Label>
 
+            <div className="space-y-1">
+              <Label>Niveau hiérarchique</Label>
               <div className="flex items-center gap-2">
-                {niveau.map((n) => (
+                {niveaux.map((n) => (
                   <Button
                     key={n}
                     type="button"
@@ -364,39 +365,28 @@ export default function Roles() {
                       setForm({ ...form, niveau: n });
                       setSelectedNiveau(n);
                     }}
-                    className={`
-                    transition-all duration-200 
-                    ${niveauStyles[n].bg} 
-                    ${
+                    className={`transition-all duration-200 ${niveauStyles[n].bg} ${
                       selectedNiveau === n
                         ? `ring-2 ${niveauStyles[n].text} ring-offset-2 ${niveauStyles[n].border} ring-offset-black scale-110 opacity-100 shadow-lg ${niveauStyles[n].shadow}`
                         : "opacity-50 hover:opacity-80 scale-100"
-                    }
-                    `}>
+                    }`}>
                     {n}
                   </Button>
                 ))}
               </div>
-
               <p className="text-xs text-gray-600 mt-1">
                 1 = plus haut niveau (Admin)
               </p>
+              <FieldError errors={errors} field="niveau" />
             </div>
-            {idrole && (
-              <p className="text-xs text-blue-400 bg-blue-500/10 rounded-lg px-3 py-2">
-                Les permissions du rôle source seront copiées automatiquement.
-              </p>
-            )}
-            {error && <p className="text-red-400 text-xs">{error}</p>}
+
             <div className="flex gap-3 pt-2">
               <Button type="submit" className="flex-1 py-2" variant="custom">
                 Créer
               </Button>
               <Button
                 type="button"
-                onClick={() => {
-                  setOpenCreate(false);
-                }}
+                onClick={() => setOpenCreate(false)}
                 className="flex-1 py-2"
                 variant="customOutline">
                 Annuler
@@ -406,7 +396,7 @@ export default function Roles() {
         </Modal>
       )}
 
-      {/* Modal Permissions */}
+      {/* ── Modal Permissions ── */}
       {openPerms && (
         <Modal
           title={`Permissions — ${selectedRole?.code}`}

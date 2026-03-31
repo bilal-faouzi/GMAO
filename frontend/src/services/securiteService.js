@@ -24,6 +24,7 @@ export const createRole = (data) => api.post("/auth/roles/", data);
 export const getRole = (roleId) => api.get(`/auth/roles/${roleId}/`);
 export const updateRole = (roleId) => api.put(`/auth/roles/${roleId}/`);
 export const deleteRole = (roleId) => api.delete(`/auth/roles/${roleId}/`);
+// update and delet role just activate or deactivate it
 export const assignPermissionToRole = (roleId, data) =>
   api.post(`/auth/roles/${roleId}/permissions/`, data);
 

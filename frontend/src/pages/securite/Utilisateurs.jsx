@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Pencil, Trash2, Shield } from "lucide-react";
+import { Plus, Search, Pencil, Shield, Power, PowerOff } from "lucide-react";
 
 import {
   createUtilisateur,
@@ -14,10 +14,10 @@ import { Modal } from "@/components/Modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-// ─── Modal générique ──────────────────────────────────────────────────────────
 
-const inputCls =
-  "w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500";
+import { FieldError, GlobalError } from "@/components/FieldError";
+import { useFormErrors } from "@/hooks/useFormErrors";
+
 const labelCls = "text-xs text-gray-400 mb-1 block";
 
 export default function Utilisateurs() {
@@ -37,7 +37,8 @@ export default function Utilisateurs() {
     prenom: "",
     nom: "",
   });
-  const [error, setError] = useState("");
+
+  const { errors, setApiErrors, clearErrors, inputCls } = useFormErrors();
 
   const fetchUtilisateurs = async () => {
     try {
@@ -61,7 +62,7 @@ export default function Utilisateurs() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    setError("");
+    clearErrors();
     try {
       await createUtilisateur(form);
       setOpenCreate(false);
@@ -74,24 +75,25 @@ export default function Utilisateurs() {
       });
       fetchUtilisateurs();
     } catch (err) {
-      setError(err.response?.data?.detail || "Erreur lors de la création.");
+      setApiErrors(err);
     }
   };
 
   const handleEdit = async (e) => {
     e.preventDefault();
-    setError("");
+    clearErrors();
     try {
       await updateUtilisateur(selected.id, form);
       setOpenEdit(false);
       fetchUtilisateurs();
     } catch (err) {
-      setError(err.response?.data?.detail || "Erreur.");
+      setApiErrors(err);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Désactiver cet utilisateur ?")) return;
+  const handleDelete = async (id, est_actif) => {
+    if (!confirm(`${est_actif ? "Désactiver" : "Activer"} cet utilisateur ?`))
+      return;
     await deleteUtilisateur(id);
     fetchUtilisateurs();
   };
@@ -105,7 +107,7 @@ export default function Utilisateurs() {
       mot_de_passe: "",
       nom_utilisateur: u.nom_utilisateur,
     });
-    setError("");
+    clearErrors();
     setOpenEdit(true);
   };
 
@@ -153,7 +155,7 @@ export default function Utilisateurs() {
         </div>
         <Button
           onClick={() => {
-            setError("");
+            clearErrors();
             setOpenCreate(true);
           }}
           variant="custom">
@@ -183,13 +185,11 @@ export default function Utilisateurs() {
               {["Utilisateur", "Email", "Rôles", "Statut"].map((h) => (
                 <th
                   key={h}
-                  className="px-4 py-3 text-left  text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   {h}
                 </th>
               ))}
-              <th
-                key="actions"
-                className="px-4 py-3 text-center  text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -252,11 +252,7 @@ export default function Utilisateurs() {
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        u.est_actif
-                          ? "bg-emerald-500/10 text-emerald-400"
-                          : "bg-red-500/10 text-red-400"
-                      }`}>
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${u.est_actif ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
                       {u.est_actif ? "Actif" : "Inactif"}
                     </span>
                   </td>
@@ -265,20 +261,24 @@ export default function Utilisateurs() {
                       <Button
                         onClick={() => openRolesModal(u)}
                         title="Gérer les rôles"
-                        className=" rounded hover:bg-emerald-500/10 text-gray-400 hover:text-emerald-400 transition-colors">
+                        className="rounded hover:bg-emerald-500/10 text-gray-400 hover:text-emerald-400 transition-colors">
                         <Shield size={13} />
                       </Button>
                       <Button
                         onClick={() => openEditModal(u)}
                         title="Modifier"
-                        className=" rounded hover:bg-blue-500/10 text-gray-400 hover:text-blue-400 transition-colors">
+                        className="rounded hover:bg-blue-500/10 text-gray-400 hover:text-blue-400 transition-colors">
                         <Pencil size={13} />
                       </Button>
                       <Button
-                        onClick={() => handleDelete(u.id)}
-                        title="Désactiver"
-                        className=" rounded hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors">
-                        <Trash2 size={13} />
+                        onClick={() => handleDelete(u.id, u.est_actif)}
+                        title={u.est_actif ? "Désactiver" : "Activer"}
+                        className="rounded hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors">
+                        {u.est_actif ? (
+                          <Power size={13} />
+                        ) : (
+                          <PowerOff size={13} />
+                        )}
                       </Button>
                     </div>
                   </td>
@@ -289,64 +289,74 @@ export default function Utilisateurs() {
         </table>
       </div>
 
-      {/* Modal Création */}
+      {/* ── Modal Création ── */}
       {openCreate && (
         <Modal title="Nouvel utilisateur" onClose={() => setOpenCreate(false)}>
           <form onSubmit={handleCreate} className="space-y-4">
+            <GlobalError errors={errors} />
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className={labelCls}>Prénom</Label>
                 <Input
-                  className={inputCls}
+                  className={inputCls("prenom")}
                   value={form.prenom}
                   onChange={(e) => setForm({ ...form, prenom: e.target.value })}
                   required
                 />
+                <FieldError errors={errors} field="prenom" />
               </div>
               <div>
                 <Label className={labelCls}>Nom</Label>
                 <Input
-                  className={inputCls}
+                  className={inputCls("nom")}
                   value={form.nom}
                   onChange={(e) => setForm({ ...form, nom: e.target.value })}
                   required
                 />
+                <FieldError errors={errors} field="nom" />
               </div>
             </div>
+
             <div>
               <Label className={labelCls}>Nom d'utilisateur</Label>
               <Input
-                className={inputCls}
+                className={inputCls("nom_utilisateur")}
                 value={form.nom_utilisateur}
                 onChange={(e) =>
                   setForm({ ...form, nom_utilisateur: e.target.value })
                 }
                 required
               />
+              <FieldError errors={errors} field="nom_utilisateur" />
             </div>
+
             <div>
               <Label className={labelCls}>Email</Label>
               <Input
                 type="email"
-                className={inputCls}
+                className={inputCls("email")}
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 required
               />
+              <FieldError errors={errors} field="email" />
             </div>
+
             <div>
               <Label className={labelCls}>Mot de passe</Label>
               <Input
                 type="password"
-                className={inputCls}
+                className={inputCls("mot_de_passe")}
                 value={form.mot_de_passe}
                 onChange={(e) =>
                   setForm({ ...form, mot_de_passe: e.target.value })
                 }
                 required
               />
+              <FieldError errors={errors} field="mot_de_passe" />
             </div>
-            {error && <p className="text-red-400 text-xs">{error}</p>}
+
             <div className="flex gap-3 pt-2">
               <Button
                 type="submit"
@@ -366,53 +376,61 @@ export default function Utilisateurs() {
         </Modal>
       )}
 
-      {/* Modal Modification */}
+      {/* ── Modal Modification ── */}
       {openEdit && (
         <Modal
           title="Modifier l'utilisateur"
           onClose={() => setOpenEdit(false)}>
           <form onSubmit={handleEdit} className="space-y-4">
+            <GlobalError errors={errors} />
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className={labelCls}>Prénom</Label>
                 <Input
-                  className={inputCls}
+                  className={inputCls("prenom")}
                   value={form.prenom}
                   onChange={(e) => setForm({ ...form, prenom: e.target.value })}
                 />
+                <FieldError errors={errors} field="prenom" />
               </div>
               <div>
                 <Label className={labelCls}>Nom</Label>
                 <Input
-                  className={inputCls}
+                  className={inputCls("nom")}
                   value={form.nom}
                   onChange={(e) => setForm({ ...form, nom: e.target.value })}
                 />
+                <FieldError errors={errors} field="nom" />
               </div>
             </div>
+
             <div>
               <Label className={labelCls}>Email</Label>
               <Input
                 type="email"
-                className={inputCls}
+                className={inputCls("email")}
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
+              <FieldError errors={errors} field="email" />
             </div>
+
             <div>
               <Label className={labelCls}>
                 Nouveau mot de passe (optionnel)
               </Label>
               <Input
                 type="password"
-                className={inputCls}
+                className={inputCls("mot_de_passe")}
                 value={form.mot_de_passe}
                 onChange={(e) =>
                   setForm({ ...form, mot_de_passe: e.target.value })
                 }
               />
+              <FieldError errors={errors} field="mot_de_passe" />
             </div>
-            {error && <p className="text-red-400 text-xs">{error}</p>}
+
             <div className="flex gap-3 pt-2">
               <Button
                 type="submit"
@@ -432,7 +450,7 @@ export default function Utilisateurs() {
         </Modal>
       )}
 
-      {/* Modal Gestion Rôles */}
+      {/* ── Modal Gestion Rôles ── */}
       {openRoles && (
         <Modal
           title={`Rôles — ${selectedUser?.prenom} ${selectedUser?.nom}`}
@@ -494,7 +512,7 @@ export default function Utilisateurs() {
                       <Button
                         onClick={() => handleAssignRole(r.id)}
                         variant="custom"
-                        className="flex-1 py-2 rounded-lg">
+                        className="flex py-2">
                         Assigner
                       </Button>
                     </div>

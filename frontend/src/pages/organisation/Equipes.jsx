@@ -26,6 +26,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FieldLabel } from "@/components/ui/field";
+import { FieldError, GlobalError } from "@/components/FieldError";
+import { useFormErrors } from "@/hooks/useFormErrors";
+
+// ─── RoleBadge ────────────────────────────────────────────────────────────────
 
 function RoleBadge({ role }) {
   const styles = {
@@ -41,6 +45,8 @@ function RoleBadge({ role }) {
   );
 }
 
+// ─── MembresPanel ─────────────────────────────────────────────────────────────
+
 function MembresPanel({ equipe, onClose }) {
   const [membres, setMembres] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +56,9 @@ function MembresPanel({ equipe, onClose }) {
     niveauRole: "MEMBRE",
   });
   const [utilisateurs, setUtilisateurs] = useState([]);
+
+  // Hook dédié aux erreurs du panel membres
+  const { errors, setApiErrors, clearErrors } = useFormErrors();
 
   useEffect(() => {
     fetchMembres();
@@ -68,10 +77,21 @@ function MembresPanel({ equipe, onClose }) {
 
   async function handleAdd() {
     if (!newMembre.utilisateur) return;
-    await addMembre({ equipe: equipe.id, ...newMembre });
-    setNewMembre({ utilisateur: "", niveauRole: "MEMBRE" });
-    setShowAdd(false);
-    fetchMembres();
+    clearErrors();
+    try {
+      const payload = {
+        equipe: equipe.id,
+        utilisateur: parseInt(newMembre.utilisateur, 10), // ← Conversion ici
+        niveauRole: newMembre.niveauRole,
+      };
+      console.log("Payload pour ajout de membre :", payload);
+      await addMembre(payload);
+      setNewMembre({ utilisateur: "", niveauRole: "MEMBRE" });
+      setShowAdd(false);
+      fetchMembres();
+    } catch (err) {
+      setApiErrors(err);
+    }
   }
 
   async function handleRemove(membreId) {
@@ -110,7 +130,8 @@ function MembresPanel({ equipe, onClose }) {
 
       {showAdd ? (
         <div className="space-y-3 border-t border-white/10 pt-4">
-          {/* Utilisateur */}
+          <GlobalError errors={errors} />
+
           <Select
             value={newMembre.utilisateur}
             onValueChange={(v) =>
@@ -129,8 +150,8 @@ function MembresPanel({ equipe, onClose }) {
               </SelectGroup>
             </SelectContent>
           </Select>
+          <FieldError errors={errors} field="utilisateur" />
 
-          {/* Rôle */}
           <Select
             value={newMembre.niveauRole}
             onValueChange={(v) =>
@@ -147,12 +168,18 @@ function MembresPanel({ equipe, onClose }) {
               </SelectGroup>
             </SelectContent>
           </Select>
+          <FieldError errors={errors} field="niveauRole" />
 
           <div className="flex gap-2">
             <Button onClick={handleAdd} variant="custom">
               Confirmer
             </Button>
-            <Button onClick={() => setShowAdd(false)} variant="customOutline">
+            <Button
+              onClick={() => {
+                setShowAdd(false);
+                clearErrors();
+              }}
+              variant="customOutline">
               Annuler
             </Button>
           </div>
@@ -167,6 +194,8 @@ function MembresPanel({ equipe, onClose }) {
   );
 }
 
+// ─── EquipeModal ──────────────────────────────────────────────────────────────
+
 function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
   const [form, setForm] = useState({
     libelle: equipe?.libelle || "",
@@ -176,40 +205,44 @@ function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
   });
   const [saving, setSaving] = useState(false);
 
+  // Hook dédié aux erreurs du modal équipe
+  const { errors, setApiErrors, clearErrors, inputCls } = useFormErrors();
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.libelle || !form.site) return;
+    clearErrors();
     try {
       setSaving(true);
       equipe ? await updateEquipe(equipe.id, form) : await createEquipe(form);
       onSaved();
       onClose();
     } catch (err) {
-      console.error(err);
+      setApiErrors(err);
     } finally {
       setSaving(false);
     }
   }
-
-  const inputClass =
-    "w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500";
 
   return (
     <Modal
       title={equipe ? "Modifier l'équipe" : "Nouvelle équipe"}
       onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
+        <GlobalError errors={errors} />
+
         <div>
           <Label className="text-xs text-gray-400 mb-1 block">Libellé *</Label>
           <Input
+            className={inputCls("libelle")}
             value={form.libelle}
             onChange={(e) => setForm({ ...form, libelle: e.target.value })}
             placeholder="Ex: Équipe Électricité Nord"
             required
           />
+          <FieldError errors={errors} field="libelle" />
         </div>
 
-        {/* Site */}
         <div>
           <Label className="text-xs text-gray-400 mb-1 block">Site *</Label>
           <Select
@@ -229,14 +262,16 @@ function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
               </SelectGroup>
             </SelectContent>
           </Select>
+          <FieldError errors={errors} field="site" />
         </div>
 
-        {/* Spécialité */}
         <div>
           <Label className="text-xs text-gray-400 mb-1 block">Spécialité</Label>
           <Select
             value={form.specialite || ""}
-            onValueChange={(v) => setForm({ ...form, specialite: v || null })}>
+            onValueChange={(v) =>
+              setForm({ ...form, specialite: v === "__none__" ? null : v })
+            }>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Aucune spécialité" />
             </SelectTrigger>
@@ -251,16 +286,15 @@ function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
               </SelectGroup>
             </SelectContent>
           </Select>
+          <FieldError errors={errors} field="specialite" />
         </div>
 
         <div className="flex items-center gap-2">
           <Checkbox
             id="estActif"
-            // On utilise 'checked' pour l'état actuel
             checked={form.estActif}
-            // On utilise 'onCheckedChange' qui donne directement le booléen
-            onCheckedChange={(e) =>
-              setForm({ ...form, estActif: e.target.checked })
+            onCheckedChange={(checked) =>
+              setForm({ ...form, estActif: checked })
             }
           />
           <FieldLabel>Active</FieldLabel>
@@ -270,14 +304,14 @@ function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
           <Button
             type="submit"
             disabled={saving}
-            className="flex-1 py-2  disabled:opacity-50"
+            className="flex-1 py-2 disabled:opacity-50"
             variant="custom">
             {saving ? "Enregistrement..." : equipe ? "Modifier" : "Créer"}
           </Button>
           <Button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2 rounded-lg "
+            className="flex-1 py-2 rounded-lg"
             variant="customOutline">
             Annuler
           </Button>
@@ -286,6 +320,8 @@ function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
     </Modal>
   );
 }
+
+// ─── Page principale ──────────────────────────────────────────────────────────
 
 export default function Equipes() {
   const [equipes, setEquipes] = useState([]);
@@ -360,7 +396,7 @@ export default function Equipes() {
         </Select>
       </div>
 
-      {/* Tableau — inchangé */}
+      {/* Tableau */}
       <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
@@ -379,9 +415,7 @@ export default function Equipes() {
                   {h}
                 </th>
               ))}
-              <th
-                key="actions"
-                className="px-4 py-3 text-center  text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">
                 Actions
               </th>
             </tr>

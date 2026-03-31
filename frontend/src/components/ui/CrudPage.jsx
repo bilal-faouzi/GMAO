@@ -12,19 +12,21 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FieldLabel } from "@/components/ui/field";
+import { FieldError, GlobalError } from "@/components/FieldError";
+import { useFormErrors } from "@/hooks/useFormErrors";
+
+// ─── Badge ────────────────────────────────────────────────────────────────────
 
 function Badge({ active }) {
   return (
     <span
-      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-        active
-          ? "bg-emerald-500/10 text-emerald-400"
-          : "bg-red-500/10 text-red-400"
-      }`}>
+      className={`text-xs px-2 py-0.5 rounded-full font-medium ${active ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
       {active ? "Actif" : "Inactif"}
     </span>
   );
 }
+
+// ─── ModalForm ────────────────────────────────────────────────────────────────
 
 function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
   const [form, setForm] = useState(
@@ -34,14 +36,18 @@ function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
   );
   const [saving, setSaving] = useState(false);
 
+  // Chaque instance de ModalForm a son propre état d'erreurs
+  const { errors, setApiErrors, clearErrors, inputCls } = useFormErrors();
+
   async function handleSubmit(e) {
     e.preventDefault();
+    clearErrors();
     try {
       setSaving(true);
       await onSave(form);
       onClose();
     } catch (err) {
-      console.error(err);
+      setApiErrors(err);
     } finally {
       setSaving(false);
     }
@@ -59,7 +65,11 @@ function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
             <X size={18} />
           </Button>
         </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Erreur globale en haut du formulaire */}
+          <GlobalError errors={errors} />
+
           {fields.map((f) => (
             <div key={f.name}>
               <Label className="text-xs text-gray-400 mb-1 block">
@@ -68,57 +78,54 @@ function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
               </Label>
 
               {f.type === "select" ? (
-                <Select
-                  value={form[f.name]}
-                  onValueChange={(value) =>
-                    setForm({ ...form, [f.name]: value })
-                  }
-                  disabled={f.disabled}
-                  required={f.required}>
-                  <SelectTrigger
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white
-                               focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500
-                               disabled:opacity-40 data-[placeholder]:text-gray-500
-                               [&>span]:flex [&>span]:items-center">
-                    <SelectValue placeholder="— Sélectionner —" />
-                  </SelectTrigger>
-                  <SelectContent
-                    className="bg-slate-900 border border-white/10 rounded-lg shadow-xl
-                               text-white z-[60]">
-                    {f.options?.map((o) => (
-                      <SelectItem
-                        key={o.value}
-                        value={String(o.value)}
-                        className="text-sm text-gray-300 px-3 py-2 cursor-pointer rounded
-                                   focus:bg-white/10 focus:text-white
-                                   data-[state=checked]:text-blue-400">
-                        {o.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <>
+                  <Select
+                    value={form[f.name]}
+                    onValueChange={(value) =>
+                      setForm({ ...form, [f.name]: value })
+                    }
+                    disabled={f.disabled}
+                    required={f.required}>
+                    <SelectTrigger className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-40 data-[placeholder]:text-gray-500 [&>span]:flex [&>span]:items-center">
+                      <SelectValue placeholder="— Sélectionner —" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900 border border-white/10 rounded-lg shadow-xl text-white z-[60]">
+                      {f.options?.map((o) => (
+                        <SelectItem
+                          key={o.value}
+                          value={String(o.value)}
+                          className="text-sm text-gray-300 px-3 py-2 cursor-pointer rounded focus:bg-white/10 focus:text-white data-[state=checked]:text-blue-400">
+                          {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FieldError errors={errors} field={f.name} />
+                </>
               ) : f.type === "checkbox" ? (
                 <div className="flex items-center gap-2">
                   <Checkbox
                     id={f.name}
-                    // On utilise 'checked' pour l'état actuel
                     checked={!!form[f.name]}
-                    // On utilise 'onCheckedChange' qui donne directement le booléen
-                    onCheckedChange={(e) =>
-                      setForm({ ...form, [f.name]: e.target.checked })
+                    onCheckedChange={(checked) =>
+                      setForm({ ...form, [f.name]: checked })
                     }
                   />
                   <FieldLabel>{f.checkLabel || f.label}</FieldLabel>
                 </div>
               ) : (
-                <Input
-                  placeholder={f.placeholder}
-                  value={form[f.name]}
-                  onChange={(e) =>
-                    setForm({ ...form, [f.name]: e.target.value })
-                  }
-                  required={f.required}
-                />
+                <>
+                  <Input
+                    className={inputCls(f.name)}
+                    placeholder={f.placeholder}
+                    value={form[f.name]}
+                    onChange={(e) =>
+                      setForm({ ...form, [f.name]: e.target.value })
+                    }
+                    required={f.required}
+                  />
+                  <FieldError errors={errors} field={f.name} />
+                </>
               )}
             </div>
           ))}
@@ -136,6 +143,8 @@ function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
     </div>
   );
 }
+
+// ─── CrudPage ─────────────────────────────────────────────────────────────────
 
 export { Badge, ModalForm };
 
@@ -213,14 +222,14 @@ export default function CrudPage({
                       {onEdit && (
                         <Button
                           onClick={() => setModal(row._raw)}
-                          className=" rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+                          className="rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
                           <Pencil size={13} />
                         </Button>
                       )}
                       {onDelete && (
                         <Button
                           onClick={() => onDelete(row.id)}
-                          className=" rounded hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors">
+                          className="rounded hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors">
                           <Trash2 size={13} />
                         </Button>
                       )}

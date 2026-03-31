@@ -23,8 +23,13 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-
 import { Checkbox } from "@/components/ui/checkbox";
+import { useFormErrors } from "@/hooks/useFormErrors"; // ← import du hook
+
+function FieldError({ name, errors }) {
+  if (!errors[name]) return null;
+  return <p className="text-red-400 text-xs mt-1">{errors[name]}</p>;
+}
 
 function AddAppartenanceModal({ onClose, onSaved }) {
   const [societes, setSocietes] = useState([]);
@@ -41,6 +46,9 @@ function AddAppartenanceModal({ onClose, onSaved }) {
     estPrincipale: false,
   });
   const [saving, setSaving] = useState(false);
+
+  // ← Hook d'erreurs
+  const { errors, setApiErrors, clearErrors } = useFormErrors();
 
   useEffect(() => {
     getSocietes().then((r) => setSocietes(r.data.results || r.data));
@@ -83,23 +91,22 @@ function AddAppartenanceModal({ onClose, onSaved }) {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.utilisateur || !form.societe || !form.site) return;
+    clearErrors(); // ← reset des erreurs avant chaque tentative
     try {
       setSaving(true);
       const payload = {
         utilisateur: form.utilisateur,
         societe: form.societe,
         site: form.site,
-        secteur: form.secteur ? parseInt(form.secteur) : null,
-        unite: form.unite ? parseInt(form.unite) : null,
+        secteur: form.secteur || null,
+        unite: form.unite || null,
         estPrincipale: form.estPrincipale,
       };
-      console.log("Payload envoyé →", payload); // ← ajoute ça
-      const res = await createAppartenance(payload);
-      console.log("Réponse →", res.data); // ← et ça
+      await createAppartenance(payload);
       onSaved();
       onClose();
     } catch (err) {
-      console.error("Erreur →", err.response?.data); // ← le plus important
+      setApiErrors(err); // ← les erreurs s'affichent dans le formulaire
     } finally {
       setSaving(false);
     }
@@ -108,6 +115,13 @@ function AddAppartenanceModal({ onClose, onSaved }) {
   return (
     <Modal title="Nouvelle appartenance" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
+        {/* Erreur globale */}
+        {errors.__global__ && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+            <p className="text-red-400 text-xs">{errors.__global__}</p>
+          </div>
+        )}
+
         {/* Utilisateur */}
         <div>
           <Label className="text-xs text-gray-400 mb-1 block">
@@ -117,7 +131,10 @@ function AddAppartenanceModal({ onClose, onSaved }) {
             value={form.utilisateur}
             onValueChange={(v) => setForm({ ...form, utilisateur: v })}
             required>
-            <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white">
+            <SelectTrigger
+              className={`w-full bg-white/5 border text-white ${
+                errors.utilisateur ? "border-red-500" : "border-white/10"
+              }`}>
               <SelectValue placeholder="Sélectionner un utilisateur" />
             </SelectTrigger>
             <SelectContent>
@@ -130,6 +147,7 @@ function AddAppartenanceModal({ onClose, onSaved }) {
               </SelectGroup>
             </SelectContent>
           </Select>
+          <FieldError name="utilisateur" errors={errors} />
         </div>
 
         {/* Société */}
@@ -137,9 +155,12 @@ function AddAppartenanceModal({ onClose, onSaved }) {
           <Label className="text-xs text-gray-400 mb-1 block">Société *</Label>
           <Select
             value={form.societe}
-            onValueChange={(v) => setForm({ ...form, societe: parseInt(v) })}
+            onValueChange={(v) => setForm({ ...form, societe: v })}
             required>
-            <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white">
+            <SelectTrigger
+              className={`w-full bg-white/5 border text-white ${
+                errors.societe ? "border-red-500" : "border-white/10"
+              }`}>
               <SelectValue placeholder="Sélectionner une société" />
             </SelectTrigger>
             <SelectContent>
@@ -152,6 +173,7 @@ function AddAppartenanceModal({ onClose, onSaved }) {
               </SelectGroup>
             </SelectContent>
           </Select>
+          <FieldError name="societe" errors={errors} />
         </div>
 
         {/* Site */}
@@ -159,10 +181,13 @@ function AddAppartenanceModal({ onClose, onSaved }) {
           <Label className="text-xs text-gray-400 mb-1 block">Site *</Label>
           <Select
             value={form.site}
-            onValueChange={(v) => setForm({ ...form, site: parseInt(v) })}
+            onValueChange={(v) => setForm({ ...form, site: v })}
             disabled={!form.societe}
             required>
-            <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white disabled:opacity-50">
+            <SelectTrigger
+              className={`w-full bg-white/5 border text-white disabled:opacity-50 ${
+                errors.site ? "border-red-500" : "border-white/10"
+              }`}>
               <SelectValue placeholder="Sélectionner un site" />
             </SelectTrigger>
             <SelectContent>
@@ -175,6 +200,7 @@ function AddAppartenanceModal({ onClose, onSaved }) {
               </SelectGroup>
             </SelectContent>
           </Select>
+          <FieldError name="site" errors={errors} />
         </div>
 
         {/* Secteur */}
@@ -184,9 +210,12 @@ function AddAppartenanceModal({ onClose, onSaved }) {
           </Label>
           <Select
             value={form.secteur}
-            onValueChange={(v) => setForm({ ...form, secteur: parseInt(v) })}
+            onValueChange={(v) => setForm({ ...form, secteur: v })}
             disabled={!form.site}>
-            <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white disabled:opacity-50">
+            <SelectTrigger
+              className={`w-full bg-white/5 border text-white disabled:opacity-50 ${
+                errors.secteur ? "border-red-500" : "border-white/10"
+              }`}>
               <SelectValue placeholder="Aucun" />
             </SelectTrigger>
             <SelectContent>
@@ -199,6 +228,7 @@ function AddAppartenanceModal({ onClose, onSaved }) {
               </SelectGroup>
             </SelectContent>
           </Select>
+          <FieldError name="secteur" errors={errors} />
         </div>
 
         {/* Unité */}
@@ -208,9 +238,12 @@ function AddAppartenanceModal({ onClose, onSaved }) {
           </Label>
           <Select
             value={form.unite}
-            onValueChange={(v) => setForm({ ...form, unite: parseInt(v) })}
+            onValueChange={(v) => setForm({ ...form, unite: v })}
             disabled={!form.secteur}>
-            <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white disabled:opacity-50">
+            <SelectTrigger
+              className={`w-full bg-white/5 border text-white disabled:opacity-50 ${
+                errors.unite ? "border-red-500" : "border-white/10"
+              }`}>
               <SelectValue placeholder="Aucune" />
             </SelectTrigger>
             <SelectContent>
@@ -223,28 +256,29 @@ function AddAppartenanceModal({ onClose, onSaved }) {
               </SelectGroup>
             </SelectContent>
           </Select>
+          <FieldError name="unite" errors={errors} />
         </div>
 
         {/* Principale */}
         <div className="flex items-left gap-2 pt-1">
           <Checkbox
             id="principale"
-            // On utilise 'checked' pour l'état actuel
             checked={form.estPrincipale}
-            // On utilise 'onCheckedChange' qui donne directement le booléen
             onCheckedChange={(checked) =>
               setForm({ ...form, estPrincipale: checked })
             }
           />
           <FieldLabel>Appartenance principale</FieldLabel>
         </div>
+        {/* Erreur contrainte unique principale */}
+        <FieldError name="estPrincipale" errors={errors} />
 
         <div className="flex gap-3 pt-2">
           <Button
             type="submit"
             disabled={saving}
             variant="custom"
-            className="flex-1 py-2 rounded-lg ">
+            className="flex-1 py-2 rounded-lg">
             {saving ? "Enregistrement..." : "Créer"}
           </Button>
           <Button
@@ -323,7 +357,7 @@ export default function Appartenances() {
               ))}
               <th
                 key="actions"
-                className="px-4 py-3 text-center  text-xs font-medium text-gray-400 uppercase tracking-wider">
+                className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
