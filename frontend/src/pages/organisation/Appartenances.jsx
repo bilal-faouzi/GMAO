@@ -85,16 +85,21 @@ function AddAppartenanceModal({ onClose, onSaved }) {
     if (!form.utilisateur || !form.societe || !form.site) return;
     try {
       setSaving(true);
-      await createAppartenance({
+      const payload = {
         utilisateur: form.utilisateur,
         societe: form.societe,
         site: form.site,
-        secteur: form.secteur || null,
-        unite: form.unite || null,
+        secteur: form.secteur ? parseInt(form.secteur) : null,
+        unite: form.unite ? parseInt(form.unite) : null,
         estPrincipale: form.estPrincipale,
-      });
+      };
+      console.log("Payload envoyé →", payload); // ← ajoute ça
+      const res = await createAppartenance(payload);
+      console.log("Réponse →", res.data); // ← et ça
       onSaved();
       onClose();
+    } catch (err) {
+      console.error("Erreur →", err.response?.data); // ← le plus important
     } finally {
       setSaving(false);
     }
@@ -132,7 +137,7 @@ function AddAppartenanceModal({ onClose, onSaved }) {
           <Label className="text-xs text-gray-400 mb-1 block">Société *</Label>
           <Select
             value={form.societe}
-            onValueChange={(v) => setForm({ ...form, societe: v })}
+            onValueChange={(v) => setForm({ ...form, societe: parseInt(v) })}
             required>
             <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white">
               <SelectValue placeholder="Sélectionner une société" />
@@ -154,7 +159,7 @@ function AddAppartenanceModal({ onClose, onSaved }) {
           <Label className="text-xs text-gray-400 mb-1 block">Site *</Label>
           <Select
             value={form.site}
-            onValueChange={(v) => setForm({ ...form, site: v })}
+            onValueChange={(v) => setForm({ ...form, site: parseInt(v) })}
             disabled={!form.societe}
             required>
             <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white disabled:opacity-50">
@@ -179,7 +184,7 @@ function AddAppartenanceModal({ onClose, onSaved }) {
           </Label>
           <Select
             value={form.secteur}
-            onValueChange={(v) => setForm({ ...form, secteur: v })}
+            onValueChange={(v) => setForm({ ...form, secteur: parseInt(v) })}
             disabled={!form.site}>
             <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white disabled:opacity-50">
               <SelectValue placeholder="Aucun" />
@@ -203,7 +208,7 @@ function AddAppartenanceModal({ onClose, onSaved }) {
           </Label>
           <Select
             value={form.unite}
-            onValueChange={(v) => setForm({ ...form, unite: v })}
+            onValueChange={(v) => setForm({ ...form, unite: parseInt(v) })}
             disabled={!form.secteur}>
             <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white disabled:opacity-50">
               <SelectValue placeholder="Aucune" />

@@ -13,7 +13,7 @@ class RoleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Role
-        fields = ['id', 'code', 'libelle', 'niveau', 'permissions']
+        fields = ['id', 'code', 'libelle', 'niveau', 'permissions', 'est_actif']
 
     def get_permissions(self, obj):
         perms = obj.permissions.filter(

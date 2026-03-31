@@ -10,6 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { FieldLabel } from "@/components/ui/field";
 
 function Badge({ active }) {
   return (
@@ -97,18 +99,16 @@ function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
                 </Select>
               ) : f.type === "checkbox" ? (
                 <div className="flex items-center gap-2">
-                  <Input
-                    type="checkbox"
+                  <Checkbox
                     id={f.name}
+                    // On utilise 'checked' pour l'état actuel
                     checked={!!form[f.name]}
-                    onChange={(e) =>
+                    // On utilise 'onCheckedChange' qui donne directement le booléen
+                    onCheckedChange={(e) =>
                       setForm({ ...form, [f.name]: e.target.checked })
                     }
-                    className="accent-blue-500"
                   />
-                  <label htmlFor={f.name} className="text-sm text-gray-300">
-                    {f.checkLabel || f.label}
-                  </label>
+                  <FieldLabel>{f.checkLabel || f.label}</FieldLabel>
                 </div>
               ) : (
                 <Input

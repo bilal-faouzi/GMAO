@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Trash2, Key, Shield, X } from "lucide-react";
-import api from "@/services/api";
+import { Plus, Search, Key, Shield, Copy, PowerOff, Power } from "lucide-react";
 import {
   getRoles,
+  getRole,
   getPermissions,
   createRole,
-  deleteRole,
+  updateRole,
   assignPermissionToRole,
   deletePermissionfromRole,
+  deleteRole,
 } from "@/services/securiteService";
 
 import { Modal } from "@/components/Modal";
@@ -15,11 +16,39 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
-const niveauColor = (n) => {
-  if (n === 1) return "bg-red-500/10 text-red-400";
-  if (n === 2) return "bg-orange-500/10 text-orange-400";
-  if (n === 3) return "bg-blue-500/10 text-blue-400";
-  return "bg-white/5 text-gray-400";
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const niveauStyles = {
+  1: {
+    bg: "bg-red-500/10",
+    text: "text-red-400",
+    border: "border-red-500",
+    shadow: "shadow-red-500/30",
+  },
+  2: {
+    bg: "bg-orange-500/10",
+    text: "text-orange-400",
+    border: "border-orange-500",
+    shadow: "shadow-orange-500/30",
+  },
+  3: {
+    bg: "bg-blue-500/10",
+    text: "text-blue-400",
+    border: "border-blue-500",
+    shadow: "shadow-blue-500/30",
+  },
+  4: {
+    bg: "bg-emerald-500/10",
+    text: "text-emerald-400",
+    border: "border-emerald-500",
+    shadow: "shadow-emerald-500/30",
+  },
+  5: {
+    bg: "bg-cyan-500/10",
+    text: "text-cyan-400",
+    border: "border-cyan-500",
+    shadow: "shadow-cyan-500/30",
+  },
 };
 
 const actionColor = (action) => {
@@ -29,6 +58,8 @@ const actionColor = (action) => {
   if (action === "DELETE") return "bg-red-500/10 text-red-400";
   return "bg-white/5 text-gray-400";
 };
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Roles() {
   const [roles, setRoles] = useState([]);
@@ -40,6 +71,10 @@ export default function Roles() {
   const [allPermissions, setAllPermissions] = useState([]);
   const [form, setForm] = useState({ code: "", libelle: "", niveau: "" });
   const [error, setError] = useState("");
+
+  const [selectedNiveau, setSelectedNiveau] = useState(null);
+
+  // ── Fetch ──────────────────────────────────────────────────────────────────
 
   const fetchRoles = async () => {
     try {
@@ -63,6 +98,8 @@ export default function Roles() {
     fetchRoles();
   }, []);
 
+  // ── Handlers ───────────────────────────────────────────────────────────────
+
   const handleCreate = async (e) => {
     e.preventDefault();
     setError("");
@@ -70,19 +107,33 @@ export default function Roles() {
       await createRole(form);
       setOpenCreate(false);
       setForm({ code: "", libelle: "", niveau: "" });
+
       fetchRoles();
     } catch (err) {
-      setError(err.response?.data?.detail || "Erreur.");
+      setError(err.response?.data?.detail || "Erreur lors de la création.");
     }
   };
 
-  const handleDelete = async (id) => {
-    try {
+  const handleDesactive = async (id) => {
+    const roleActuel = roles.find((r) => r.id === id);
+    if (!roleActuel) return;
+
+    if (roleActuel.est_actif === true) {
       if (!confirm("Désactiver ce rôle ?")) return;
-      await deleteRole(id);
-      fetchRoles();
-    } catch (err) {
-      console.error(err);
+      try {
+        await deleteRole(id, { est_actif: false });
+        fetchRoles();
+      } catch (err) {
+        console.error(err);
+      }
+    } else {
+      if (!confirm("Réactiver ce rôle ?")) return;
+      try {
+        await updateRole(id, { est_actif: true });
+        fetchRoles();
+      } catch (err) {
+        console.error(err);
+      }
     }
   };
 
@@ -100,10 +151,10 @@ export default function Roles() {
         ...prev,
         permissions: [...(prev.permissions || []), perm],
       }));
+      fetchRoles();
     } catch (err) {
       console.error(err);
     }
-    fetchRoles();
   };
 
   const handleRemovePermission = async (permId) => {
@@ -120,12 +171,14 @@ export default function Roles() {
       console.error(err);
     }
   };
-
+  const niveau = [1, 2, 3, 4, 5];
   const filtered = roles.filter(
     (r) =>
       r.code.toLowerCase().includes(search.toLowerCase()) ||
       r.libelle.toLowerCase().includes(search.toLowerCase()),
   );
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="p-6 space-y-6">
@@ -140,6 +193,8 @@ export default function Roles() {
         <Button
           onClick={() => {
             setError("");
+            setForm({ code: "", libelle: "", niveau: "" });
+
             setOpenCreate(true);
           }}
           variant="custom">
@@ -155,7 +210,7 @@ export default function Roles() {
         />
         <Input
           placeholder="Rechercher un rôle..."
-          className="  pl-9 "
+          className="pl-9"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -169,41 +224,76 @@ export default function Roles() {
           {filtered.map((role) => (
             <div
               key={role.id}
-              className="bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/[0.07] transition-colors">
+              className={`border rounded-xl p-5 transition-colors ${
+                role.est_actif !== false
+                  ? "bg-white/5 border-white/10 hover:bg-white/[0.07]"
+                  : "bg-white/[0.02] border-white/5 opacity-50 grayscale"
+              }`}>
+              {/* Header carte */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center">
-                    <Key size={18} className="text-blue-400" />
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      role.est_actif !== false
+                        ? "bg-blue-500/10"
+                        : "bg-gray-500/10"
+                    }`}>
+                    <Key
+                      size={18}
+                      className={
+                        role.est_actif !== false
+                          ? "text-blue-400"
+                          : "text-gray-600"
+                      }
+                    />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white">{role.code}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-white">{role.code}</h3>
+                      {role.est_actif === false && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-500/10 text-gray-500 border border-gray-500/20">
+                          Désactivé
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-500">{role.libelle}</p>
                   </div>
                 </div>
+
+                {/* Actions */}
                 <div className="flex gap-1">
                   <Button
                     onClick={() => openPermsModal(role)}
                     title="Permissions"
-                    className="p-1.5 rounded hover:bg-emerald-500/10 text-gray-500 hover:text-emerald-400 transition-colors">
+                    className="p-2 rounded hover:bg-emerald-500/10 text-gray-500 hover:text-emerald-400 transition-colors">
                     <Shield size={13} />
                   </Button>
+
                   <Button
-                    onClick={() => handleDelete(role.id)}
-                    title="Désactiver"
-                    className="p-1.5 rounded hover:bg-red-500/10 text-gray-500 hover:text-red-400 transition-colors">
-                    <Trash2 size={13} />
+                    onClick={() => handleDesactive(role.id)}
+                    title={
+                      role.est_actif !== false ? "Désactiver" : "Réactiver"
+                    }
+                    className="p-2 rounded hover:bg-orange-500/10 text-gray-500 hover:text-orange-400 transition-colors">
+                    {role.est_actif !== false ? (
+                      <PowerOff size={13} />
+                    ) : (
+                      <Power size={13} />
+                    )}
                   </Button>
                 </div>
               </div>
 
+              {/* Niveau */}
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-xs text-gray-500">Niveau :</span>
                 <span
-                  className={`text-xs px-2 py-0.5 rounded-full font-medium ${niveauColor(role.niveau)}`}>
+                  className={`text-xs px-2 py-0.5 rounded-full font-medium ${niveauStyles[role.niveau].bg} ${niveauStyles[role.niveau].text} border ${niveauStyles[role.niveau].border} shadow ${niveauStyles[role.niveau].shadow}`}>
                   Niveau {role.niveau}
                 </span>
               </div>
 
+              {/* Permissions preview */}
               <div>
                 <p className="text-xs text-gray-500 mb-2">
                   Permissions ({role.permissions?.length || 0}) :
@@ -234,9 +324,13 @@ export default function Roles() {
         </div>
       )}
 
-      {/* Modal Création */}
+      {/* Modal Création / Duplication */}
       {openCreate && (
-        <Modal title="Nouveau rôle" onClose={() => setOpenCreate(false)}>
+        <Modal
+          title="Nouveau rôle"
+          onClose={() => {
+            setOpenCreate(false);
+          }}>
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
               <Label>Code</Label>
@@ -258,30 +352,52 @@ export default function Roles() {
                 required
               />
             </div>
-            <div>
+            <div className="space-y-1 gap-2 ">
               <Label>Niveau hiérarchique</Label>
-              <Input
-                type="number"
-                min="1"
-                max="10"
-                placeholder="ex: 3"
-                value={form.niveau}
-                onChange={(e) => setForm({ ...form, niveau: e.target.value })}
-                required
-              />
+
+              <div className="flex items-center gap-2">
+                {niveau.map((n) => (
+                  <Button
+                    key={n}
+                    type="button"
+                    onClick={() => {
+                      setForm({ ...form, niveau: n });
+                      setSelectedNiveau(n);
+                    }}
+                    className={`
+                    transition-all duration-200 
+                    ${niveauStyles[n].bg} 
+                    ${
+                      selectedNiveau === n
+                        ? `ring-2 ${niveauStyles[n].text} ring-offset-2 ${niveauStyles[n].border} ring-offset-black scale-110 opacity-100 shadow-lg ${niveauStyles[n].shadow}`
+                        : "opacity-50 hover:opacity-80 scale-100"
+                    }
+                    `}>
+                    {n}
+                  </Button>
+                ))}
+              </div>
+
               <p className="text-xs text-gray-600 mt-1">
                 1 = plus haut niveau (Admin)
               </p>
             </div>
+            {idrole && (
+              <p className="text-xs text-blue-400 bg-blue-500/10 rounded-lg px-3 py-2">
+                Les permissions du rôle source seront copiées automatiquement.
+              </p>
+            )}
             {error && <p className="text-red-400 text-xs">{error}</p>}
             <div className="flex gap-3 pt-2">
-              <Button type="submit" className="flex-1 py-2 " variant="custom">
+              <Button type="submit" className="flex-1 py-2" variant="custom">
                 Créer
               </Button>
               <Button
                 type="button"
-                onClick={() => setOpenCreate(false)}
-                className="flex-1 py-2 "
+                onClick={() => {
+                  setOpenCreate(false);
+                }}
+                className="flex-1 py-2"
                 variant="customOutline">
                 Annuler
               </Button>
@@ -296,6 +412,7 @@ export default function Roles() {
           title={`Permissions — ${selectedRole?.code}`}
           onClose={() => setOpenPerms(false)}>
           <div className="space-y-4 max-h-96 overflow-y-auto">
+            {/* Assignées */}
             <div>
               <p className="text-xs text-gray-400 mb-2 uppercase tracking-wider">
                 Assignées ({selectedRole?.permissions?.length || 0})
@@ -329,6 +446,8 @@ export default function Roles() {
                 )}
               </div>
             </div>
+
+            {/* Ajouter */}
             <div>
               <p className="text-xs text-gray-400 mb-2 uppercase tracking-wider">
                 Ajouter

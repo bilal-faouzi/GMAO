@@ -307,7 +307,7 @@ class RoleListCreateView(APIView):
 
     def get(self, request):
         """List all roles"""
-        roles = Role.objects.filter(est_actif=True).order_by('niveau')
+        roles = Role.objects.order_by('niveau')
         return Response(RoleSerializer(roles, many=True).data)
 
     def post(self, request):
@@ -376,6 +376,39 @@ class RoleDetailView(APIView):
             adresse_ip=get_client_ip(request)
         )
 
+        return Response({'detail': 'Rôle désactivé avec succès.'})
+    
+    def put(self, request, role_id):
+        """Met à jour un rôle (ex: activation/désactivation)"""
+        role = self.get_object(role_id)
+        if not role:
+            return Response(
+                {'detail': 'Rôle non trouvé.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # On utilise le serializer avec partial=True pour ne mettre à jour que les champs envoyés
+       
+
+        role.est_actif = True 
+        role.save(update_fields=['est_actif'])
+
+            # Optionnel : Ajouter une trace dans ton Journal d'Audit
+        action_type = 'UPDATE'
+        if 'est_actif' in request.data:
+            action_type = 'ACTIVATE' if request.data['est_actif'] else 'DEACTIVATE'
+
+            JournalAudit.objects.create(
+                id_utilisateur=request.user,
+                action=action_type,
+                module='ROLES',
+                type_entite='Role',
+                id_entite=role.id,
+                adresse_ip=self.get_client_ip(request) # Assure-toi que cette fonction est accessible
+            )
+
+            
+        
         return Response({'detail': 'Rôle désactivé avec succès.'})
 
 

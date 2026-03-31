@@ -25,7 +25,7 @@ export const getEnfantsActif = (actifId, params = {}) =>
 export const getHistoriqueActif = (actifId, params = {}) =>
   api.get(`/v1/actifs/${actifId}/historique/`, { params });
 
-export const getArborescenc = (params = {}) =>
+export const getActifsArborescence = (params = {}) =>
   api.get("/v1/actifs/arborescence/", { params });
 
 // ─── Historique statuts ─────────────────────────────────────────
