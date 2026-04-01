@@ -1,4 +1,7 @@
 import hashlib
+from re import search
+from tracemalloc import start
+from urllib import request
 import uuid
 from datetime import datetime, timezone
 
@@ -153,17 +156,28 @@ class MeView(APIView):
 
 class UtilisateurListCreateView(APIView):
     permission_classes = [IsAuthenticated, IsSessionActive]
-
     def get(self, request):
-        """List all users"""
         utilisateurs = Utilisateur.objects.all().order_by('date_creation')
-        
-        # Filter by active status if provided
+    
         est_actif = request.query_params.get('est_actif')
         if est_actif is not None:
             utilisateurs = utilisateurs.filter(est_actif=est_actif.lower() == 'true')
 
-        # Pagination manuelle
+    # ✅ Recherche par nom/prénom/username
+        search = request.query_params.get('search', '').strip()
+        if search:
+            utilisateurs = utilisateurs.filter(
+                Q(nom__icontains=search) |
+                Q(prenom__icontains=search) |
+                Q(nom_utilisateur__icontains=search)
+            )
+
+    # ✅ Retourner tous sans pagination si all=true
+        if request.query_params.get('all') == 'true':
+            serializer = UtilisateurSerializer(utilisateurs, many=True)
+            return Response({'results': serializer.data, 'count': utilisateurs.count()})
+
+    # Pagination manuelle
         page = int(request.query_params.get('page', 1))
         page_size = int(request.query_params.get('page_size', 10))
         total = utilisateurs.count()
@@ -172,7 +186,7 @@ class UtilisateurListCreateView(APIView):
 
         serializer = UtilisateurSerializer(utilisateurs[start:end], many=True)
         return Response({
-            'count': utilisateurs.count(),
+            'count': total,
             'results': serializer.data,
             'page': page,
             'page_size': page_size,
@@ -234,11 +248,14 @@ class UtilisateurDetailView(APIView):
     def patch(self, request, user_id):
         """Update a user"""
         utilisateur = self.get_object(user_id)
+
         if not utilisateur:
             return Response(
                 {'detail': 'Utilisateur non trouvé.'},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+        print("Request data:", request.data)
 
         serializer = UpdateUtilisateurSerializer(
             data=request.data,

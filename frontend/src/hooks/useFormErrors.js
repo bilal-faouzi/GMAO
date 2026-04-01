@@ -32,6 +32,7 @@ export function useFormErrors() {
 
   const setApiErrors = (err) => {
     setErrors(parseApiErrors(err));
+    console.error("API Errors:", parseApiErrors(err));
   };
 
   const clearErrors = () => setErrors({});

@@ -97,8 +97,10 @@ export default function Utilisateurs() {
   const handleEdit = async (e) => {
     e.preventDefault();
     clearErrors();
+    const payload = { ...form };
+    if (!payload.mot_de_passe) delete payload.mot_de_passe;
     try {
-      await updateUtilisateur(selected.id, form);
+      await updateUtilisateur(selected.id, payload);
       setOpenEdit(false);
       fetchUtilisateurs();
     } catch (err) {

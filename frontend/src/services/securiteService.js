@@ -8,7 +8,7 @@ export const createUtilisateur = (data) =>
 export const getUtilisateur = (userId) =>
   api.get(`/auth/utilisateurs/${userId}/`);
 export const updateUtilisateur = (userId, data) =>
-  api.put(`/auth/utilisateurs/${userId}/`, data);
+  api.patch(`/auth/utilisateurs/${userId}/`, data);
 export const deleteUtilisateur = (userId) =>
   api.delete(`/auth/utilisateurs/${userId}/`);
 export const assignRoleToUser = (userId, data) =>

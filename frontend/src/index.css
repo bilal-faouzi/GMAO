@@ -52,7 +52,7 @@ body {
   body { background: var(--bg-base); font-family: 'DM Sans', sans-serif; color: var(--text-primary); -webkit-font-smoothing: antialiased; }
 
   /* page */
-  .page { display: flex; flex-direction: column; gap: 20px; padding: 28px 32px; min-height: 100vh; background: var(--bg-base); }
+  .page { display: flex; flex-direction: column; gap: 20px; padding: 28px 32px; min-height: 100vh; background: var(--background); }
 
   /* header */
   .hdr { display: flex; align-items: flex-start; justify-content: space-between; }

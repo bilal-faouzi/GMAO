@@ -1,5 +1,14 @@
-import { useState, useEffect } from "react";
-import { Users, Plus, Pencil, Trash2, UserPlus, UserMinus } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import {
+  Users,
+  Plus,
+  Pencil,
+  Trash2,
+  UserPlus,
+  UserMinus,
+  Check,
+  ChevronsUpDown,
+} from "lucide-react";
 import {
   getEquipes,
   createEquipe,
@@ -21,6 +30,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -28,6 +50,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { FieldLabel } from "@/components/ui/field";
 import { FieldError, GlobalError } from "@/components/FieldError";
 import { useFormErrors } from "@/hooks/useFormErrors";
+import { cn } from "@/lib/utils";
 
 // ─── RoleBadge ────────────────────────────────────────────────────────────────
 
@@ -56,14 +79,20 @@ function MembresPanel({ equipe, onClose }) {
     niveauRole: "MEMBRE",
   });
   const [utilisateurs, setUtilisateurs] = useState([]);
-
-  // Hook dédié aux erreurs du panel membres
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [openCombo, setOpenCombo] = useState(false);
+  const searchTimer = useRef(null);
   const { errors, setApiErrors, clearErrors } = useFormErrors();
 
   useEffect(() => {
     fetchMembres();
-    getUtilisateurs().then((r) => setUtilisateurs(r.data.results || r.data));
   }, [equipe.id]);
+
+  useEffect(() => {
+    if (!showAdd) return;
+    fetchUsers("");
+  }, [showAdd]);
 
   async function fetchMembres() {
     try {
@@ -75,20 +104,35 @@ function MembresPanel({ equipe, onClose }) {
     }
   }
 
+  async function fetchUsers(q) {
+    setUsersLoading(true);
+    try {
+      const res = await getUtilisateurs({ all: "true", search: q });
+      setUtilisateurs(res.data.results);
+    } finally {
+      setUsersLoading(false);
+    }
+  }
+
+  function handleSearch(q) {
+    setSearch(q);
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => fetchUsers(q), 300);
+  }
+
   async function handleAdd() {
     if (!newMembre.utilisateur) return;
     clearErrors();
     try {
-      const payload = {
+      await addMembre({
         equipe: equipe.id,
-        utilisateur: newMembre.utilisateur, // ← Conversion ici
+        utilisateur: newMembre.utilisateur,
         niveauRole: newMembre.niveauRole,
-      };
-      console.log("Payload pour ajout de membre :", payload);
-      await addMembre(payload);
+      });
       setNewMembre({ utilisateur: "", niveauRole: "MEMBRE" });
-
+      setSearch("");
       fetchMembres();
+      await fetchUsers("");
     } catch (err) {
       setApiErrors(err);
     }
@@ -100,9 +144,16 @@ function MembresPanel({ equipe, onClose }) {
     fetchMembres();
   }
 
+  const usersDisponibles = utilisateurs.filter(
+    (u) => !membres.some((m) => m.utilisateur === u.id),
+  );
+
+  const selectedUser = utilisateurs.find((u) => u.id === newMembre.utilisateur);
+
   return (
     <Modal title={`Membres — ${equipe.libelle}`} onClose={onClose}>
-      <div className="space-y-3 max-h-64 overflow-y-auto mb-4">
+      {/* ── Liste membres actuels ── */}
+      <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
         {loading ? (
           <p className="text-gray-400 text-sm text-center py-4">
             Chargement...
@@ -128,30 +179,78 @@ function MembresPanel({ equipe, onClose }) {
         )}
       </div>
 
+      {/* ── Formulaire ajout ── */}
       {showAdd ? (
         <div className="space-y-3 border-t border-white/10 pt-4">
           <GlobalError errors={errors} />
 
-          <Select
-            value={newMembre.utilisateur}
-            onValueChange={(v) =>
-              setNewMembre({ ...newMembre, utilisateur: v })
-            }>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Sélectionner un utilisateur" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {utilisateurs.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.prenom} {u.nom}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+          {/* Combobox utilisateur avec recherche */}
+          <Popover open={openCombo} onOpenChange={setOpenCombo}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="customOutline"
+                role="combobox"
+                className="w-full justify-between font-normal">
+                {selectedUser
+                  ? `${selectedUser.prenom} ${selectedUser.nom}`
+                  : "Sélectionner un utilisateur..."}
+                <ChevronsUpDown size={14} className="ml-2 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-[var(--radix-popover-trigger-width)] p-1 bg-[#1c1c1f] border border-white/10 rounded-md shadow-xl"
+              align="start">
+              <Command shouldFilter={false} className="bg-transparent">
+                <CommandInput
+                  placeholder="Rechercher..."
+                  value={search}
+                  onValueChange={handleSearch}
+                  className="text-sm text-white border-b border-white/10 px-3 py-2 placeholder:text-gray-500 bg-transparent outline-none"
+                />
+                <CommandList className="max-h-52 overflow-y-auto">
+                  {usersLoading ? (
+                    <div className="py-4 text-center text-sm text-gray-500">
+                      Chargement...
+                    </div>
+                  ) : usersDisponibles.length === 0 ? (
+                    <CommandEmpty>Aucun résultat</CommandEmpty>
+                  ) : (
+                    <CommandGroup>
+                      {usersDisponibles.map((u) => (
+                        <CommandItem
+                          key={u.id}
+                          value={u.id}
+                          onSelect={() => {
+                            setNewMembre({ ...newMembre, utilisateur: u.id });
+                            setOpenCombo(false);
+                          }}
+                          className="flex items-center px-3 py-2 text-sm cursor-pointer rounded-sm text-white hover:bg-white/10 data-[selected=true]:bg-white/10">
+                          <Check
+                            size={14}
+                            className={cn(
+                              "mr-2 flex-shrink-0",
+                              newMembre.utilisateur === u.id
+                                ? "opacity-100"
+                                : "opacity-0",
+                            )}
+                          />
+                          <span>
+                            {u.prenom} {u.nom}
+                          </span>
+                          <span className="ml-2 text-xs text-gray-500">
+                            {u.nom_utilisateur}
+                          </span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  )}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
           <FieldError errors={errors} field="utilisateur" />
 
+          {/* Select rôle */}
           <Select
             value={newMembre.niveauRole}
             onValueChange={(v) =>
@@ -178,6 +277,9 @@ function MembresPanel({ equipe, onClose }) {
               onClick={() => {
                 setShowAdd(false);
                 clearErrors();
+                setSearch("");
+                setUtilisateurs([]);
+                setNewMembre({ utilisateur: "", niveauRole: "MEMBRE" });
               }}
               variant="customOutline">
               Annuler
@@ -204,8 +306,6 @@ function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
     estActif: equipe?.estActif ?? true,
   });
   const [saving, setSaving] = useState(false);
-
-  // Hook dédié aux erreurs du modal équipe
   const { errors, setApiErrors, clearErrors, inputCls } = useFormErrors();
 
   async function handleSubmit(e) {
@@ -372,12 +472,10 @@ export default function Equipes() {
           </p>
         </div>
         <Button onClick={() => setModalEquipe("new")} variant="custom">
-          <Plus size={15} />
-          Nouvelle équipe
+          <Plus size={15} /> Nouvelle équipe
         </Button>
       </div>
 
-      {/* Filtre site */}
       <div className="flex gap-3">
         <Select value={filterSite} onValueChange={setFilterSite}>
           <SelectTrigger className="min-w-[180px]">
@@ -396,7 +494,6 @@ export default function Equipes() {
         </Select>
       </div>
 
-      {/* Tableau */}
       <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
