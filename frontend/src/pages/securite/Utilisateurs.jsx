@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Pencil, Shield, Power, PowerOff } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Pencil,
+  Shield,
+  Power,
+  PowerOff,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 import {
   createUtilisateur,
@@ -23,6 +32,8 @@ const labelCls = "text-xs text-gray-400 mb-1 block";
 export default function Utilisateurs() {
   const [utilisateurs, setUtilisateurs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
@@ -40,10 +51,14 @@ export default function Utilisateurs() {
 
   const { errors, setApiErrors, clearErrors, inputCls } = useFormErrors();
 
-  const fetchUtilisateurs = async () => {
+  const fetchUtilisateurs = async (currentPage = page) => {
     try {
-      const res = await getUtilisateurs();
+      const res = await getUtilisateurs({
+        page: currentPage,
+      });
       setUtilisateurs(res.data.results || res.data);
+      setTotalPages(res.data.total_pages || 1);
+      setPage(res.data.page || 1);
     } catch (err) {
       console.error(err);
     } finally {
@@ -58,7 +73,7 @@ export default function Utilisateurs() {
 
   useEffect(() => {
     fetchUtilisateurs();
-  }, []);
+  }, [page]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -173,7 +188,10 @@ export default function Utilisateurs() {
           placeholder="Rechercher un utilisateur..."
           className="pl-9"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
         />
       </div>
 
@@ -287,7 +305,39 @@ export default function Utilisateurs() {
             )}
           </tbody>
         </table>
+        {/* Pagination */}
       </div>
+      {totalPages > 1 && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 8,
+            marginTop: 12,
+          }}>
+          <Button
+            className="btn btn-outline btn-icon"
+            disabled={page === 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}>
+            <ChevronLeft size={16} />
+          </Button>
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              fontSize: 13,
+              color: "var(--text-secondary)",
+            }}>
+            {page} / {totalPages}
+          </span>
+          <Button
+            className="btn btn-outline btn-icon"
+            disabled={page === totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+            <ChevronRight size={16} />
+          </Button>
+        </div>
+      )}
 
       {/* ── Modal Création ── */}
       {openCreate && (

@@ -131,7 +131,6 @@ class EquipeUtilisateurSerializer(serializers.ModelSerializer):
 # ─── AppartenanceOrganisationnelle ────────────────────────────────────────────
 
 class AppartenanceOrganisationnelleSerializer(serializers.ModelSerializer):
-    # ← pk_field=UUIDField() dit à DRF d'accepter/retourner des UUIDs
     utilisateur = serializers.PrimaryKeyRelatedField(
         queryset=Utilisateur.objects.all(),
         pk_field=serializers.UUIDField()

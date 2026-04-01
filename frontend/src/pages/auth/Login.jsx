@@ -29,8 +29,8 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gray-300  flex items-center justify-center p-4">
+      <div className="w-full bg-slate-50 shadow-lg p-6 rounded-lg max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
@@ -43,7 +43,7 @@ export default function Login() {
         </div>
 
         {/* Card */}
-        <Card className="shadow-lg border-0">
+        <Card className="shadow-lg border ">
           <CardHeader className="pb-4">
             <CardTitle className="text-xl text-slate-800">Connexion</CardTitle>
           </CardHeader>
@@ -55,6 +55,7 @@ export default function Login() {
                 </label>
                 <Input
                   placeholder="Entrez votre nom d'utilisateur"
+                  className="text-black"
                   value={form.nom_utilisateur}
                   onChange={(e) =>
                     setForm({ ...form, nom_utilisateur: e.target.value })
@@ -70,6 +71,7 @@ export default function Login() {
                 <Input
                   type="password"
                   placeholder="Entrez votre mot de passe"
+                  className="text-black"
                   value={form.mot_de_passe}
                   onChange={(e) =>
                     setForm({ ...form, mot_de_passe: e.target.value })

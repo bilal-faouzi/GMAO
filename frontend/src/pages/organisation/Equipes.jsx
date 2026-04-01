@@ -81,13 +81,13 @@ function MembresPanel({ equipe, onClose }) {
     try {
       const payload = {
         equipe: equipe.id,
-        utilisateur: parseInt(newMembre.utilisateur, 10), // ← Conversion ici
+        utilisateur: newMembre.utilisateur, // ← Conversion ici
         niveauRole: newMembre.niveauRole,
       };
       console.log("Payload pour ajout de membre :", payload);
       await addMembre(payload);
       setNewMembre({ utilisateur: "", niveauRole: "MEMBRE" });
-      setShowAdd(false);
+
       fetchMembres();
     } catch (err) {
       setApiErrors(err);
@@ -451,7 +451,7 @@ export default function Equipes() {
                   <td className="px-4 py-3">
                     <Button
                       onClick={() => setPanelMembres(eq)}
-                      className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 transition-colors">
+                      className="flex items-center gap-1.5 text-blue-400 hover:bg-blue-300/10 hover:text-blue-600 transition-colors">
                       <Users size={13} />
                       <span>{eq.membres_count ?? 0}</span>
                     </Button>
@@ -495,7 +495,10 @@ export default function Equipes() {
       {panelMembres && (
         <MembresPanel
           equipe={panelMembres}
-          onClose={() => setPanelMembres(null)}
+          onClose={() => {
+            setPanelMembres(null);
+            fetchAll();
+          }}
         />
       )}
     </div>

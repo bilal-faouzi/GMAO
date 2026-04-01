@@ -1,7 +1,7 @@
 import api from "./api";
 
 // ─── Utilisateurs ───────────────────────────────────────────────
-export const getUtilisateurs = (params = {}) =>
+export const getUtilisateurs = (params) =>
   api.get("/auth/utilisateurs/", { params });
 export const createUtilisateur = (data) =>
   api.post("/auth/utilisateurs/", data);

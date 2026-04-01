@@ -175,17 +175,19 @@ export default function Permissions() {
                 {perms.map((p) => (
                   <div
                     key={p.id}
-                    className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                    <div className="flex items-center gap-3">
+                    className="flex items-center justify-between p-3 gap-3 bg-white/5 rounded-lg">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
                       <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${actionColor(p.action)}`}>
+                        className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${actionColor(p.action)}`}>
                         {p.action}
                       </span>
-                      <span className="text-sm font-mono text-gray-300">
+
+                      <span className="text-sm truncate font-mono text-gray-300">
                         {p.code}
                       </span>
                     </div>
-                    <span className="text-xs text-gray-500 border border-white/10 px-2 py-0.5 rounded-full">
+
+                    <span className="shrink-0 text-xs text-gray-500 border border-white/10 px-2 py-0.5 rounded-full">
                       {p.ressource}
                     </span>
                   </div>

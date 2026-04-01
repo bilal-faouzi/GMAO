@@ -163,10 +163,20 @@ class UtilisateurListCreateView(APIView):
         if est_actif is not None:
             utilisateurs = utilisateurs.filter(est_actif=est_actif.lower() == 'true')
 
-        serializer = UtilisateurSerializer(utilisateurs, many=True)
+        # Pagination manuelle
+        page = int(request.query_params.get('page', 1))
+        page_size = int(request.query_params.get('page_size', 10))
+        total = utilisateurs.count()
+        start = (page - 1) * page_size
+        end = start + page_size
+
+        serializer = UtilisateurSerializer(utilisateurs[start:end], many=True)
         return Response({
             'count': utilisateurs.count(),
-            'results': serializer.data
+            'results': serializer.data,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': (total + page_size - 1) // page_size,
         })
 
     def post(self, request):
@@ -622,7 +632,7 @@ class SessionListView(APIView):
     permission_classes = [IsAuthenticated, IsSessionActive]
 
     def get(self, request):
-        sessions = SessionActive.objects.all().order_by('-date_creation')
+        sessions = SessionActive.objects.filter(est_active=True).order_by('-date_creation')
         data = []
         for s in sessions:
             data.append({
