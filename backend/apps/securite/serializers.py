@@ -1,3 +1,4 @@
+# securite/serializers.py
 from rest_framework import serializers
 from .models import JournalAudit, Utilisateur, Role, Permission, UtilisateurRole, RolePermission
 
@@ -47,7 +48,8 @@ class UtilisateurSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.Serializer):
     nom_utilisateur = serializers.CharField()
     mot_de_passe = serializers.CharField(write_only=True)
-    
+
+
 class CreateUtilisateurSerializer(serializers.Serializer):
     nom_utilisateur = serializers.CharField(max_length=150)
     email = serializers.EmailField()
@@ -57,12 +59,24 @@ class CreateUtilisateurSerializer(serializers.Serializer):
 
     def validate_nom_utilisateur(self, value):
         if Utilisateur.objects.filter(nom_utilisateur=value).exists():
-            raise serializers.ValidationError("Ce nom d'utilisateur existe déjà.")
+            raise serializers.ValidationError(
+                "Ce nom d'utilisateur est déjà pris. Choisissez un autre identifiant."
+            )
         return value
 
     def validate_email(self, value):
         if Utilisateur.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Cet email existe déjà.")
+            raise serializers.ValidationError(
+                "Un compte existe déjà avec cette adresse email."
+            )
+        return value
+
+    def validate_mot_de_passe(self, value):
+        # ← NOUVEAU : règles de complexité minimales
+        if value.isdigit():
+            raise serializers.ValidationError(
+                "Le mot de passe ne peut pas être composé uniquement de chiffres."
+            )
         return value
 
 
@@ -75,18 +89,32 @@ class UpdateUtilisateurSerializer(serializers.Serializer):
     def validate_email(self, value):
         user_id = self.context.get('user_id')
         if Utilisateur.objects.filter(email=value).exclude(id=user_id).exists():
-            raise serializers.ValidationError("Cet email est déjà utilisé.")
+            raise serializers.ValidationError(
+                "Cette adresse email est déjà utilisée par un autre compte."
+            )
         return value
-    
+
+
 class CreateRoleSerializer(serializers.Serializer):
     code = serializers.CharField(max_length=50)
     libelle = serializers.CharField(max_length=150)
     niveau = serializers.IntegerField(min_value=1, max_value=10)
 
     def validate_code(self, value):
+        value = value.upper()
         if Role.objects.filter(code=value).exists():
-            raise serializers.ValidationError("Ce code de rôle existe déjà.")
-        return value.upper()
+            raise serializers.ValidationError(
+                f"Le code rôle '{value}' existe déjà. "
+                "Utilisez un code unique (ex: RESP_TECH_RABAT)."
+            )
+        return value
+
+    def validate_niveau(self, value):
+        # ← NOUVEAU : avertir si le niveau est déjà utilisé
+        # (pas un blocage dur, juste une info utile)
+        if Role.objects.filter(niveau=value, est_actif=True).exists():
+            pass  # On laisse passer, mais la vue peut logger un warning
+        return value
 
 
 class CreatePermissionSerializer(serializers.Serializer):
@@ -96,8 +124,21 @@ class CreatePermissionSerializer(serializers.Serializer):
     ressource = serializers.CharField(max_length=100)
 
     def validate_code(self, value):
+        value = value.upper()
         if Permission.objects.filter(code=value).exists():
-            raise serializers.ValidationError("Ce code de permission existe déjà.")
+            raise serializers.ValidationError(
+                f"La permission '{value}' existe déjà dans le système."
+            )
+        return value
+
+    def validate_action(self, value):
+        # ← NOUVEAU : actions autorisées uniquement
+        actions_valides = {'CREER', 'LIRE', 'MODIFIER', 'SUPPRIMER', 'VALIDER', 'CLOTURER'}
+        if value.upper() not in actions_valides:
+            raise serializers.ValidationError(
+                f"Action '{value}' non reconnue. "
+                f"Valeurs autorisées : {', '.join(sorted(actions_valides))}."
+            )
         return value.upper()
 
 
@@ -105,19 +146,73 @@ class AssignRoleSerializer(serializers.Serializer):
     id_role = serializers.UUIDField()
 
     def validate_id_role(self, value):
-        if not Role.objects.filter(id=value, est_actif=True).exists():
-            raise serializers.ValidationError("Rôle non trouvé ou inactif.")
+        try:
+            role = Role.objects.get(id=value)
+        except Role.DoesNotExist:
+            raise serializers.ValidationError(
+                "Ce rôle n'existe pas dans le système."
+            )
+        if not role.est_actif:
+            raise serializers.ValidationError(
+                f"Le rôle '{role.libelle}' est désactivé et ne peut pas être attribué."
+            )
         return value
+
+    def validate(self, data):
+        # ← NOUVEAU : vérifier que l'utilisateur n'a pas déjà ce rôle
+        utilisateur_id = self.context.get('utilisateur_id')
+        id_role = data.get('id_role')
+
+        if utilisateur_id and id_role:
+            deja_attribue = UtilisateurRole.objects.filter(
+                id_utilisateur=utilisateur_id,
+                id_role=id_role
+            ).exists()
+            if deja_attribue:
+                role = Role.objects.get(id=id_role)
+                raise serializers.ValidationError(
+                    f"L'utilisateur possède déjà le rôle '{role.libelle}'. "
+                    "Chaque rôle ne peut être attribué qu'une seule fois."
+                )
+        return data
 
 
 class AssignPermissionSerializer(serializers.Serializer):
     id_permission = serializers.UUIDField()
 
     def validate_id_permission(self, value):
-        if not Permission.objects.filter(id=value, est_actif=True).exists():
-            raise serializers.ValidationError("Permission non trouvée ou inactive.")
+        try:
+            permission = Permission.objects.get(id=value)
+        except Permission.DoesNotExist:
+            raise serializers.ValidationError(
+                "Cette permission n'existe pas dans le système."
+            )
+        if not permission.est_actif:
+            raise serializers.ValidationError(
+                f"La permission '{permission.code}' est désactivée "
+                "et ne peut pas être attribuée."
+            )
         return value
-    
+
+    def validate(self, data):
+        # ← NOUVEAU : vérifier que le rôle n'a pas déjà cette permission
+        role_id = self.context.get('role_id')
+        id_permission = data.get('id_permission')
+
+        if role_id and id_permission:
+            deja_attribuee = RolePermission.objects.filter(
+                id_role=role_id,
+                id_permission=id_permission
+            ).exists()
+            if deja_attribuee:
+                perm = Permission.objects.get(id=id_permission)
+                raise serializers.ValidationError(
+                    f"Le rôle possède déjà la permission '{perm.code}'. "
+                    "Chaque permission ne peut être attribuée qu'une seule fois par rôle."
+                )
+        return data
+
+
 class JournalAuditSerializer(serializers.ModelSerializer):
     utilisateur = serializers.SerializerMethodField()
 

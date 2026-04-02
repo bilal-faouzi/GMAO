@@ -73,6 +73,9 @@ class UtilisateurRole(models.Model):
     class Meta:
         db_table = 'utilisateur_role'
         unique_together = ('id_utilisateur', 'id_role')
+        constraints = [
+            models.UniqueConstraint(fields=['id_utilisateur', 'id_role'], name='unique_user_role')
+        ]
 
 
 class RolePermission(models.Model):
@@ -88,6 +91,10 @@ class RolePermission(models.Model):
     class Meta:
         db_table = 'role_permission'
         unique_together = ('id_role', 'id_permission')
+        constraints = [
+            models.UniqueConstraint(fields=['id_role', 'id_permission'], name='unique_role_permission')
+        ]
+
 
 
 class SessionActive(models.Model):

@@ -56,9 +56,9 @@ import { cn } from "@/lib/utils";
 
 function RoleBadge({ role }) {
   const styles = {
-    CHEF: "bg-amber-500/10 text-amber-400",
-    MEMBRE: "bg-blue-500/10 text-blue-400",
-    REMPLACANT: "bg-gray-500/10 text-gray-400",
+    CHEF: "bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400",
+    MEMBRE: "bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400",
+    REMPLACANT: "bg-gray-100 dark:bg-gray-500/10 text-text-secondary",
   };
   return (
     <span
@@ -155,23 +155,26 @@ function MembresPanel({ equipe, onClose }) {
       {/* ── Liste membres actuels ── */}
       <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
         {loading ? (
-          <p className="text-gray-400 text-sm text-center py-4">
+          <p className="text-text-secondary text-sm text-center py-4">
             Chargement...
           </p>
         ) : membres.length === 0 ? (
-          <p className="text-gray-500 text-sm text-center py-4">Aucun membre</p>
+          <p className="text-text-muted text-sm text-center py-4">
+            Aucun membre
+          </p>
         ) : (
           membres.map((m) => (
             <div
               key={m.id}
-              className="flex items-center justify-between p-2 rounded-lg bg-white/5">
+              className="flex items-center justify-between p-2 mx-2 my-1 bg-slate-100 shadow-md hover:ring dark:bg-neutral-900/50 inset-shadow-sm rounded-sm bg-surface">
               <div>
-                <p className="text-sm text-white">{m.utilisateur_nom}</p>
+                <p className="text-sm text-text">{m.utilisateur_nom}</p>
                 <RoleBadge role={m.niveauRole} />
               </div>
               <Button
                 onClick={() => handleRemove(m.id)}
-                className="p-1.5 rounded hover:bg-red-500/10 text-gray-500 hover:text-red-400 transition-colors">
+                variant="ghost"
+                className=" rounded hover:bg-red-100 dark:hover:bg-red-500/10 text-text-muted hover:text-danger transition-colors">
                 <UserMinus size={14} />
               </Button>
             </div>
@@ -181,7 +184,7 @@ function MembresPanel({ equipe, onClose }) {
 
       {/* ── Formulaire ajout ── */}
       {showAdd ? (
-        <div className="space-y-3 border-t border-white/10 pt-4">
+        <div className="space-y-3 border-t border-border pt-4">
           <GlobalError errors={errors} />
 
           {/* Combobox utilisateur avec recherche */}
@@ -198,18 +201,18 @@ function MembresPanel({ equipe, onClose }) {
               </Button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-[var(--radix-popover-trigger-width)] p-1 bg-[#1c1c1f] border border-white/10 rounded-md shadow-xl"
+              className="w-[var(--radix-popover-trigger-width)] p-1 bg-elevated border border-border rounded-md shadow-xl"
               align="start">
               <Command shouldFilter={false} className="bg-transparent">
                 <CommandInput
                   placeholder="Rechercher..."
                   value={search}
                   onValueChange={handleSearch}
-                  className="text-sm text-white border-b border-white/10 px-3 py-2 placeholder:text-gray-500 bg-transparent outline-none"
+                  className="text-sm text-text border-b border-border px-3 py-2 placeholder:text-text-muted bg-transparent outline-none"
                 />
                 <CommandList className="max-h-52 overflow-y-auto">
                   {usersLoading ? (
-                    <div className="py-4 text-center text-sm text-gray-500">
+                    <div className="py-4 text-center text-sm text-text-muted">
                       Chargement...
                     </div>
                   ) : usersDisponibles.length === 0 ? (
@@ -224,7 +227,7 @@ function MembresPanel({ equipe, onClose }) {
                             setNewMembre({ ...newMembre, utilisateur: u.id });
                             setOpenCombo(false);
                           }}
-                          className="flex items-center px-3 py-2 text-sm cursor-pointer rounded-sm text-white hover:bg-white/10 data-[selected=true]:bg-white/10">
+                          className="flex items-center px-3 py-2 text-sm cursor-pointer rounded-sm text-text hover:bg-hover data-[selected=true]:bg-hover">
                           <Check
                             size={14}
                             className={cn(
@@ -237,7 +240,7 @@ function MembresPanel({ equipe, onClose }) {
                           <span>
                             {u.prenom} {u.nom}
                           </span>
-                          <span className="ml-2 text-xs text-gray-500">
+                          <span className="ml-2 text-xs text-text-muted">
                             {u.nom_utilisateur}
                           </span>
                         </CommandItem>
@@ -332,7 +335,9 @@ function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
         <GlobalError errors={errors} />
 
         <div>
-          <Label className="text-xs text-gray-400 mb-1 block">Libellé *</Label>
+          <Label className="text-xs text-text-secondary mb-1 block">
+            Libellé *
+          </Label>
           <Input
             className={inputCls("libelle")}
             value={form.libelle}
@@ -344,7 +349,9 @@ function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
         </div>
 
         <div>
-          <Label className="text-xs text-gray-400 mb-1 block">Site *</Label>
+          <Label className="text-xs text-text-secondary mb-1 block">
+            Site *
+          </Label>
           <Select
             value={form.site}
             onValueChange={(v) => setForm({ ...form, site: v })}
@@ -366,7 +373,9 @@ function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
         </div>
 
         <div>
-          <Label className="text-xs text-gray-400 mb-1 block">Spécialité</Label>
+          <Label className="text-xs text-text-secondary mb-1 block">
+            Spécialité
+          </Label>
           <Select
             value={form.specialite || ""}
             onValueChange={(v) =>
@@ -466,8 +475,8 @@ export default function Equipes() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Équipes</h1>
-          <p className="text-gray-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-text">Équipes</h1>
+          <p className="text-text-secondary text-sm mt-1">
             {equipes.length} équipe(s) au total
           </p>
         </div>
@@ -494,10 +503,10 @@ export default function Equipes() {
         </Select>
       </div>
 
-      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+      <div className="bg-surface border border-border rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-white/10">
+            <tr className="border-b border-border">
               {[
                 "Équipe",
                 "Site",
@@ -508,54 +517,59 @@ export default function Equipes() {
               ].map((h) => (
                 <th
                   key={h}
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                   {h}
                 </th>
               ))}
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-4 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className="divide-y divide-border-subtle">
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                <td
+                  colSpan={7}
+                  className="px-4 py-8 text-center text-text-muted">
                   Chargement...
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                <td
+                  colSpan={7}
+                  className="px-4 py-8 text-center text-text-muted">
                   Aucune équipe
                 </td>
               </tr>
             ) : (
               filtered.map((eq) => (
-                <tr key={eq.id} className="hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-3 font-medium text-white">
+                <tr key={eq.id} className="hover:bg-surface transition-colors">
+                  <td className="px-4 py-3 font-medium text-text">
                     {eq.libelle}
                   </td>
-                  <td className="px-4 py-3 text-gray-400">
+                  <td className="px-4 py-3 text-text-secondary">
                     {eq.site_libelle || "—"}
                   </td>
-                  <td className="px-4 py-3 text-gray-400">
+                  <td className="px-4 py-3 text-text-secondary">
                     {eq.specialite_libelle || "—"}
                   </td>
-                  <td className="px-4 py-3 text-gray-400">
+                  <td className="px-4 py-3 text-text-secondary">
                     {eq.chef_nom || "—"}
                   </td>
                   <td className="px-4 py-3">
                     <Button
                       onClick={() => setPanelMembres(eq)}
-                      className="flex items-center gap-1.5 text-blue-400 hover:bg-blue-300/10 hover:text-blue-600 transition-colors">
+                      variant="ghost"
+                      className="flex items-center gap-1.5 text-blue-700 dark:text-blue-400 dark:hover:bg-blue-300/10 hover:bg-blue-600/10 transition-colors">
                       <Users size={13} />
                       <span>{eq.membres_count ?? 0}</span>
                     </Button>
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${eq.estActif ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+                      className={`text-xs px-2 py-0.5 rounded-full ${eq.estActif ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400"}`}>
                       {eq.estActif ? "Actif" : "Inactif"}
                     </span>
                   </td>
@@ -563,12 +577,14 @@ export default function Equipes() {
                     <div className="flex items-center justify-center gap-2">
                       <Button
                         onClick={() => setModalEquipe(eq)}
-                        className="rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+                        variant="ghost"
+                        className="rounded hover:bg-hover text-text-secondary hover:text-text transition-colors">
                         <Pencil size={13} />
                       </Button>
                       <Button
                         onClick={() => handleDelete(eq)}
-                        className="rounded hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors">
+                        variant="ghost"
+                        className="rounded hover:bg-red-100 dark:hover:bg-red-500/10 text-text-secondary hover:text-danger transition-colors">
                         <Trash2 size={13} />
                       </Button>
                     </div>

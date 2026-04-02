@@ -29,33 +29,32 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-300  flex items-center justify-center p-4">
-      <div className="w-full bg-slate-50 shadow-lg p-6 rounded-lg max-w-md">
+    <div className="min-h-screen bg-bg flex items-center justify-center p-4 transition-colors duration-200">
+      <div className="w-full bg-surface shadow-lg p-6 rounded-lg max-w-md border border-border">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-4">
             <span className="text-white text-2xl font-bold">G</span>
           </div>
-          <h1 className="text-3xl font-bold text-slate-900">GMAO</h1>
-          <p className="text-slate-500 mt-1">
+          <h1 className="text-3xl font-bold text-text">GMAO</h1>
+          <p className="text-text-muted mt-1">
             Gestion de Maintenance Assistée par Ordinateur
           </p>
         </div>
 
         {/* Card */}
-        <Card className="shadow-lg border ">
+        <Card className="shadow-lg border border-border bg-surface">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl text-slate-800">Connexion</CardTitle>
+            <CardTitle className="text-xl text-text">Connexion</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
+                <label className="text-sm font-medium text-text-secondary">
                   Nom d'utilisateur
                 </label>
                 <Input
                   placeholder="Entrez votre nom d'utilisateur"
-                  className="text-black"
                   value={form.nom_utilisateur}
                   onChange={(e) =>
                     setForm({ ...form, nom_utilisateur: e.target.value })
@@ -65,13 +64,12 @@ export default function Login() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
+                <label className="text-sm font-medium text-text-secondary">
                   Mot de passe
                 </label>
                 <Input
                   type="password"
                   placeholder="Entrez votre mot de passe"
-                  className="text-black"
                   value={form.mot_de_passe}
                   onChange={(e) =>
                     setForm({ ...form, mot_de_passe: e.target.value })
@@ -81,14 +79,15 @@ export default function Login() {
               </div>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-3 rounded-lg">
+                <div className="bg-danger-soft border border-danger/30 text-danger text-sm p-3 rounded-lg">
                   {error}
                 </div>
               )}
 
               <Button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full"
+                variant="custom"
                 disabled={loading}>
                 {loading ? "Connexion..." : "Se connecter"}
               </Button>
@@ -96,7 +95,7 @@ export default function Login() {
           </CardContent>
         </Card>
 
-        <p className="text-center text-slate-400 text-sm mt-6">
+        <p className="text-center text-text-muted text-sm mt-6">
           GMAO © 2026 — B. FAOUZI
         </p>
       </div>

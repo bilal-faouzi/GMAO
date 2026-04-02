@@ -1,3 +1,4 @@
+# organisation/serializers.py
 from rest_framework import serializers
 from .models import (
     Societe, Site, Secteur, Unite,
@@ -5,6 +6,7 @@ from .models import (
     AppartenanceOrganisationnelle
 )
 from apps.securite.models import Utilisateur
+
 
 class SpecialiteSerializer(serializers.ModelSerializer):
     class Meta:
@@ -127,6 +129,66 @@ class EquipeUtilisateurSerializer(serializers.ModelSerializer):
             obj.utilisateur, 'nom_utilisateur', str(obj.utilisateur)
         )
 
+    def validate_equipe(self, equipe):
+        # ← NOUVEAU : l'équipe doit être active
+        if not equipe.estActif:
+            raise serializers.ValidationError(
+                f"L'équipe '{equipe.libelle}' est désactivée. "
+                "Impossible d'y affecter un technicien."
+            )
+        return equipe
+
+    def validate_utilisateur(self, utilisateur):
+        # ← NOUVEAU : l'utilisateur doit être actif
+        if not utilisateur.est_actif:
+            raise serializers.ValidationError(
+                f"Le compte de '{utilisateur.nom_utilisateur}' est désactivé. "
+                "Réactivez-le avant de l'affecter à une équipe."
+            )
+        return utilisateur
+
+    def validate(self, data):
+        utilisateur = data.get('utilisateur')
+        est_actif   = data.get('estActif', True)
+
+        if utilisateur and est_actif:
+            # ← NOUVEAU : un technicien ne peut être actif que dans une seule équipe
+            qs = EquipeUtilisateur.objects.filter(
+                utilisateur=utilisateur,
+                estActif=True
+            )
+            # En cas de modification (PATCH/PUT), on exclut l'instance courante
+            if self.instance:
+                qs = qs.exclude(pk=self.instance.pk)
+
+            if qs.exists():
+                equipe_actuelle = qs.first().equipe
+                raise serializers.ValidationError(
+                    f"{utilisateur.prenom} {utilisateur.nom} est déjà membre actif "
+                    f"de l'équipe '{equipe_actuelle.libelle}'. "
+                    "Pour le muter, désactivez d'abord son appartenance actuelle "
+                    "(estActif=false), puis créez une nouvelle ligne."
+                )
+
+        # ← NOUVEAU : vérifier le doublon (même user, même équipe)
+        equipe      = data.get('equipe')
+        if utilisateur and equipe:
+            qs_doublon = EquipeUtilisateur.objects.filter(
+                utilisateur=utilisateur,
+                equipe=equipe
+            )
+            if self.instance:
+                qs_doublon = qs_doublon.exclude(pk=self.instance.pk)
+
+            if qs_doublon.exists():
+                raise serializers.ValidationError(
+                    f"{utilisateur.prenom} {utilisateur.nom} appartient déjà "
+                    f"à l'équipe '{equipe.libelle}' (ligne existante). "
+                    "Réactivez l'appartenance existante au lieu d'en créer une nouvelle."
+                )
+
+        return data
+
 
 # ─── AppartenanceOrganisationnelle ────────────────────────────────────────────
 
@@ -154,3 +216,66 @@ class AppartenanceOrganisationnelleSerializer(serializers.ModelSerializer):
         prenom = getattr(obj.utilisateur, 'prenom', '') or ''
         nom    = getattr(obj.utilisateur, 'nom', '')    or ''
         return f"{prenom} {nom}".strip() or str(obj.utilisateur)
+
+    def validate(self, data):
+        utilisateur  = data.get('utilisateur')
+        est_principale = data.get('estPrincipale', False)
+        site         = data.get('site')
+        societe      = data.get('societe')
+
+        # ← NOUVEAU : un seul rattachement principal par utilisateur
+        if est_principale and utilisateur:
+            qs = AppartenanceOrganisationnelle.objects.filter(
+                utilisateur=utilisateur,
+                estPrincipale=True
+            )
+            if self.instance:
+                qs = qs.exclude(pk=self.instance.pk)
+
+            if qs.exists():
+                raise serializers.ValidationError({
+                    'estPrincipale': (
+                        f"{utilisateur.prenom} {utilisateur.nom} a déjà un rattachement "
+                        "principal. Passez l'ancien à estPrincipale=false avant d'en "
+                        "définir un nouveau."
+                    )
+                })
+
+        # ← NOUVEAU : doublon exact (même user + même site)
+        if utilisateur and site:
+            qs_doublon = AppartenanceOrganisationnelle.objects.filter(
+                utilisateur=utilisateur,
+                site=site
+            )
+            if self.instance:
+                qs_doublon = qs_doublon.exclude(pk=self.instance.pk)
+
+            if qs_doublon.exists():
+                raise serializers.ValidationError(
+                    f"{utilisateur.prenom} {utilisateur.nom} est déjà rattaché "
+                    f"au site '{site.libelle}'. "
+                    "Modifiez l'appartenance existante plutôt que d'en créer une nouvelle."
+                )
+
+        # ← NOUVEAU : cohérence hiérarchique — le secteur doit appartenir au site
+        secteur = data.get('secteur')
+        if secteur and site and secteur.site_id != site.id:
+            raise serializers.ValidationError({
+                'secteur': (
+                    f"Le secteur '{secteur.libelle}' n'appartient pas "
+                    f"au site '{site.libelle}'. "
+                    "Vérifiez la cohérence de la hiérarchie."
+                )
+            })
+
+        # ← NOUVEAU : cohérence hiérarchique — l'unité doit appartenir au secteur
+        unite = data.get('unite')
+        if unite and secteur and unite.secteur_id != secteur.id:
+            raise serializers.ValidationError({
+                'unite': (
+                    f"L'unité '{unite.libelle}' n'appartient pas "
+                    f"au secteur '{secteur.libelle}'."
+                )
+            })
+
+        return data

@@ -18,21 +18,21 @@ function TreeNode({ node, level = 0, icon: Icon, color }) {
   const hasChildren = children.length > 0;
 
   const icons = {
-    0: { Icon: Building2, color: "text-blue-400", bg: "bg-blue-500/10" },
-    1: { Icon: MapPin, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-    2: { Icon: Grid3x3, color: "text-violet-400", bg: "bg-violet-500/10" },
-    3: { Icon: Factory, color: "text-amber-400", bg: "bg-amber-500/10" },
+    0: { Icon: Building2, color: "text-blue-700 dark:text-blue-400", bg: "bg-blue-100 dark:bg-blue-500/10" },
+    1: { Icon: MapPin, color: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-100 dark:bg-emerald-500/10" },
+    2: { Icon: Grid3x3, color: "text-violet-700 dark:text-violet-400", bg: "bg-violet-100 dark:bg-violet-500/10" },
+    3: { Icon: Factory, color: "text-amber-700 dark:text-amber-400", bg: "bg-amber-100 dark:bg-amber-500/10" },
   };
   const { Icon: NodeIcon, color: nodeColor, bg } = icons[level] || icons[3];
 
   return (
     <div className="select-none">
       <div
-        className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-white/5 transition-colors ${level === 0 ? "mb-1" : ""}`}
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-surface transition-colors ${level === 0 ? "mb-1" : ""}`}
         style={{ paddingLeft: `${level * 20 + 12}px` }}
         onClick={() => hasChildren && setOpen(!open)}>
         {hasChildren ? (
-          <span className="text-gray-500 w-4">
+          <span className="text-text-muted w-4">
             {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </span>
         ) : (
@@ -43,14 +43,14 @@ function TreeNode({ node, level = 0, icon: Icon, color }) {
           <NodeIcon size={13} className={nodeColor} />
         </span>
 
-        <span className="flex-1 text-sm text-gray-200 font-medium truncate">
+        <span className="flex-1 text-sm text-text font-medium truncate">
           {node.raisonSociale || node.libelle}
         </span>
 
-        <span className="text-xs text-gray-500 font-mono">{node.code}</span>
+        <span className="text-xs text-text-muted font-mono">{node.code}</span>
 
         {!node.estActif && (
-          <span className="text-xs px-1.5 py-0.5 rounded bg-red-500/10 text-red-400">
+          <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400">
             Inactif
           </span>
         )}
@@ -128,8 +128,8 @@ export default function Organisation() {
       {/* En-tête */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Organisation</h1>
-          <p className="text-gray-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-text">Organisation</h1>
+          <p className="text-text-secondary text-sm mt-1">
             Structure hiérarchique de l'entreprise
           </p>
         </div>
@@ -146,58 +146,58 @@ export default function Organisation() {
             label: "Sociétés",
             value: societes.length,
             icon: Building2,
-            color: "text-blue-400",
-            bg: "bg-blue-500/10",
+            color: "text-blue-700 dark:text-blue-400",
+            bg: "bg-blue-100 dark:bg-blue-500/10",
           },
           {
             label: "Sites",
             value: stats.sites,
             icon: MapPin,
-            color: "text-emerald-400",
-            bg: "bg-emerald-500/10",
+            color: "text-emerald-700 dark:text-emerald-400",
+            bg: "bg-emerald-100 dark:bg-emerald-500/10",
           },
           {
             label: "Secteurs",
             value: stats.secteurs,
             icon: Grid3x3,
-            color: "text-violet-400",
-            bg: "bg-violet-500/10",
+            color: "text-violet-700 dark:text-violet-400",
+            bg: "bg-violet-100 dark:bg-violet-500/10",
           },
           {
             label: "Unités",
             value: stats.unites,
             icon: Factory,
-            color: "text-amber-400",
-            bg: "bg-amber-500/10",
+            color: "text-amber-700 dark:text-amber-400",
+            bg: "bg-amber-100 dark:bg-amber-500/10",
           },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <div
             key={label}
-            className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-3">
+            className="bg-surface border border-border rounded-xl p-4 flex items-center gap-3">
             <div className={`p-2 rounded-lg ${bg}`}>
               <Icon size={20} className={color} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-2xl font-bold text-text">
                 {loading ? "—" : value}
               </p>
-              <p className="text-xs text-gray-400">{label}</p>
+              <p className="text-xs text-text-secondary">{label}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* Arbre */}
-      <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-        <h2 className="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
-          <Building2 size={15} className="text-blue-400" />
+      <div className="bg-surface border border-border rounded-xl p-4">
+        <h2 className="text-sm font-semibold text-text-secondary mb-4 flex items-center gap-2">
+          <Building2 size={15} className="text-blue-700 dark:text-blue-400" />
           Arborescence complète
         </h2>
 
         {loading ? (
-          <div className="text-center py-12 text-gray-500">Chargement...</div>
+          <div className="text-center py-12 text-text-muted">Chargement...</div>
         ) : societes.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-text-muted">
             Aucune société. Créez-en une depuis l'admin Django.
           </div>
         ) : (
@@ -206,7 +206,7 @@ export default function Organisation() {
               arbres[s.id] ? (
                 <TreeNode key={s.id} node={arbres[s.id]} level={0} />
               ) : (
-                <div key={s.id} className="px-3 py-2 text-sm text-gray-500">
+                <div key={s.id} className="px-3 py-2 text-sm text-text-muted">
                   {s.raisonSociale} — chargement...
                 </div>
               ),

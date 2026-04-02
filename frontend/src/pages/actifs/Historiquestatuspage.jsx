@@ -31,41 +31,41 @@ const STATUT_OPTIONS = [
     value: "EN_SERVICE",
     label: "En service",
     icon: CheckCircle2,
-    bg: "#052e16",
-    text: "#4ade80",
-    dot: "#22c55e",
+    bg: "var(--status-green-bg)",
+    text: "var(--status-green-text)",
+    dot: "var(--status-green-dot)",
   },
   {
     value: "EN_PANNE",
     label: "En panne",
     icon: XCircle,
-    bg: "#450a0a",
-    text: "#f87171",
-    dot: "#ef4444",
+    bg: "var(--status-red-bg)",
+    text: "var(--status-red-text)",
+    dot: "var(--status-red-dot)",
   },
   {
     value: "EN_MAINTENANCE",
     label: "En maintenance",
     icon: Wrench,
-    bg: "#431407",
-    text: "#fdba74",
-    dot: "#f97316",
+    bg: "var(--status-orange-bg)",
+    text: "var(--status-orange-text)",
+    dot: "var(--status-orange-dot)",
   },
   {
     value: "HORS_SERVICE",
     label: "Hors service",
     icon: PauseCircle,
-    bg: "#1c1917",
-    text: "#a8a29e",
-    dot: "#78716c",
+    bg: "var(--status-stone-bg)",
+    text: "var(--status-stone-text)",
+    dot: "var(--status-stone-dot)",
   },
   {
     value: "EN_VEILLE",
     label: "En veille",
     icon: Clock,
-    bg: "#2e1065",
-    text: "#c4b5fd",
-    dot: "#a855f7",
+    bg: "var(--status-purple-bg)",
+    text: "var(--status-purple-text)",
+    dot: "var(--status-purple-dot)",
   },
 ];
 
@@ -80,8 +80,8 @@ function StatutBadge({ statut }) {
       <span
         style={{
           fontSize: 11,
-          color: "#71717a",
-          background: "#1f1f23",
+          color: "var(--color-text-muted)",
+          background: "var(--color-elevated)",
           padding: "2px 8px",
           borderRadius: 999,
         }}>
@@ -240,16 +240,25 @@ export default function HistoriqueStatutsPage() {
           <strong>{loading ? "—" : stats.total}</strong>&nbsp;changements
         </div>
         <div className="stat-chip">
-          <span className="dot" style={{ background: "#ef4444" }} />
+          <span
+            className="dot"
+            style={{ background: "var(--status-red-dot)" }}
+          />
           <strong>{loading ? "—" : stats.enPanne}</strong>&nbsp;pannes
         </div>
         <div className="stat-chip">
-          <span className="dot" style={{ background: "#f97316" }} />
+          <span
+            className="dot"
+            style={{ background: "var(--status-orange-dot)" }}
+          />
           <strong>{loading ? "—" : stats.enMaintenance}</strong>
           &nbsp;maintenances
         </div>
         <div className="stat-chip">
-          <span className="dot" style={{ background: "#22c55e" }} />
+          <span
+            className="dot"
+            style={{ background: "var(--status-green-dot)" }}
+          />
           <strong>{loading ? "—" : stats.enService}</strong>&nbsp;retours
           service
         </div>
@@ -447,7 +456,10 @@ export default function HistoriqueStatutsPage() {
 
                     {/* Flèche */}
                     <td style={{ padding: 0, textAlign: "center" }}>
-                      <ArrowRight size={13} style={{ color: "#334155" }} />
+                      <ArrowRight
+                        size={13}
+                        style={{ color: "var(--color-text-muted)" }}
+                      />
                     </td>
 
                     {/* Nouveau statut */}

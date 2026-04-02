@@ -18,58 +18,58 @@ const ACTION_OPTIONS = [
   {
     value: "CREATE",
     label: "CREATE",
-    bg: "#052e16",
-    text: "#4ade80",
-    dot: "#22c55e",
+    bg: "var(--status-green-bg)",
+    text: "var(--status-green-text)",
+    dot: "var(--status-green-dot)",
   },
   {
     value: "UPDATE",
     label: "UPDATE",
-    bg: "#431407",
-    text: "#fdba74",
-    dot: "#f97316",
+    bg: "var(--status-orange-bg)",
+    text: "var(--status-orange-text)",
+    dot: "var(--status-orange-dot)",
   },
   {
     value: "DELETE",
     label: "DELETE",
-    bg: "#450a0a",
-    text: "#f87171",
-    dot: "#ef4444",
+    bg: "var(--status-red-bg)",
+    text: "var(--status-red-text)",
+    dot: "var(--status-red-dot)",
   },
   {
     value: "LOGIN",
     label: "LOGIN",
-    bg: "#0c1a4b",
-    text: "#93c5fd",
-    dot: "#3b82f6",
+    bg: "var(--status-blue-bg)",
+    text: "var(--status-blue-text)",
+    dot: "var(--status-blue-dot)",
   },
   {
     value: "LOGOUT",
     label: "LOGOUT",
-    bg: "#111827",
-    text: "#9ca3af",
-    dot: "#6b7280",
+    bg: "var(--status-gray-bg)",
+    text: "var(--status-gray-text)",
+    dot: "var(--status-gray-dot)",
   },
   {
     value: "FORCE_LOGOUT",
     label: "FORCE_LOGOUT",
-    bg: "#1c1917",
-    text: "#a8a29e",
-    dot: "#78716c",
+    bg: "var(--status-stone-bg)",
+    text: "var(--status-stone-text)",
+    dot: "var(--status-stone-dot)",
   },
   {
     value: "ASSIGN_ROLE",
     label: "ASSIGN_ROLE",
-    bg: "#2e1065",
-    text: "#c4b5fd",
-    dot: "#a855f7",
+    bg: "var(--status-purple-bg)",
+    text: "var(--status-purple-text)",
+    dot: "var(--status-purple-dot)",
   },
   {
     value: "DEACTIVATE",
     label: "DEACTIVATE",
-    bg: "#450a0a",
-    text: "#f87171",
-    dot: "#ef4444",
+    bg: "var(--status-red-bg)",
+    text: "var(--status-red-text)",
+    dot: "var(--status-red-dot)",
   },
 ];
 
@@ -103,7 +103,10 @@ function ActionBadge({ action }) {
     return (
       <span
         className="badge"
-        style={{ background: "#1f1f23", color: "#71717a" }}>
+        style={{
+          background: "var(--color-elevated)",
+          color: "var(--color-text-muted)",
+        }}>
         {action}
       </span>
     );
@@ -141,7 +144,7 @@ function UserCell({ entry }) {
           width: 28,
           height: 28,
           borderRadius: "50%",
-          background: "#1d4ed8",
+          background: "var(--color-primary)",
           color: "#fff",
           display: "flex",
           alignItems: "center",
@@ -270,19 +273,31 @@ export default function JournalAudit() {
       {/* Stats */}
       <div className="stats-row">
         <div className="stat-chip">
-          <span className="dot" style={{ background: "#22c55e" }} />
+          <span
+            className="dot"
+            style={{ background: "var(--status-green-dot)" }}
+          />
           <strong>{creates}</strong> créations
         </div>
         <div className="stat-chip">
-          <span className="dot" style={{ background: "#f97316" }} />
+          <span
+            className="dot"
+            style={{ background: "var(--status-orange-dot)" }}
+          />
           <strong>{updates}</strong> modifications
         </div>
         <div className="stat-chip">
-          <span className="dot" style={{ background: "#ef4444" }} />
+          <span
+            className="dot"
+            style={{ background: "var(--status-red-dot)" }}
+          />
           <strong>{deletes}</strong> suppressions
         </div>
         <div className="stat-chip">
-          <span className="dot" style={{ background: "#3b82f6" }} />
+          <span
+            className="dot"
+            style={{ background: "var(--status-blue-dot)" }}
+          />
           <strong>{logins}</strong> connexions
         </div>
         <div className="stat-chip">
@@ -364,7 +379,11 @@ export default function JournalAudit() {
                   <SelectItem key={u.id} value={u.nom_utilisateur}>
                     {u.prenom} {u.nom}
                     <span
-                      style={{ color: "#6b7280", fontSize: 11, marginLeft: 6 }}>
+                      style={{
+                        color: "var(--color-text-muted)",
+                        fontSize: 11,
+                        marginLeft: 6,
+                      }}>
                       @{u.nom_utilisateur}
                     </span>
                   </SelectItem>

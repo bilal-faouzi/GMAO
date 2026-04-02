@@ -39,10 +39,10 @@ export default function Unites() {
 
   const rows = data.map(u => ({
     id:         u.id,
-    secteur:    <span className="text-gray-400 text-xs">{u.secteur_libelle}</span>,
-    code:       <span className="font-mono text-blue-400 text-xs font-bold">{u.code}</span>,
-    libelle:    <span className="font-medium text-white">{u.libelle}</span>,
-    productive: <span className={`text-xs font-medium ${u.estProductive ? 'text-emerald-400' : 'text-gray-500'}`}>
+    secteur:    <span className="text-text-secondary text-xs">{u.secteur_libelle}</span>,
+    code:       <span className="font-mono text-blue-700 dark:text-blue-400 text-xs font-bold">{u.code}</span>,
+    libelle:    <span className="font-medium text-text">{u.libelle}</span>,
+    productive: <span className={`text-xs font-medium ${u.estProductive ? 'text-emerald-700 dark:text-emerald-400' : 'text-text-muted'}`}>
                   {u.estProductive ? '✓ Oui' : '— Non'}
                 </span>,
     statut:     <Badge active={u.estActif} />,

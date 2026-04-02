@@ -36,9 +36,9 @@ export default function Secteurs() {
 
   const rows = data.map(s => ({
     id:      s.id,
-    site:    <span className="text-gray-400 text-xs">{s.site_libelle}</span>,
-    code:    <span className="font-mono text-blue-400 text-xs font-bold">{s.code}</span>,
-    libelle: <span className="font-medium text-white">{s.libelle}</span>,
+    site:    <span className="text-text-secondary text-xs">{s.site_libelle}</span>,
+    code:    <span className="font-mono text-blue-700 dark:text-blue-400 text-xs font-bold">{s.code}</span>,
+    libelle: <span className="font-medium text-text">{s.libelle}</span>,
     statut:  <Badge active={s.estActif} />,
     _raw:    s,
   }))

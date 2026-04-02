@@ -19,36 +19,41 @@ import { Button } from "@/components/ui/button";
 const STATUT_CONFIG = {
   EN_SERVICE: {
     label: "En service",
-    bg: "#052e16",
-    text: "#4ade80",
-    dot: "#22c55e",
+    bg: "var(--status-green-bg)",
+    text: "var(--status-green-text)",
+    dot: "var(--status-green-dot)",
   },
   EN_MAINTENANCE: {
     label: "Maintenance",
-    bg: "#431407",
-    text: "#fdba74",
-    dot: "#f97316",
+    bg: "var(--status-orange-bg)",
+    text: "var(--status-orange-text)",
+    dot: "var(--status-orange-dot)",
   },
   EN_PANNE: {
     label: "En panne",
-    bg: "#450a0a",
-    text: "#f87171",
-    dot: "#ef4444",
+    bg: "var(--status-red-bg)",
+    text: "var(--status-red-text)",
+    dot: "var(--status-red-dot)",
   },
   HORS_SERVICE: {
     label: "Hors service",
-    bg: "#1c1917",
-    text: "#a8a29e",
-    dot: "#78716c",
+    bg: "var(--status-stone-bg)",
+    text: "var(--status-stone-text)",
+    dot: "var(--status-stone-dot)",
   },
-  RESERVE: { label: "Réservé", bg: "#0c1a4b", text: "#93c5fd", dot: "#3b82f6" },
+  RESERVE: {
+    label: "Réservé",
+    bg: "var(--status-blue-bg)",
+    text: "var(--status-blue-text)",
+    dot: "var(--status-blue-dot)",
+  },
 };
 
 const CRITICITE_CONFIG = {
-  CRITIQUE: { label: "Critique", color: "#ef4444" },
-  ELEVEE: { label: "Élevée", color: "#f97316" },
-  MOYENNE: { label: "Moyenne", color: "#eab308" },
-  FAIBLE: { label: "Faible", color: "#22c55e" },
+  CRITIQUE: { label: "Critique", color: "var(--crit-1)" },
+  ELEVEE: { label: "Élevée", color: "var(--crit-2)" },
+  MOYENNE: { label: "Moyenne", color: "var(--crit-3)" },
+  FAIBLE: { label: "Faible", color: "var(--crit-4)" },
 };
 
 const TYPE_ICONS = {
@@ -87,9 +92,9 @@ function filterTree(nodes, q) {
 function StatutBadge({ statut }) {
   const cfg = STATUT_CONFIG[statut] || {
     label: statut,
-    bg: "#1f1f23",
-    text: "#71717a",
-    dot: "#71717a",
+    bg: "var(--color-elevated)",
+    text: "var(--color-text-muted)",
+    dot: "var(--color-text-muted)",
   };
   return (
     <span
@@ -154,9 +159,9 @@ function TypeBadge({ type }) {
         gap: 4,
         padding: "2px 7px",
         borderRadius: 4,
-        background: "#ffffff0a",
-        border: "1px solid #ffffff12",
-        color: "#94a3b8",
+        background: "var(--color-elevated)",
+        border: "1px solid var(--color-border-subtle)",
+        color: "var(--color-text-muted)",
         fontSize: 11,
       }}>
       {icon}
@@ -192,7 +197,7 @@ function TreeNode({ node, depth = 0, searchQuery }) {
             top: 0,
             bottom: 0,
             width: 1,
-            background: "#ffffff0d",
+            background: "var(--color-border-subtle)",
             pointerEvents: "none",
           }}
         />
@@ -207,7 +212,7 @@ function TreeNode({ node, depth = 0, searchQuery }) {
             top: 20,
             width: 10,
             height: 1,
-            background: "#ffffff0d",
+            background: "var(--color-border-subtle)",
             pointerEvents: "none",
           }}
         />
@@ -222,14 +227,17 @@ function TreeNode({ node, depth = 0, searchQuery }) {
           padding: "7px 12px 7px 0",
           paddingLeft: depth * 20 + 4,
           borderRadius: 8,
-          background: isHighlighted ? "#1e3a5f" : "transparent",
+          background: isHighlighted
+            ? "var(--color-primary-soft)"
+            : "transparent",
           cursor: hasChildren ? "pointer" : "default",
           transition: "background 0.15s",
           position: "relative",
           zIndex: 1,
         }}
         onMouseEnter={(e) =>
-          !isHighlighted && (e.currentTarget.style.background = "#ffffff07")
+          !isHighlighted &&
+          (e.currentTarget.style.background = "var(--color-hover)")
         }
         onMouseLeave={(e) =>
           !isHighlighted && (e.currentTarget.style.background = "transparent")
@@ -248,7 +256,7 @@ function TreeNode({ node, depth = 0, searchQuery }) {
             <ChevronRight
               size={14}
               style={{
-                color: "#64748b",
+                color: "var(--color-text-muted)",
                 transform: open ? "rotate(90deg)" : "rotate(0deg)",
                 transition: "transform 0.2s",
               }}
@@ -259,7 +267,7 @@ function TreeNode({ node, depth = 0, searchQuery }) {
                 width: 6,
                 height: 6,
                 borderRadius: "50%",
-                background: "#334155",
+                background: "var(--color-active)",
                 margin: "auto",
               }}
             />
@@ -267,7 +275,10 @@ function TreeNode({ node, depth = 0, searchQuery }) {
         </div>
 
         {/* Icône package */}
-        <Package size={14} style={{ color: "#475569", flexShrink: 0 }} />
+        <Package
+          size={14}
+          style={{ color: "var(--color-text-muted)", flexShrink: 0 }}
+        />
 
         {/* Code + Désignation */}
         <div
@@ -283,7 +294,7 @@ function TreeNode({ node, depth = 0, searchQuery }) {
               style={{
                 fontSize: 12,
                 fontFamily: "monospace",
-                color: "#64748b",
+                color: "var(--color-text-muted)",
                 fontWeight: 600,
                 flexShrink: 0,
               }}>
@@ -292,7 +303,7 @@ function TreeNode({ node, depth = 0, searchQuery }) {
             <span
               style={{
                 fontSize: 13,
-                color: "#e2e8f0",
+                color: "var(--color-text)",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
@@ -319,9 +330,9 @@ function TreeNode({ node, depth = 0, searchQuery }) {
             <span
               style={{
                 fontSize: 11,
-                color: "#475569",
-                background: "#0f172a",
-                border: "1px solid #1e293b",
+                color: "var(--color-text-muted)",
+                background: "var(--color-elevated)",
+                border: "1px solid var(--color-border)",
                 borderRadius: 4,
                 padding: "1px 6px",
               }}>

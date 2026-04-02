@@ -21,43 +21,47 @@ import { useFormErrors } from "@/hooks/useFormErrors";
 
 const niveauStyles = {
   1: {
-    bg: "bg-red-500/10",
-    text: "text-red-400",
-    border: "border-red-500",
-    shadow: "shadow-red-500/30",
+    bg: "bg-red-100 dark:bg-red-500/10",
+    text: "text-red-700 dark:text-red-400",
+    border: "border-red-300 dark:border-red-500",
+    shadow: "shadow-red-300/30 dark:shadow-red-500/30",
   },
   2: {
-    bg: "bg-orange-500/10",
-    text: "text-orange-400",
-    border: "border-orange-500",
-    shadow: "shadow-orange-500/30",
+    bg: "bg-orange-100 dark:bg-orange-500/10",
+    text: "text-orange-700 dark:text-orange-400",
+    border: "border-orange-300 dark:border-orange-500",
+    shadow: "shadow-orange-300/30 dark:shadow-orange-500/30",
   },
   3: {
-    bg: "bg-blue-500/10",
-    text: "text-blue-400",
-    border: "border-blue-500",
-    shadow: "shadow-blue-500/30",
+    bg: "bg-blue-100 dark:bg-blue-500/10",
+    text: "text-blue-700 dark:text-blue-400",
+    border: "border-blue-300 dark:border-blue-500",
+    shadow: "shadow-blue-300/30 dark:shadow-blue-500/30",
   },
   4: {
-    bg: "bg-emerald-500/10",
-    text: "text-emerald-400",
-    border: "border-emerald-500",
-    shadow: "shadow-emerald-500/30",
+    bg: "bg-emerald-100 dark:bg-emerald-500/10",
+    text: "text-emerald-700 dark:text-emerald-400",
+    border: "border-emerald-300 dark:border-emerald-500",
+    shadow: "shadow-emerald-300/30 dark:shadow-emerald-500/30",
   },
   5: {
-    bg: "bg-cyan-500/10",
-    text: "text-cyan-400",
-    border: "border-cyan-500",
-    shadow: "shadow-cyan-500/30",
+    bg: "bg-cyan-100 dark:bg-cyan-500/10",
+    text: "text-cyan-700 dark:text-cyan-400",
+    border: "border-cyan-300 dark:border-cyan-500",
+    shadow: "shadow-cyan-300/30 dark:shadow-cyan-500/30",
   },
 };
 
 const actionColor = (action) => {
-  if (action === "READ") return "bg-blue-500/10 text-blue-400";
-  if (action === "CREATE") return "bg-emerald-500/10 text-emerald-400";
-  if (action === "UPDATE") return "bg-orange-500/10 text-orange-400";
-  if (action === "DELETE") return "bg-red-500/10 text-red-400";
-  return "bg-white/5 text-gray-400";
+  if (action === "READ")
+    return "bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400";
+  if (action === "CREATE")
+    return "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
+  if (action === "UPDATE")
+    return "bg-orange-100 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400";
+  if (action === "DELETE")
+    return "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400";
+  return "bg-surface text-text-secondary";
 };
 
 const niveaux = [1, 2, 3, 4, 5];
@@ -188,8 +192,8 @@ export default function Roles() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Rôles</h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-text">Rôles</h1>
+          <p className="text-text-secondary text-sm mt-1">
             Gérer les rôles et leurs permissions
           </p>
         </div>
@@ -209,7 +213,7 @@ export default function Roles() {
       <div className="relative">
         <Search
           size={15}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
         />
         <Input
           placeholder="Rechercher un rôle..."
@@ -221,7 +225,7 @@ export default function Roles() {
 
       {/* Cards */}
       {loading ? (
-        <p className="text-center text-gray-500 py-12">Chargement...</p>
+        <p className="text-center text-text-muted py-12">Chargement...</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((role) => (
@@ -229,33 +233,33 @@ export default function Roles() {
               key={role.id}
               className={`border rounded-xl p-5 transition-colors ${
                 role.est_actif !== false
-                  ? "bg-white/5 border-white/10 hover:bg-white/[0.07]"
-                  : "bg-white/[0.02] border-white/5 opacity-50 grayscale"
+                  ? "bg-surface border-border hover:bg-hover"
+                  : "bg-elevated border-border-subtle opacity-50 grayscale"
               }`}>
               {/* Header carte */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${role.est_actif !== false ? "bg-blue-500/10" : "bg-gray-500/10"}`}>
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${role.est_actif !== false ? "bg-blue-100 dark:bg-blue-500/10" : "bg-gray-100 dark:bg-gray-500/10"}`}>
                     <Key
                       size={18}
                       className={
                         role.est_actif !== false
-                          ? "text-blue-400"
-                          : "text-gray-600"
+                          ? "text-blue-700 dark:text-blue-400"
+                          : "text-text-muted"
                       }
                     />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-white">{role.code}</h3>
+                      <h3 className="font-semibold text-text">{role.code}</h3>
                       {role.est_actif === false && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-500/10 text-gray-500 border border-gray-500/20">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-500/10 text-text-muted border border-gray-300/20 dark:border-gray-500/20">
                           Désactivé
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500">{role.libelle}</p>
+                    <p className="text-xs text-text-muted">{role.libelle}</p>
                   </div>
                 </div>
 
@@ -264,7 +268,8 @@ export default function Roles() {
                   <Button
                     onClick={() => openPermsModal(role)}
                     title="Permissions"
-                    className="p-2 rounded hover:bg-emerald-500/10 text-gray-500 hover:text-emerald-400 transition-colors">
+                    variant="ghost"
+                    className="p-2 rounded hover:bg-emerald-100 dark:hover:bg-emerald-500/10 text-text-muted hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors">
                     <Shield size={13} />
                   </Button>
                   <Button
@@ -272,7 +277,8 @@ export default function Roles() {
                     title={
                       role.est_actif !== false ? "Désactiver" : "Réactiver"
                     }
-                    className="p-2 rounded hover:bg-orange-500/10 text-gray-500 hover:text-orange-400 transition-colors">
+                    variant="ghost"
+                    className="p-2 rounded hover:bg-orange-100 dark:hover:bg-orange-500/10 text-text-muted hover:text-orange-700 dark:hover:text-orange-400 transition-colors">
                     {role.est_actif !== false ? (
                       <PowerOff size={13} />
                     ) : (
@@ -284,7 +290,7 @@ export default function Roles() {
 
               {/* Niveau */}
               <div className="flex items-center gap-2 mb-4">
-                <span className="text-xs text-gray-500">Niveau :</span>
+                <span className="text-xs text-text-muted">Niveau :</span>
                 <span
                   className={`text-xs px-2 py-0.5 rounded-full font-medium ${niveauStyles[role.niveau].bg} ${niveauStyles[role.niveau].text} border ${niveauStyles[role.niveau].border} shadow ${niveauStyles[role.niveau].shadow}`}>
                   Niveau {role.niveau}
@@ -293,7 +299,7 @@ export default function Roles() {
 
               {/* Permissions preview */}
               <div>
-                <p className="text-xs text-gray-500 mb-2">
+                <p className="text-xs text-text-muted mb-2">
                   Permissions ({role.permissions?.length || 0}) :
                 </p>
                 <div className="flex flex-wrap gap-1">
@@ -301,17 +307,17 @@ export default function Roles() {
                     role.permissions.slice(0, 3).map((p) => (
                       <span
                         key={p.id}
-                        className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-gray-400 border border-white/10">
+                        className="text-xs px-2 py-0.5 rounded-full bg-surface text-text-secondary border border-border">
                         {p.code}
                       </span>
                     ))
                   ) : (
-                    <span className="text-xs text-gray-600">
+                    <span className="text-xs text-text-muted">
                       Aucune permission
                     </span>
                   )}
                   {role.permissions?.length > 3 && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-gray-500 border border-white/10">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-surface text-text-muted border border-border">
                       +{role.permissions.length - 3}
                     </span>
                   )}
@@ -367,14 +373,14 @@ export default function Roles() {
                     }}
                     className={`transition-all duration-200 ${niveauStyles[n].bg} ${
                       selectedNiveau === n
-                        ? `ring-2 ${niveauStyles[n].text} ring-offset-2 ${niveauStyles[n].border} ring-offset-black scale-110 opacity-100 shadow-lg ${niveauStyles[n].shadow}`
+                        ? `ring-2 ${niveauStyles[n].text} ring-offset-2 ${niveauStyles[n].border} ring-offset-bg scale-110 opacity-100 shadow-lg ${niveauStyles[n].shadow}`
                         : "opacity-50 hover:opacity-80 scale-100"
                     }`}>
                     {n}
                   </Button>
                 ))}
               </div>
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-xs text-text-muted mt-1">
                 1 = plus haut niveau (Admin)
               </p>
               <FieldError errors={errors} field="niveau" />
@@ -404,7 +410,7 @@ export default function Roles() {
           <div className="space-y-4 max-h-96 overflow-y-auto">
             {/* Assignées */}
             <div>
-              <p className="text-xs text-gray-400 mb-2 uppercase tracking-wider">
+              <p className="text-xs text-text-secondary mb-2 uppercase tracking-wider">
                 Assignées ({selectedRole?.permissions?.length || 0})
               </p>
               <div className="space-y-2">
@@ -412,25 +418,25 @@ export default function Roles() {
                   selectedRole.permissions.map((p) => (
                     <div
                       key={p.id}
-                      className="flex items-center justify-between p-2.5 rounded-lg bg-white/5">
+                      className="flex items-center justify-between p-2.5 rounded-lg bg-surface">
                       <div className="flex items-center gap-2">
                         <span
                           className={`text-xs px-2 py-0.5 rounded-full font-medium ${actionColor(p.action)}`}>
                           {p.action}
                         </span>
-                        <span className="text-xs font-mono text-gray-400">
+                        <span className="text-xs font-mono text-text-secondary">
                           {p.code}
                         </span>
                       </div>
                       <Button
                         onClick={() => handleRemovePermission(p.id)}
-                        className="text-gray-500 hover:text-red-400 transition-colors text-lg leading-none">
+                        className="text-text-muted hover:text-danger transition-colors text-lg leading-none">
                         ×
                       </Button>
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-gray-600 p-2">
+                  <p className="text-sm text-text-muted p-2">
                     Aucune permission assignée
                   </p>
                 )}
@@ -439,7 +445,7 @@ export default function Roles() {
 
             {/* Ajouter */}
             <div>
-              <p className="text-xs text-gray-400 mb-2 uppercase tracking-wider">
+              <p className="text-xs text-text-secondary mb-2 uppercase tracking-wider">
                 Ajouter
               </p>
               <div className="space-y-2">
@@ -451,13 +457,13 @@ export default function Roles() {
                   .map((p) => (
                     <div
                       key={p.id}
-                      className="flex items-center justify-between p-2.5 rounded-lg border border-white/10">
+                      className="flex items-center justify-between p-2.5 rounded-lg border border-border">
                       <div className="flex items-center gap-2">
                         <span
                           className={`text-xs px-2 py-0.5 rounded-full font-medium ${actionColor(p.action)}`}>
                           {p.action}
                         </span>
-                        <span className="text-xs font-mono text-gray-400">
+                        <span className="text-xs font-mono text-text-secondary">
                           {p.code}
                         </span>
                       </div>
@@ -472,7 +478,7 @@ export default function Roles() {
                   (p) =>
                     !selectedRole?.permissions?.find((sp) => sp.id === p.id),
                 ).length === 0 && (
-                  <p className="text-sm text-gray-600 p-2">
+                  <p className="text-sm text-text-muted p-2">
                     Toutes les permissions sont assignées
                   </p>
                 )}

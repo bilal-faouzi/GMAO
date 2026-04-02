@@ -10,7 +10,7 @@ from apps.securite.models import Utilisateur
 class Societe(BaseModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     code = models.CharField(max_length=20, unique=True)
-    raisonSociale = models.CharField(max_length=200)
+    raisonSociale = models.CharField(max_length=200 ,unique=True)
     estActif = models.BooleanField(default=True)
 
     class Meta:
@@ -111,6 +111,12 @@ class Equipe(BaseModel):
         unique_together = [('site', 'libelle')]
         ordering = ['site', 'libelle']
         verbose_name = "Équipe"
+        constraints = [
+            models.UniqueConstraint(
+                fields=['site', 'specialite', 'libelle'],
+                name='unique_equipe_site_specialite_libelle'
+            )
+        ]
 
     def __str__(self):
         return f"{self.site.code} — {self.libelle}"
@@ -137,6 +143,17 @@ class EquipeUtilisateur(BaseModel):
         unique_together = [('equipe', 'utilisateur')]
         ordering = ['equipe', 'niveauRole']
         verbose_name = "Membre d'équipe"
+        constraints = [
+            models.UniqueConstraint(
+                fields=['utilisateur'],
+                condition=models.Q(estActif=True),
+                name='unique_utilisateur_equipe_active'
+            ),
+            models.UniqueConstraint(
+                fields=['equipe', 'utilisateur'],
+                name='unique_equipe_utilisateur'
+            )
+        ]
 
     def __str__(self):
         return f"{self.equipe} — {self.utilisateur} ({self.niveauRole})"

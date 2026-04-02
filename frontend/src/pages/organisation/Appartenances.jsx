@@ -28,7 +28,11 @@ import { useFormErrors } from "@/hooks/useFormErrors"; // ← import du hook
 
 function FieldError({ name, errors }) {
   if (!errors[name]) return null;
-  return <p className="text-red-400 text-xs mt-1">{errors[name]}</p>;
+  return (
+    <p className="text-red-700 dark:text-red-400 text-xs mt-1">
+      {errors[name]}
+    </p>
+  );
 }
 
 function AddAppartenanceModal({ onClose, onSaved }) {
@@ -117,14 +121,16 @@ function AddAppartenanceModal({ onClose, onSaved }) {
       <form onSubmit={handleSubmit} className="space-y-3">
         {/* Erreur globale */}
         {errors.__global__ && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
-            <p className="text-red-400 text-xs">{errors.__global__}</p>
+          <div className="bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded-lg px-3 py-2">
+            <p className="text-red-700 dark:text-red-400 text-xs">
+              {errors.__global__}
+            </p>
           </div>
         )}
 
         {/* Utilisateur */}
         <div>
-          <Label className="text-xs text-gray-400 mb-1 block">
+          <Label className="text-xs text-text-secondary mb-1 block">
             Utilisateur *
           </Label>
           <Select
@@ -132,8 +138,10 @@ function AddAppartenanceModal({ onClose, onSaved }) {
             onValueChange={(v) => setForm({ ...form, utilisateur: v })}
             required>
             <SelectTrigger
-              className={`w-full bg-white/5 border text-white ${
-                errors.utilisateur ? "border-red-500" : "border-white/10"
+              className={`w-full bg-surface border text-text ${
+                errors.utilisateur
+                  ? "border-red-300 dark:border-red-500"
+                  : "border-border"
               }`}>
               <SelectValue placeholder="Sélectionner un utilisateur" />
             </SelectTrigger>
@@ -152,14 +160,18 @@ function AddAppartenanceModal({ onClose, onSaved }) {
 
         {/* Société */}
         <div>
-          <Label className="text-xs text-gray-400 mb-1 block">Société *</Label>
+          <Label className="text-xs text-text-secondary mb-1 block">
+            Société *
+          </Label>
           <Select
             value={form.societe}
             onValueChange={(v) => setForm({ ...form, societe: v })}
             required>
             <SelectTrigger
-              className={`w-full bg-white/5 border text-white ${
-                errors.societe ? "border-red-500" : "border-white/10"
+              className={`w-full bg-surface border text-text ${
+                errors.societe
+                  ? "border-red-300 dark:border-red-500"
+                  : "border-border"
               }`}>
               <SelectValue placeholder="Sélectionner une société" />
             </SelectTrigger>
@@ -178,15 +190,19 @@ function AddAppartenanceModal({ onClose, onSaved }) {
 
         {/* Site */}
         <div>
-          <Label className="text-xs text-gray-400 mb-1 block">Site *</Label>
+          <Label className="text-xs text-text-secondary mb-1 block">
+            Site *
+          </Label>
           <Select
             value={form.site}
             onValueChange={(v) => setForm({ ...form, site: v })}
             disabled={!form.societe}
             required>
             <SelectTrigger
-              className={`w-full bg-white/5 border text-white disabled:opacity-50 ${
-                errors.site ? "border-red-500" : "border-white/10"
+              className={`w-full bg-surface border text-text disabled:opacity-50 ${
+                errors.site
+                  ? "border-red-300 dark:border-red-500"
+                  : "border-border"
               }`}>
               <SelectValue placeholder="Sélectionner un site" />
             </SelectTrigger>
@@ -205,7 +221,7 @@ function AddAppartenanceModal({ onClose, onSaved }) {
 
         {/* Secteur */}
         <div>
-          <Label className="text-xs text-gray-400 mb-1 block">
+          <Label className="text-xs text-text-secondary mb-1 block">
             Secteur (optionnel)
           </Label>
           <Select
@@ -213,8 +229,10 @@ function AddAppartenanceModal({ onClose, onSaved }) {
             onValueChange={(v) => setForm({ ...form, secteur: v })}
             disabled={!form.site}>
             <SelectTrigger
-              className={`w-full bg-white/5 border text-white disabled:opacity-50 ${
-                errors.secteur ? "border-red-500" : "border-white/10"
+              className={`w-full bg-surface border text-text disabled:opacity-50 ${
+                errors.secteur
+                  ? "border-red-300 dark:border-red-500"
+                  : "border-border"
               }`}>
               <SelectValue placeholder="Aucun" />
             </SelectTrigger>
@@ -233,7 +251,7 @@ function AddAppartenanceModal({ onClose, onSaved }) {
 
         {/* Unité */}
         <div>
-          <Label className="text-xs text-gray-400 mb-1 block">
+          <Label className="text-xs text-text-secondary mb-1 block">
             Unité (optionnel)
           </Label>
           <Select
@@ -241,8 +259,10 @@ function AddAppartenanceModal({ onClose, onSaved }) {
             onValueChange={(v) => setForm({ ...form, unite: v })}
             disabled={!form.secteur}>
             <SelectTrigger
-              className={`w-full bg-white/5 border text-white disabled:opacity-50 ${
-                errors.unite ? "border-red-500" : "border-white/10"
+              className={`w-full bg-surface border text-text disabled:opacity-50 ${
+                errors.unite
+                  ? "border-red-300 dark:border-red-500"
+                  : "border-border"
               }`}>
               <SelectValue placeholder="Aucune" />
             </SelectTrigger>
@@ -323,8 +343,8 @@ export default function Appartenances() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Appartenances</h1>
-          <p className="text-gray-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-text">Appartenances</h1>
+          <p className="text-text-secondary text-sm mt-1">
             Périmètre organisationnel des utilisateurs
           </p>
         </div>
@@ -337,10 +357,10 @@ export default function Appartenances() {
         </Button>
       </div>
 
-      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+      <div className="bg-surface border border-border rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-white/10">
+            <tr className="border-b border-border">
               {[
                 "Utilisateur",
                 "Société",
@@ -351,55 +371,59 @@ export default function Appartenances() {
               ].map((h) => (
                 <th
                   key={h}
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                   {h}
                 </th>
               ))}
               <th
                 key="actions"
-                className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">
+                className="px-4 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className="divide-y divide-border-subtle">
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                <td
+                  colSpan={7}
+                  className="px-4 py-8 text-center text-text-muted">
                   Chargement...
                 </td>
               </tr>
             ) : appartenances.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                <td
+                  colSpan={7}
+                  className="px-4 py-8 text-center text-text-muted">
                   Aucune appartenance
                 </td>
               </tr>
             ) : (
               appartenances.map((a) => (
-                <tr key={a.id} className="hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-3 font-medium text-white">
+                <tr key={a.id} className="hover:bg-surface transition-colors">
+                  <td className="px-4 py-3 font-medium text-text">
                     {a.utilisateur_nom || a.utilisateur}
                   </td>
-                  <td className="px-4 py-3 text-gray-400">
+                  <td className="px-4 py-3 text-text-secondary">
                     {a.societe_libelle || "—"}
                   </td>
-                  <td className="px-4 py-3 text-gray-400">
+                  <td className="px-4 py-3 text-text-secondary">
                     {a.site_libelle || "—"}
                   </td>
-                  <td className="px-4 py-3 text-gray-400">
+                  <td className="px-4 py-3 text-text-secondary">
                     {a.secteur_libelle || "—"}
                   </td>
-                  <td className="px-4 py-3 text-gray-400">
+                  <td className="px-4 py-3 text-text-secondary">
                     {a.unite_libelle || "—"}
                   </td>
                   <td className="px-4 py-3">
                     {a.estPrincipale ? (
-                      <span className="flex items-center gap-1 text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full w-fit">
+                      <span className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/10 px-2 py-0.5 rounded-full w-fit">
                         <Star size={10} fill="currentColor" /> Principale
                       </span>
                     ) : (
-                      <span className="text-xs text-gray-500 bg-white/5 px-2 py-0.5 rounded-full">
+                      <span className="text-xs text-text-muted bg-surface px-2 py-0.5 rounded-full">
                         Secondaire
                       </span>
                     )}
@@ -407,7 +431,8 @@ export default function Appartenances() {
                   <td className="px-4 py-3">
                     <Button
                       onClick={() => handleDelete(a.id)}
-                      className="p-1.5 rounded hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors">
+                      variant="ghost"
+                      className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-500/10 text-text-secondary hover:text-danger transition-colors">
                       <Trash2 size={13} />
                     </Button>
                   </td>

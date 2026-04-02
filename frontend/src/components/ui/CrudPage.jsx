@@ -20,7 +20,7 @@ import { useFormErrors } from "@/hooks/useFormErrors";
 function Badge({ active }) {
   return (
     <span
-      className={`text-xs px-2 py-0.5 rounded-full font-medium ${active ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+      className={`text-xs px-2 py-0.5 rounded-full font-medium ${active ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400"}`}>
       {active ? "Actif" : "Inactif"}
     </span>
   );
@@ -55,13 +55,13 @@ function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-md p-6 shadow-2xl">
+      <div className="bg-surface border border-border rounded-xl w-full max-w-md p-6 shadow-2xl transition-colors">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-white font-semibold text-lg">{title}</h3>
+          <h3 className="text-text font-semibold text-lg">{title}</h3>
           <Button
             variant="ghost"
             onClick={onClose}
-            className="text-gray-400 hover:text-white">
+            className="text-text-muted hover:text-text">
             <X size={18} />
           </Button>
         </div>
@@ -72,7 +72,7 @@ function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
 
           {fields.map((f) => (
             <div key={f.name}>
-              <Label className="text-xs text-gray-400 mb-1 block">
+              <Label className="text-xs text-text-secondary mb-1 block">
                 {f.label}
                 {f.required && " *"}
               </Label>
@@ -86,15 +86,12 @@ function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
                     }
                     disabled={f.disabled}
                     required={f.required}>
-                    <SelectTrigger className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-40 data-[placeholder]:text-gray-500 [&>span]:flex [&>span]:items-center">
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="— Sélectionner —" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border border-white/10 rounded-lg shadow-xl text-white z-[60]">
+                    <SelectContent className="z-[60]">
                       {f.options?.map((o) => (
-                        <SelectItem
-                          key={o.value}
-                          value={String(o.value)}
-                          className="text-sm text-gray-300 px-3 py-2 cursor-pointer rounded focus:bg-white/10 focus:text-white data-[state=checked]:text-blue-400">
+                        <SelectItem key={o.value} value={String(o.value)}>
                           {o.label}
                         </SelectItem>
                       ))}
@@ -166,8 +163,10 @@ export default function CrudPage({
       {/* En-tête */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">{title}</h1>
-          {subtitle && <p className="text-gray-400 text-sm mt-1">{subtitle}</p>}
+          <h1 className="text-2xl font-bold text-text">{title}</h1>
+          {subtitle && (
+            <p className="text-text-secondary text-sm mt-1">{subtitle}</p>
+          )}
         </div>
         <Button onClick={() => setModal("create")} variant="custom">
           <Plus size={15} />
@@ -176,28 +175,28 @@ export default function CrudPage({
       </div>
 
       {/* Tableau */}
-      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+      <div className="bg-surface border border-border rounded-xl overflow-hidden transition-colors">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-white/10">
+            <tr className="border-b border-border">
               {columns.map((c) => (
                 <th
                   key={c.key}
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
                   {c.label}
                 </th>
               ))}
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-4 py-3 text-center text-xs font-medium text-text-muted uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className="divide-y divide-border-subtle">
             {loading ? (
               <tr>
                 <td
                   colSpan={columns.length + 1}
-                  className="px-4 py-10 text-center text-gray-500">
+                  className="px-4 py-10 text-center text-text-muted">
                   Chargement...
                 </td>
               </tr>
@@ -205,15 +204,15 @@ export default function CrudPage({
               <tr>
                 <td
                   colSpan={columns.length + 1}
-                  className="px-4 py-10 text-center text-gray-500">
+                  className="px-4 py-10 text-center text-text-muted">
                   Aucun élément
                 </td>
               </tr>
             ) : (
               rows.map((row) => (
-                <tr key={row.id} className="hover:bg-white/5 transition-colors">
+                <tr key={row.id} className="hover:bg-hover transition-colors">
                   {columns.map((c) => (
-                    <td key={c.key} className="px-4 py-3 text-gray-300">
+                    <td key={c.key} className="px-4 py-3 text-text-secondary">
                       {row[c.key]}
                     </td>
                   ))}
@@ -221,15 +220,17 @@ export default function CrudPage({
                     <div className="flex items-center justify-center gap-2">
                       {onEdit && (
                         <Button
+                          variant="ghost"
                           onClick={() => setModal(row._raw)}
-                          className="rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+                          className="rounded hover:bg-hover text-text-muted hover:text-text transition-colors">
                           <Pencil size={13} />
                         </Button>
                       )}
                       {onDelete && (
                         <Button
+                          variant="ghost"
                           onClick={() => onDelete(row.id)}
-                          className="rounded hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors">
+                          className="rounded hover:bg-danger-soft text-text-muted hover:text-danger transition-colors">
                           <Trash2 size={13} />
                         </Button>
                       )}

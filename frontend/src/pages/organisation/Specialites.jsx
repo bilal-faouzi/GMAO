@@ -32,8 +32,8 @@ export default function Specialites() {
 
   const rows = data.map(s => ({
     id:      s.id,
-    code:    <span className="font-mono text-amber-400 text-xs font-bold">{s.code}</span>,
-    libelle: <span className="font-medium text-white">{s.libelle}</span>,
+    code:    <span className="font-mono text-amber-700 dark:text-amber-400 text-xs font-bold">{s.code}</span>,
+    libelle: <span className="font-medium text-text">{s.libelle}</span>,
     statut:  <Badge active={s.estActif} />,
     _raw:    s,
   }))

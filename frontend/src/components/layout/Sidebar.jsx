@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import useAuthStore from "@/store/authStore";
 import api from "@/services/api";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 const navSections = [
   {
@@ -74,16 +75,18 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="w-64 min-h-screen max-h-screen sticky top-0 bg-slate-900 flex flex-col">
+    <div className="w-64 min-h-screen max-h-screen sticky top-0 bg-[var(--color-sidebar-bg)] border-r border-[var(--color-sidebar-border)] flex flex-col transition-colors duration-200">
       {/* Logo */}
-      <div className="p-6 border-b border-slate-700">
+      <div className="p-6 border-b border-[var(--color-sidebar-border)]">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
             <span className="text-white font-bold text-lg">G</span>
           </div>
           <div>
-            <h1 className="text-white font-bold text-lg">GMAO</h1>
-            <p className="text-slate-400 text-xs">Maintenance</p>
+            <h1 className="text-text font-bold text-lg">GMAO</h1>
+            <p className="text-[var(--color-sidebar-text)] text-xs">
+              Maintenance
+            </p>
           </div>
         </div>
       </div>
@@ -93,7 +96,7 @@ export default function Sidebar() {
         {navSections.map((section, i) => (
           <div key={i}>
             {section.label && (
-              <p className="text-slate-500 text-xs font-semibold uppercase tracking-widest px-3 mb-2">
+              <p className="text-text-muted text-xs font-semibold uppercase tracking-widest px-3 mb-2">
                 {section.label}
               </p>
             )}
@@ -105,8 +108,8 @@ export default function Sidebar() {
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                       isActive
-                        ? "bg-blue-600 text-white"
-                        : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                        ? "bg-primary text-white"
+                        : "text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)] hover:text-text"
                     }`
                   }>
                   <Icon size={18} />
@@ -119,26 +122,27 @@ export default function Sidebar() {
       </nav>
 
       {/* User info + logout */}
-      <div className="p-4 border-t border-slate-700">
+      <div className="p-4 border-t border-[var(--color-sidebar-border)]">
         <div className="flex items-center gap-3 px-3 py-2 mb-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
             <span className="text-white text-sm font-bold">
               {user?.prenom?.[0]}
               {user?.nom?.[0]}
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-medium truncate">
+            <p className="text-text text-sm font-medium truncate">
               {user?.prenom} {user?.nom}
             </p>
-            <p className="text-slate-400 text-xs truncate">
+            <p className="text-[var(--color-sidebar-text)] text-xs truncate">
               {user?.roles?.[0]?.code || "Utilisateur"}
             </p>
           </div>
+          <ThemeToggle />
         </div>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-red-400 transition-colors">
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)] hover:text-danger transition-colors">
           <LogOut size={18} />
           Déconnexion
         </button>

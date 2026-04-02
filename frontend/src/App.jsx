@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import ThemeProvider from "@/providers/ThemProvider";
 import Login from "@/pages/auth/Login";
 import Dashboard from "@/pages/dashboard/Dashboard";
 import Utilisateurs from "@/pages/securite/Utilisateurs";
@@ -20,30 +21,35 @@ import HistoriqueStatutsPage from "./pages/actifs/Historiquestatuspage";
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="utilisateurs" element={<Utilisateurs />} />
-          <Route path="roles" element={<Roles />} />
-          <Route path="permissions" element={<Permissions />} />
-          <Route path="sessions" element={<Sessions />} />
-          <Route path="journal-audit" element={<JournalAudit />} />
-          <Route path="organisation" element={<Organisation />} />
-          <Route path="societes" element={<Societes />} />
-          <Route path="sites" element={<Sites />} />
-          <Route path="secteurs" element={<Secteurs />} />
-          <Route path="unites" element={<Unites />} />
-          <Route path="specialites" element={<Specialites />} />
-          <Route path="equipes" element={<Equipes />} />
-          <Route path="appartenances" element={<Appartenances />} />
-          <Route path="Actif" element={<ActifsPage />} />
-          <Route path="Historiquestatuts" element={<HistoriqueStatutsPage />} />
-        </Route>
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="utilisateurs" element={<Utilisateurs />} />
+            <Route path="roles" element={<Roles />} />
+            <Route path="permissions" element={<Permissions />} />
+            <Route path="sessions" element={<Sessions />} />
+            <Route path="journal-audit" element={<JournalAudit />} />
+            <Route path="organisation" element={<Organisation />} />
+            <Route path="societes" element={<Societes />} />
+            <Route path="sites" element={<Sites />} />
+            <Route path="secteurs" element={<Secteurs />} />
+            <Route path="unites" element={<Unites />} />
+            <Route path="specialites" element={<Specialites />} />
+            <Route path="equipes" element={<Equipes />} />
+            <Route path="appartenances" element={<Appartenances />} />
+            <Route path="Actif" element={<ActifsPage />} />
+            <Route
+              path="Historiquestatuts"
+              element={<HistoriqueStatutsPage />}
+            />
+          </Route>
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }

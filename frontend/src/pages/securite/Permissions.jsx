@@ -16,19 +16,19 @@ import {
 } from "@/components/ui/select";
 
 const actionColor = (action) => {
-  if (action === "READ") return "bg-blue-500/10 text-blue-400";
-  if (action === "CREATE") return "bg-emerald-500/10 text-emerald-400";
-  if (action === "UPDATE") return "bg-orange-500/10 text-orange-400";
-  if (action === "DELETE") return "bg-red-500/10 text-red-400";
-  return "bg-white/5 text-gray-400";
+  if (action === "READ") return "bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400";
+  if (action === "CREATE") return "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
+  if (action === "UPDATE") return "bg-orange-100 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400";
+  if (action === "DELETE") return "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400";
+  return "bg-surface text-text-secondary";
 };
 
 const moduleColors = [
-  "bg-purple-500/10 text-purple-400",
-  "bg-pink-500/10 text-pink-400",
-  "bg-indigo-500/10 text-indigo-400",
-  "bg-cyan-500/10 text-cyan-400",
-  "bg-teal-500/10 text-teal-400",
+  "bg-purple-100 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400",
+  "bg-pink-100 dark:bg-pink-500/10 text-pink-700 dark:text-pink-400",
+  "bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400",
+  "bg-cyan-100 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-400",
+  "bg-teal-100 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400",
 ];
 
 export default function Permissions() {
@@ -97,8 +97,8 @@ export default function Permissions() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Permissions</h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-text">Permissions</h1>
+          <p className="text-text-secondary text-sm mt-1">
             Gérer les permissions du système
           </p>
         </div>
@@ -117,10 +117,10 @@ export default function Permissions() {
         {["READ", "CREATE", "UPDATE", "DELETE"].map((action) => (
           <div
             key={action}
-            className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center justify-between">
+            className="bg-surface border border-border rounded-xl p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs text-gray-500">{action}</p>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-xs text-text-muted">{action}</p>
+              <p className="text-2xl font-bold text-text">
                 {permissions.filter((p) => p.action === action).length}
               </p>
             </div>
@@ -136,7 +136,7 @@ export default function Permissions() {
       <div className="relative">
         <Search
           size={15}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
         />
         <Input
           placeholder="Rechercher une permission..."
@@ -148,9 +148,9 @@ export default function Permissions() {
 
       {/* Groupé par module */}
       {loading ? (
-        <p className="text-center text-gray-500 py-12">Chargement...</p>
+        <p className="text-center text-text-muted py-12">Chargement...</p>
       ) : Object.keys(grouped).length === 0 ? (
-        <p className="text-center text-gray-500 py-12">
+        <p className="text-center text-text-muted py-12">
           Aucune permission trouvée
         </p>
       ) : (
@@ -158,16 +158,16 @@ export default function Permissions() {
           {Object.entries(grouped).map(([module, perms], idx) => (
             <div
               key={module}
-              className="bg-white/5 border border-white/10 rounded-xl p-5 bento-card">
+              className="bg-surface border border-border rounded-xl p-5 bento-card">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center">
-                  <Shield size={15} className="text-gray-400" />
+                <div className="w-8 h-8 bg-surface rounded-lg flex items-center justify-center">
+                  <Shield size={15} className="text-text-secondary" />
                 </div>
                 <span
                   className={`text-xs px-2.5 py-1 rounded-full font-semibold ${moduleColors[idx % moduleColors.length]}`}>
                   {module}
                 </span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-text-muted">
                   {perms.length} permission{perms.length > 1 ? "s" : ""}
                 </span>
               </div>
@@ -175,19 +175,19 @@ export default function Permissions() {
                 {perms.map((p) => (
                   <div
                     key={p.id}
-                    className="flex items-center justify-between p-3 gap-3 bg-white/5 rounded-lg">
+                    className="flex items-center justify-between p-3 gap-3 bg-surface rounded-lg">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <span
                         className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${actionColor(p.action)}`}>
                         {p.action}
                       </span>
 
-                      <span className="text-sm truncate font-mono text-gray-300">
+                      <span className="text-sm truncate font-mono text-text-secondary">
                         {p.code}
                       </span>
                     </div>
 
-                    <span className="shrink-0 text-xs text-gray-500 border border-white/10 px-2 py-0.5 rounded-full">
+                    <span className="shrink-0 text-xs text-text-muted border border-border px-2 py-0.5 rounded-full">
                       {p.ressource}
                     </span>
                   </div>
@@ -246,14 +246,14 @@ export default function Permissions() {
               />
             </div>
             {form.module && form.action && form.ressource && (
-              <div className="p-3 bg-white/5 rounded-lg border border-white/10">
-                <p className="text-xs text-gray-500 mb-1">Code généré :</p>
-                <code className="text-sm font-mono text-blue-400">
+              <div className="p-3 bg-surface rounded-lg border border-border">
+                <p className="text-xs text-text-muted mb-1">Code généré :</p>
+                <code className="text-sm font-mono text-blue-700 dark:text-blue-400">
                   {form.module}.{form.action}.{form.ressource}
                 </code>
               </div>
             )}
-            {error && <p className="text-red-400 text-xs">{error}</p>}
+            {error && <p className="text-red-700 dark:text-red-400 text-xs">{error}</p>}
             <div className="flex gap-3 pt-2">
               <Button
                 type="submit"

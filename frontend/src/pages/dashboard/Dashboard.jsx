@@ -43,29 +43,29 @@ export default function Dashboard() {
       title: "Utilisateurs",
       value: stats.utilisateurs,
       icon: Users,
-      color: "text-blue-400",
-      bg: "bg-blue-500/10",
+      color: "text-blue-700 dark:text-blue-400",
+      bg: "bg-blue-100 dark:bg-blue-500/10",
     },
     {
       title: "Rôles",
       value: stats.roles,
       icon: Shield,
-      color: "text-emerald-400",
-      bg: "bg-emerald-500/10",
+      color: "text-emerald-700 dark:text-emerald-400",
+      bg: "bg-emerald-100 dark:bg-emerald-500/10",
     },
     {
       title: "Permissions",
       value: stats.permissions,
       icon: Key,
-      color: "text-purple-400",
-      bg: "bg-purple-500/10",
+      color: "text-purple-700 dark:text-purple-400",
+      bg: "bg-purple-100 dark:bg-purple-500/10",
     },
     {
       title: "Statut API",
       value: "En ligne",
       icon: Activity,
-      color: "text-orange-400",
-      bg: "bg-orange-500/10",
+      color: "text-orange-700 dark:text-orange-400",
+      bg: "bg-orange-100 dark:bg-orange-500/10",
     },
   ];
 
@@ -73,10 +73,10 @@ export default function Dashboard() {
     <div className="p-8 space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">
+        <h1 className="text-2xl font-bold text-text">
           Bonjour, {user?.prenom} 👋
         </h1>
-        <p className="text-slate-400 mt-1">
+        <p className="text-text-secondary mt-1">
           Bienvenue sur le tableau de bord GMAO
         </p>
       </div>
@@ -86,10 +86,10 @@ export default function Dashboard() {
         {cards.map(({ title, value, icon: Icon, color, bg }) => (
           <div
             key={title}
-            className="bg-white/5 border border-white/10 rounded-xl p-6 flex items-center justify-between">
+            className="bg-surface border border-border rounded-xl p-6 flex items-center justify-between transition-colors">
             <div>
-              <p className="text-sm text-slate-400">{title}</p>
-              <p className="text-3xl font-bold text-white mt-1">
+              <p className="text-sm text-text-secondary">{title}</p>
+              <p className="text-3xl font-bold text-text mt-1">
                 {loading ? "..." : value}
               </p>
             </div>
@@ -102,8 +102,8 @@ export default function Dashboard() {
       </div>
 
       {/* Profil */}
-      <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-        <h2 className="text-base font-semibold text-white mb-4">Mon Profil</h2>
+      <div className="bg-surface border border-border rounded-xl p-6 transition-colors">
+        <h2 className="text-base font-semibold text-text mb-4">Mon Profil</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 ">
           {[
             { label: "Nom complet", value: `${user?.prenom} ${user?.nom}` },
@@ -113,11 +113,11 @@ export default function Dashboard() {
           ].map(({ label, value }) => (
             <div
               key={label}
-              className="p-4 bg-white/5 rounded-lg border border-white/10 overflow-hidden">
-              <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+              className="p-4 bg-elevated rounded-lg border border-border-subtle overflow-hidden transition-colors">
+              <p className="text-xs text-text-muted font-medium uppercase tracking-wide">
                 {label}
               </p>
-              <p className="text-sm font-semibold text-white mt-1">
+              <p className="text-sm font-semibold text-text mt-1">
                 {value || "—"}
               </p>
             </div>

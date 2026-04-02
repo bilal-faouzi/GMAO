@@ -27,7 +27,7 @@ import { Label } from "@/components/ui/label";
 import { FieldError, GlobalError } from "@/components/FieldError";
 import { useFormErrors } from "@/hooks/useFormErrors";
 
-const labelCls = "text-xs text-gray-400 mb-1 block";
+const labelCls = "text-xs text-text-secondary mb-1 block";
 
 export default function Utilisateurs() {
   const [utilisateurs, setUtilisateurs] = useState([]);
@@ -165,8 +165,8 @@ export default function Utilisateurs() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Utilisateurs</h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-text">Utilisateurs</h1>
+          <p className="text-text-secondary text-sm mt-1">
             Gérer les comptes utilisateurs
           </p>
         </div>
@@ -184,7 +184,7 @@ export default function Utilisateurs() {
       <div className="relative">
         <Search
           size={15}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
         />
         <Input
           placeholder="Rechercher un utilisateur..."
@@ -198,28 +198,28 @@ export default function Utilisateurs() {
       </div>
 
       {/* Table */}
-      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+      <div className="bg-surface border border-border rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-white/10">
+            <tr className="border-b border-border">
               {["Utilisateur", "Email", "Rôles", "Statut"].map((h) => (
                 <th
                   key={h}
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                   {h}
                 </th>
               ))}
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-4 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className="divide-y divide-border-subtle">
             {loading ? (
               <tr>
                 <td
                   colSpan={5}
-                  className="px-4 py-10 text-center text-gray-500">
+                  className="px-4 py-10 text-center text-text-muted">
                   Chargement...
                 </td>
               </tr>
@@ -227,44 +227,46 @@ export default function Utilisateurs() {
               <tr>
                 <td
                   colSpan={5}
-                  className="px-4 py-10 text-center text-gray-500">
+                  className="px-4 py-10 text-center text-text-muted">
                   Aucun utilisateur trouvé
                 </td>
               </tr>
             ) : (
               filtered.map((u) => (
-                <tr key={u.id} className="hover:bg-white/5 transition-colors">
+                <tr key={u.id} className="hover:bg-surface transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-blue-400 text-xs font-bold">
+                      <div className="w-8 h-8 bg-blue-100 dark:bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="text-blue-700 dark:text-blue-400 text-xs font-bold">
                           {u.prenom[0]}
                           {u.nom[0]}
                         </span>
                       </div>
                       <div>
-                        <p className="font-medium text-white">
+                        <p className="font-medium text-text">
                           {u.prenom} {u.nom}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-text-muted">
                           @{u.nom_utilisateur}
                         </p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-400 text-sm">{u.email}</td>
+                  <td className="px-4 py-3 text-text-secondary text-sm">
+                    {u.email}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1 flex-wrap">
                       {u.roles?.length > 0 ? (
                         u.roles.map((r) => (
                           <span
                             key={r.id}
-                            className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-medium">
+                            className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">
                             {r.code}
                           </span>
                         ))
                       ) : (
-                        <span className="text-gray-600 text-xs">
+                        <span className="text-text-muted text-xs">
                           Aucun rôle
                         </span>
                       )}
@@ -272,28 +274,31 @@ export default function Utilisateurs() {
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${u.est_actif ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${u.est_actif ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400"}`}>
                       {u.est_actif ? "Actif" : "Inactif"}
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-1">
+                    <div className="flex justify-center gap-1">
                       <Button
+                        variant="ghost"
                         onClick={() => openRolesModal(u)}
                         title="Gérer les rôles"
-                        className="rounded hover:bg-emerald-500/10 text-gray-400 hover:text-emerald-400 transition-colors">
+                        className="rounded hover:bg-emerald-100 dark:hover:bg-emerald-500/10 text-text-secondary hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors">
                         <Shield size={13} />
                       </Button>
                       <Button
+                        variant="ghost"
                         onClick={() => openEditModal(u)}
                         title="Modifier"
-                        className="rounded hover:bg-blue-500/10 text-gray-400 hover:text-blue-400 transition-colors">
+                        className="rounded hover:bg-blue-100 dark:hover:bg-blue-500/10 text-text-secondary hover:text-blue-700 dark:hover:text-blue-400 transition-colors">
                         <Pencil size={13} />
                       </Button>
                       <Button
+                        variant="ghost"
                         onClick={() => handleDelete(u.id, u.est_actif)}
                         title={u.est_actif ? "Désactiver" : "Activer"}
-                        className="rounded hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors">
+                        className="rounded hover:bg-red-100 dark:hover:bg-red-500/10 text-text-secondary hover:text-danger transition-colors">
                         {u.est_actif ? (
                           <Power size={13} />
                         ) : (
@@ -509,7 +514,7 @@ export default function Utilisateurs() {
           onClose={() => setOpenRoles(false)}>
           <div className="space-y-4">
             <div>
-              <p className="text-xs text-gray-400 mb-2 uppercase tracking-wider">
+              <p className="text-xs text-text-secondary mb-2 uppercase tracking-wider">
                 Rôles assignés
               </p>
               <div className="space-y-2">
@@ -517,31 +522,31 @@ export default function Utilisateurs() {
                   selectedUser.roles.map((r) => (
                     <div
                       key={r.id}
-                      className="flex items-center justify-between p-2.5 rounded-lg bg-white/5">
+                      className="flex items-center justify-between p-2.5 rounded-lg bg-surface">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-medium">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">
                           {r.code}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-text-muted">
                           {r.libelle}
                         </span>
                       </div>
                       <Button
                         onClick={() => handleRemoveRole(r.id)}
-                        className="text-gray-500 hover:text-red-400 transition-colors text-lg leading-none">
+                        className="text-text-muted hover:text-danger transition-colors text-lg leading-none">
                         ×
                       </Button>
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-gray-600 p-2">
+                  <p className="text-sm text-text-muted p-2">
                     Aucun rôle assigné
                   </p>
                 )}
               </div>
             </div>
             <div>
-              <p className="text-xs text-gray-400 mb-2 uppercase tracking-wider">
+              <p className="text-xs text-text-secondary mb-2 uppercase tracking-wider">
                 Assigner un rôle
               </p>
               <div className="space-y-2">
@@ -552,12 +557,12 @@ export default function Utilisateurs() {
                   .map((r) => (
                     <div
                       key={r.id}
-                      className="flex items-center justify-between p-2.5 rounded-lg border border-white/10">
+                      className="flex items-center justify-between p-2.5 rounded-lg border border-border">
                       <div>
-                        <span className="text-sm font-medium text-white">
+                        <span className="text-sm font-medium text-text">
                           {r.code}
                         </span>
-                        <span className="text-xs text-gray-500 ml-2">
+                        <span className="text-xs text-text-muted ml-2">
                           {r.libelle}
                         </span>
                       </div>
@@ -572,7 +577,7 @@ export default function Utilisateurs() {
                 {allRoles.filter(
                   (r) => !selectedUser?.roles?.find((ur) => ur.id === r.id),
                 ).length === 0 && (
-                  <p className="text-sm text-gray-600 p-2">
+                  <p className="text-sm text-text-muted p-2">
                     Tous les rôles sont déjà assignés
                   </p>
                 )}
