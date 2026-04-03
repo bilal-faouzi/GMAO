@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   Users,
@@ -14,7 +14,10 @@ import {
   Grid3x3,
   Factory,
   Wrench,
-} from "lucide-react";
+  Package,
+  BarChart2,
+  GitBranch,
+} from 'lucide-react'
 import useAuthStore from "@/store/authStore";
 import api from "@/services/api";
 import ThemeToggle from "@/components/ui/ThemeToggle";
@@ -23,56 +26,49 @@ const navSections = [
   {
     label: null,
     items: [
-      { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-      { to: "/utilisateurs", icon: Users, label: "Utilisateurs" },
-      { to: "/roles", icon: Shield, label: "Rôles" },
-      { to: "/permissions", icon: Key, label: "Permissions" },
-      { to: "/sessions", icon: MonitorSmartphone, label: "Sessions" },
-      { to: "/journal-audit", icon: ClipboardList, label: "Journal Audit" },
+      { to: '/dashboard',     icon: LayoutDashboard,  label: 'Dashboard'     },
+      { to: '/utilisateurs',  icon: Users,             label: 'Utilisateurs'  },
+      { to: '/roles',         icon: Shield,            label: 'Rôles'         },
+      { to: '/permissions',   icon: Key,               label: 'Permissions'   },
+      { to: '/sessions',      icon: MonitorSmartphone, label: 'Sessions'      },
+      { to: '/journal-audit', icon: ClipboardList,     label: 'Journal Audit' },
     ],
   },
   {
-    label: "Organisation",
+    label: 'Organisation',
     items: [
-      { to: "/organisation", icon: Building2, label: "Arborescence" },
-      { to: "/societes", icon: Building2, label: "Sociétés" },
-      { to: "/sites", icon: MapPin, label: "Sites" },
-      { to: "/secteurs", icon: Grid3x3, label: "Secteurs" },
-      { to: "/unites", icon: Factory, label: "Unités" },
-      { to: "/specialites", icon: Wrench, label: "Spécialités" },
-      { to: "/equipes", icon: UsersRound, label: "Équipes" },
-      { to: "/appartenances", icon: Link2, label: "Appartenances" },
+      { to: '/organisation',  icon: Building2,  label: 'Arborescence'  },
+      { to: '/societes',      icon: Building2,  label: 'Sociétés'      },
+      { to: '/sites',         icon: MapPin,     label: 'Sites'         },
+      { to: '/secteurs',      icon: Grid3x3,    label: 'Secteurs'      },
+      { to: '/unites',        icon: Factory,    label: 'Unités'        },
+      { to: '/specialites',   icon: Wrench,     label: 'Spécialités'   },
+      { to: '/equipes',       icon: UsersRound, label: 'Équipes'       },
+      { to: '/appartenances', icon: Link2,      label: 'Appartenances' },
     ],
   },
   {
-    label: "actif",
+    label: 'Actifs',
     items: [
-      {
-        to: "/Actif",
-        icon: Building2,
-        label: "Actif",
-      },
-      {
-        to: "/Historiquestatuts",
-        icon: Building2,
-        label: "Historiquestatuts",
-      },
+      { to: '/actifs/dashboard', icon: BarChart2, label: 'Dashboard Actifs' },
+      { to: '/actifs',           icon: Package,   label: 'Liste des actifs' },
+      { to: '/actifs/arborescence', icon: GitBranch, label: 'Arborescence' },
     ],
   },
-];
+]
 
 export default function Sidebar() {
-  const { user, logout } = useAuthStore();
-  const navigate = useNavigate();
+  const { user, logout } = useAuthStore()
+  const navigate = useNavigate()
 
   const handleLogout = async () => {
     try {
-      const refresh = localStorage.getItem("refresh_token");
-      await api.post("/auth/logout/", { refresh });
+      const refresh = localStorage.getItem('refresh_token')
+      await api.post('/auth/logout/', { refresh })
     } catch {}
-    logout();
-    navigate("/login");
-  };
+    logout()
+    navigate('/login')
+  }
 
   return (
     <div className="w-64 min-h-screen max-h-screen sticky top-0 bg-[var(--color-sidebar-bg)] border-r border-[var(--color-sidebar-border)] flex flex-col transition-colors duration-200">
@@ -108,10 +104,11 @@ export default function Sidebar() {
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                       isActive
-                        ? "bg-primary text-white"
-                        : "text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)] hover:text-text"
+                        ? 'bg-blue-600 text-white'
+                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                     }`
-                  }>
+                  }
+                >
                   <Icon size={18} />
                   {label}
                 </NavLink>
@@ -126,16 +123,15 @@ export default function Sidebar() {
         <div className="flex items-center gap-3 px-3 py-2 mb-2">
           <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
             <span className="text-white text-sm font-bold">
-              {user?.prenom?.[0]}
-              {user?.nom?.[0]}
+              {user?.prenom?.[0]}{user?.nom?.[0]}
             </span>
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-text text-sm font-medium truncate">
               {user?.prenom} {user?.nom}
             </p>
-            <p className="text-[var(--color-sidebar-text)] text-xs truncate">
-              {user?.roles?.[0]?.code || "Utilisateur"}
+            <p className="text-slate-400 text-xs truncate">
+              {user?.roles?.[0]?.code || 'Utilisateur'}
             </p>
           </div>
           <ThemeToggle />
@@ -147,6 +143,7 @@ export default function Sidebar() {
           Déconnexion
         </button>
       </div>
+
     </div>
-  );
+  )
 }
