@@ -53,6 +53,7 @@
   --color-surface:  #f9fafe;   /* cartes — blanc légèrement bleuté */
   --color-elevated: #f0f3fb;   /* inputs, éléments surélevés */
   --color-hover:    #e2e9f5;   /* hover */
+  --color-showcase:  #e5ebf5;   /* sections mises en avant */
   --color-active:   #d5deef;   /* active / selected */
 
   /* Bordures — bleu ardoise */
