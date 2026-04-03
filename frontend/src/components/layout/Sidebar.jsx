@@ -14,7 +14,10 @@ import {
   Grid3x3,
   Factory,
   Wrench,
-} from "lucide-react";
+  Package,
+  BarChart2,
+  GitBranch,
+} from 'lucide-react'
 import useAuthStore from "@/store/authStore";
 import api from "@/services/api";
 import ThemeToggle from "@/components/ui/ThemeToggle";

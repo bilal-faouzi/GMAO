@@ -6,7 +6,7 @@ import os
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from apps.actif.models import Actif
+from apps.actifs.models import Actif
 from apps.organisation.models import Unite
 
 unite = Unite.objects.first()

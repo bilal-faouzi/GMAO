@@ -20,9 +20,11 @@ import DetailActif        from '@/pages/actifs/DetailActif'
 import FormulaireActif    from '@/pages/actifs/FormulaireActif'
 import DashboardActifs    from '@/pages/actifs/DashboardActifs'
 import ArborescenceActifs from '@/pages/actifs/ArborescenceActifs'
+import ThemeProvider from './providers/ThemProvider'
 
 export default function App() {
   return (
+    <ThemeProvider>
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -56,5 +58,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
+    </ThemeProvider>
   )
 }
