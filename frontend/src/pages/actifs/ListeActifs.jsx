@@ -1,43 +1,132 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getActifs, deleteActif, changerStatut } from '../../services/actifService';
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  getActifs,
+  deleteActif,
+  changerStatut,
+} from "../../services/actifService";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Search,
+  RotateCcw,
+  Plus,
+  Eye,
+  Pencil,
+  RefreshCw,
+  Trash2,
+  Filter,
+  X,
+} from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-// Constantes partagées (idéalement dans un fichier séparé)
+// ─── Config statuts & types ───────────────────────────────────────────────────
+
 const STATUTS = {
-  ACTIF: { value: 'actif', label: 'Actif', color: 'bg-green-500/20 text-green-400' },
-  EN_PANNE: { value: 'en_panne', label: 'En panne', color: 'bg-red-500/20 text-red-400' },
-  EN_MAINTENANCE: { value: 'en_maintenance', label: 'En maintenance', color: 'bg-amber-500/20 text-amber-400' },
-  RETIRE: { value: 'retire', label: 'Retiré', color: 'bg-gray-500/20 text-gray-400' }
+  actif: {
+    label: "Actif",
+    bg: "var(--status-green-bg)",
+    text: "var(--status-green-text)",
+    dot: "var(--status-green-dot)",
+  },
+  en_panne: {
+    label: "En panne",
+    bg: "var(--status-red-bg)",
+    text: "var(--status-red-text)",
+    dot: "var(--status-red-dot)",
+  },
+  en_maintenance: {
+    label: "En maintenance",
+    bg: "var(--status-orange-bg)",
+    text: "var(--status-orange-text)",
+    dot: "var(--status-orange-dot)",
+  },
+  retire: {
+    label: "Retiré",
+    bg: "var(--status-gray-bg)",
+    text: "var(--status-gray-text)",
+    dot: "var(--status-gray-dot)",
+  },
 };
 
 const TYPES = {
-  EQUIPEMENT: { value: 'equipement', label: 'Équipement', color: 'bg-blue-500/20 text-blue-400' },
-  INFRASTRUCTURE: { value: 'infrastructure', label: 'Infrastructure', color: 'bg-purple-500/20 text-purple-400' },
-  VEHICULE: { value: 'vehicule', label: 'Véhicule', color: 'bg-teal-500/20 text-teal-400' },
-  AUTRE: { value: 'autre', label: 'Autre', color: 'bg-gray-500/20 text-gray-400' }
+  equipement: {
+    label: "Équipement",
+    bg: "var(--status-blue-bg)",
+    text: "var(--status-blue-text)",
+  },
+  infrastructure: {
+    label: "Infrastructure",
+    bg: "var(--status-purple-bg)",
+    text: "var(--status-purple-text)",
+  },
+  vehicule: {
+    label: "Véhicule",
+    bg: "var(--status-cyan-bg)",
+    text: "var(--status-cyan-text)",
+  },
+  autre: {
+    label: "Autre",
+    bg: "var(--status-gray-bg)",
+    text: "var(--status-gray-text)",
+  },
 };
 
-const STATUT_COLORS = Object.fromEntries(Object.values(STATUTS).map(s => [s.value, s.color]));
-const TYPE_COLORS = Object.fromEntries(Object.values(TYPES).map(t => [t.value, t.color]));
+const ALL = "__all__";
+
+function StatutBadge({ statut }) {
+  const cfg = STATUTS[statut] || {
+    label: statut,
+    bg: "var(--color-elevated)",
+    text: "var(--color-text-muted)",
+    dot: "var(--color-text-muted)",
+  };
+  return (
+    <span className="badge" style={{ background: cfg.bg, color: cfg.text }}>
+      <span className="bdot" style={{ background: cfg.dot }} />
+      {cfg.label}
+    </span>
+  );
+}
+
+function TypeBadge({ type }) {
+  const cfg = TYPES[type] || {
+    label: type,
+    bg: "var(--color-elevated)",
+    text: "var(--color-text-muted)",
+  };
+  return (
+    <span className="badge" style={{ background: cfg.bg, color: cfg.text }}>
+      {cfg.label}
+    </span>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function ListeActifs() {
   const navigate = useNavigate();
   const [actifs, setActifs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ search: '', statut: '', type: '', estActif: '' });
+  const [filters, setFilters] = useState({ search: "", statut: "", type: "" });
+  const [showFilters, setShowFilters] = useState(false);
   const [modalStatut, setModalStatut] = useState(null);
-  const [nouveauStatut, setNouveauStatut] = useState('');
-  const [motif, setMotif] = useState('');
+  const [nouveauStatut, setNouveauStatut] = useState("");
+  const [motif, setMotif] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [erreur, setErreur] = useState(null);
 
-  // Nettoyage des filtres avant envoi
   const buildParams = useCallback(() => {
     const params = {};
     if (filters.search?.trim()) params.search = filters.search.trim();
     if (filters.statut) params.statut = filters.statut;
     if (filters.type) params.type = filters.type;
-    if (filters.estActif) params.estActif = filters.estActif === 'true';
     return params;
   }, [filters]);
 
@@ -45,36 +134,32 @@ export default function ListeActifs() {
     setLoading(true);
     setErreur(null);
     try {
-      const params = buildParams();
-      const res = await getActifs(params);
+      const res = await getActifs(buildParams());
       setActifs(res.data.results || res.data);
-    } catch (e) {
-      console.error(e);
-      setErreur('Erreur lors du chargement des actifs');
+    } catch {
+      setErreur("Erreur lors du chargement des actifs");
     } finally {
       setLoading(false);
     }
   }, [buildParams]);
 
-  // Rechargement automatique quand les filtres changent (sauf search géré manuellement)
   useEffect(() => {
     charger();
-  }, [charger, filters.statut, filters.type, filters.estActif]);
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    charger();
-  };
+  }, [charger]);
 
   const handleDelete = async (id) => {
-    if (!window.confirm('⚠️ Supprimer définitivement cet actif ? Cette action est irréversible.')) return;
+    if (
+      !window.confirm(
+        "Supprimer définitivement cet actif ? Cette action est irréversible.",
+      )
+    )
+      return;
     setActionLoading(true);
     try {
       await deleteActif(id);
       await charger();
-    } catch (e) {
-      console.error(e);
-      setErreur('Erreur lors de la suppression');
+    } catch {
+      setErreur("Erreur lors de la suppression");
     } finally {
       setActionLoading(false);
     }
@@ -86,203 +171,327 @@ export default function ListeActifs() {
     try {
       await changerStatut(modalStatut.id, nouveauStatut, motif);
       setModalStatut(null);
-      setNouveauStatut('');
-      setMotif('');
+      setNouveauStatut("");
+      setMotif("");
       await charger();
-    } catch (e) {
-      console.error(e);
-      setErreur('Erreur lors du changement de statut');
+    } catch {
+      setErreur("Erreur lors du changement de statut");
     } finally {
       setActionLoading(false);
     }
   };
 
-  const resetFilters = () => {
-    setFilters({ search: '', statut: '', type: '', estActif: '' });
+  const hasFilters = !!(filters.statut || filters.type);
+  const filterCount = [filters.statut, filters.type].filter(Boolean).length;
+  const clearFilters = () => setFilters({ search: "", statut: "", type: "" });
+
+  const stats = {
+    total: actifs.length,
+    actif: actifs.filter((a) => a.statut === "actif").length,
+    panne: actifs.filter((a) => a.statut === "en_panne").length,
+    maint: actifs.filter((a) => a.statut === "en_maintenance").length,
   };
 
   return (
-    <div className="p-6 text-white">
+    <div className="page">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold">Actifs</h1>
-          <p className="text-gray-400 text-sm mt-1">Gestion des équipements et infrastructures</p>
+      <div className="hdr">
+        <div className="hdr-l">
+          <h1>Actifs</h1>
+          <p>Gestion des équipements et infrastructures</p>
         </div>
         <button
-          onClick={() => navigate('/actifs/nouveau')}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
-        >
-          + Nouvel actif
+          className="btn btn-primary"
+          onClick={() => navigate("/actifs/nouveau")}>
+          <Plus size={14} /> Nouvel actif
         </button>
       </div>
 
-      {/* Message d'erreur global */}
+      {/* Erreur globale */}
       {erreur && (
-        <div className="bg-red-500/20 border border-red-500/40 text-red-400 rounded-lg p-4 mb-6 text-sm">
+        <div
+          style={{
+            background: "var(--status-red-bg)",
+            border: "1px solid rgba(239,68,68,.25)",
+            color: "var(--status-red-text)",
+            borderRadius: "var(--r-sm)",
+            padding: "10px 14px",
+            fontSize: 13,
+          }}>
           {erreur}
+          <button
+            onClick={() => setErreur(null)}
+            style={{ marginLeft: 12, cursor: "pointer", opacity: 0.7 }}>
+            <X size={14} />
+          </button>
         </div>
       )}
 
-      {/* Filtres */}
-      <div className="bg-gray-800 rounded-xl p-4 mb-6 flex flex-wrap gap-3 items-end">
-        <form onSubmit={handleSearch} className="flex gap-2 flex-1 min-w-[200px]">
-          <input
-            type="text"
-            placeholder="Rechercher code, libellé, série..."
-            value={filters.search}
-            onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
-            className="bg-gray-700 text-white rounded-lg px-3 py-2 text-sm flex-1 outline-none border border-gray-600 focus:border-purple-500"
+      {/* Stats */}
+      <div className="stats-row">
+        <div className="stat-chip">
+          <strong>{stats.total}</strong>&nbsp;actifs
+        </div>
+        <div className="stat-chip">
+          <span
+            className="dot"
+            style={{ background: "var(--status-green-dot)" }}
           />
-          <button type="submit" className="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg text-sm transition">
-            🔍
-          </button>
-        </form>
-
-        <select
-          value={filters.statut}
-          onChange={e => setFilters(f => ({ ...f, statut: e.target.value }))}
-          className="bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none"
-        >
-          <option value="">Tous les statuts</option>
-          {Object.values(STATUTS).map(s => (
-            <option key={s.value} value={s.value}>{s.label}</option>
-          ))}
-        </select>
-
-        <select
-          value={filters.type}
-          onChange={e => setFilters(f => ({ ...f, type: e.target.value }))}
-          className="bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none"
-        >
-          <option value="">Tous les types</option>
-          {Object.values(TYPES).map(t => (
-            <option key={t.value} value={t.value}>{t.label}</option>
-          ))}
-        </select>
-
-        <button
-          onClick={resetFilters}
-          className="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg text-sm transition"
-        >
-          Réinitialiser
-        </button>
+          <strong>{stats.actif}</strong>&nbsp;en service
+        </div>
+        <div className="stat-chip">
+          <span
+            className="dot"
+            style={{ background: "var(--status-red-dot)" }}
+          />
+          <strong>{stats.panne}</strong>&nbsp;en panne
+        </div>
+        <div className="stat-chip">
+          <span
+            className="dot"
+            style={{ background: "var(--status-orange-dot)" }}
+          />
+          <strong>{stats.maint}</strong>&nbsp;maintenance
+        </div>
       </div>
 
-      {/* Tableau */}
-      <div className="bg-gray-800 rounded-xl overflow-hidden">
-        {loading ? (
-          <div className="p-12 text-center text-gray-400">Chargement...</div>
-        ) : actifs.length === 0 ? (
-          <div className="p-12 text-center text-gray-400">Aucun actif trouvé</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-700/50 text-gray-400 uppercase text-xs">
-                <tr>
-                  <th className="px-4 py-3 text-left">Code</th>
-                  <th className="px-4 py-3 text-left">Libellé</th>
-                  <th className="px-4 py-3 text-left">Type</th>
-                  <th className="px-4 py-3 text-left">Statut</th>
-                  <th className="px-4 py-3 text-left">Site</th>
-                  <th className="px-4 py-3 text-left">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-700">
-                {actifs.map(actif => (
-                  <tr key={actif.id} className="hover:bg-gray-700/30 transition">
-                    <td className="px-4 py-3 font-mono text-purple-300">{actif.code}</td>
-                    <td className="px-4 py-3 font-medium">{actif.libelle}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${TYPE_COLORS[actif.type] || 'bg-gray-500/20 text-gray-400'}`}>
-                        {TYPES[actif.type?.toUpperCase()]?.label || actif.type}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUT_COLORS[actif.statut] || 'bg-gray-500/20 text-gray-400'}`}>
-                        {STATUTS[actif.statut?.toUpperCase()]?.label || actif.statut?.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-400">
-                      {actif.site_detail?.libelle || actif.site?.libelle || '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => navigate(`/actifs/${actif.id}`)}
-                          className="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded transition"
-                          disabled={actionLoading}
-                        >
-                          Détail
-                        </button>
-                        <button
-                          onClick={() => navigate(`/actifs/${actif.id}/modifier`)}
-                          className="text-xs bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 px-2 py-1 rounded transition"
-                          disabled={actionLoading}
-                        >
-                          Modifier
-                        </button>
-                        <button
-                          onClick={() => { setModalStatut(actif); setNouveauStatut(actif.statut); setMotif(''); }}
-                          className="text-xs bg-amber-600/20 hover:bg-amber-600/40 text-amber-400 px-2 py-1 rounded transition"
-                          disabled={actionLoading}
-                        >
-                          Statut
-                        </button>
-                        <button
-                          onClick={() => handleDelete(actif.id)}
-                          className="text-xs bg-red-600/20 hover:bg-red-600/40 text-red-400 px-2 py-1 rounded transition"
-                          disabled={actionLoading}
-                        >
-                          Supprimer
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+      {/* Filtres */}
+      <div className="filter-card">
+        <div className="filter-row">
+          <div className="search-wrap" style={{ flex: 1 }}>
+            <Search size={14} className="search-icon" />
+            <Input
+              className="search-input"
+              placeholder="Rechercher code, libellé, série..."
+              value={filters.search}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, search: e.target.value }))
+              }
+              onKeyDown={(e) => e.key === "Enter" && charger()}
+            />
+          </div>
+          <Button
+            className={`pill ${showFilters ? "active" : ""}`}
+            onClick={() => setShowFilters((v) => !v)}>
+            <Filter size={11} /> Filtres
+            {hasFilters && <span className="pill-count">{filterCount}</span>}
+          </Button>
+          {hasFilters && (
+            <Button className="pill" onClick={clearFilters}>
+              <X size={11} /> Effacer
+            </Button>
+          )}
+          <Button
+            className="btn btn-ghost btn-icon"
+            title="Rafraîchir"
+            onClick={charger}>
+            <RotateCcw size={13} />
+          </Button>
+        </div>
+
+        {showFilters && (
+          <div className="filters-exp">
+            <Select
+              value={filters.statut || ALL}
+              onValueChange={(v) =>
+                setFilters((f) => ({ ...f, statut: v === ALL ? "" : v }))
+              }>
+              <SelectTrigger className="sel-mini">
+                <SelectValue placeholder="Tous les statuts" />
+              </SelectTrigger>
+              <SelectContent className="z-[9999]">
+                <SelectItem value={ALL}>Tous les statuts</SelectItem>
+                {Object.entries(STATUTS).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>
+                    {v.label}
+                  </SelectItem>
                 ))}
-              </tbody>
-            </table>
+              </SelectContent>
+            </Select>
+            <Select
+              value={filters.type || ALL}
+              onValueChange={(v) =>
+                setFilters((f) => ({ ...f, type: v === ALL ? "" : v }))
+              }>
+              <SelectTrigger className="sel-mini">
+                <SelectValue placeholder="Tous les types" />
+              </SelectTrigger>
+              <SelectContent className="z-[9999]">
+                <SelectItem value={ALL}>Tous les types</SelectItem>
+                {Object.entries(TYPES).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>
+                    {v.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
       </div>
 
+      {/* Table */}
+      <div className="tbl-card">
+        <div className="tbl-head">
+          <span className="tbl-title">Liste des actifs</span>
+          <span className="tbl-count">
+            {loading ? "Chargement…" : `${actifs.length} actif(s)`}
+          </span>
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          <table>
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Libellé</th>
+                <th>Type</th>
+                <th>Statut</th>
+                <th>Site</th>
+                <th className="c">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i}>
+                    {Array.from({ length: 6 }).map((_, j) => (
+                      <td key={j}>
+                        <div className="skeleton" style={{ width: "70%" }} />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : actifs.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="empty">
+                    Aucun actif trouvé
+                  </td>
+                </tr>
+              ) : (
+                actifs.map((actif) => (
+                  <tr key={actif.id}>
+                    <td>
+                      <span className="code-mono" style={{ fontWeight: 600 }}>
+                        {actif.code}
+                      </span>
+                    </td>
+                    <td className="desig">{actif.libelle}</td>
+                    <td>
+                      <TypeBadge type={actif.type} />
+                    </td>
+                    <td>
+                      <StatutBadge statut={actif.statut} />
+                    </td>
+                    <td style={{ color: "var(--text-muted)", fontSize: 13 }}>
+                      {actif.site_detail?.libelle || actif.site?.libelle || "—"}
+                    </td>
+                    <td className="c">
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 4,
+                          justifyContent: "center",
+                        }}>
+                        <button
+                          className="act-btn"
+                          title="Détail"
+                          disabled={actionLoading}
+                          onClick={() => navigate(`/actifs/${actif.id}`)}>
+                          <Eye size={14} />
+                        </button>
+                        <button
+                          className="act-btn"
+                          title="Modifier"
+                          disabled={actionLoading}
+                          onClick={() =>
+                            navigate(`/actifs/${actif.id}/modifier`)
+                          }>
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          className="act-btn"
+                          title="Changer statut"
+                          disabled={actionLoading}
+                          onClick={() => {
+                            setModalStatut(actif);
+                            setNouveauStatut(actif.statut);
+                            setMotif("");
+                          }}>
+                          <RefreshCw size={14} />
+                        </button>
+                        <button
+                          className="act-btn"
+                          title="Supprimer"
+                          disabled={actionLoading}
+                          onClick={() => handleDelete(actif.id)}
+                          style={{ color: "var(--status-red-text)" }}>
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Modal changer statut */}
       {modalStatut && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md border border-gray-700">
-            <h2 className="text-lg font-semibold mb-4">Changer le statut</h2>
-            <p className="text-gray-400 text-sm mb-4">
-              Actif : <span className="text-white font-mono">{modalStatut.code}</span>
-            </p>
-            <select
-              value={nouveauStatut}
-              onChange={e => setNouveauStatut(e.target.value)}
-              className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none mb-3"
-            >
-              {Object.values(STATUTS).map(s => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
-            <textarea
-              placeholder="Motif (optionnel)"
-              value={motif}
-              onChange={e => setMotif(e.target.value)}
-              className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none mb-4 resize-none h-20"
-            />
-            <div className="flex gap-3 justify-end">
+        <div className="backdrop">
+          <div className="modal modal-sm">
+            <div className="m-hdr">
+              <span className="m-title">Changer le statut</span>
+              <button className="m-close" onClick={() => setModalStatut(null)}>
+                ✕
+              </button>
+            </div>
+            <div
+              className="m-body-plain"
+              style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                Actif :{" "}
+                <span className="code-mono" style={{ fontWeight: 600 }}>
+                  {modalStatut.code}
+                </span>
+              </p>
+              <div className="fg">
+                <label className="flabel">Nouveau statut</label>
+                <select
+                  className="fsel"
+                  value={nouveauStatut}
+                  onChange={(e) => setNouveauStatut(e.target.value)}>
+                  {Object.entries(STATUTS).map(([k, v]) => (
+                    <option key={k} value={k}>
+                      {v.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="fg">
+                <label className="flabel">Motif (optionnel)</label>
+                <textarea
+                  className="finput"
+                  placeholder="Raison du changement…"
+                  value={motif}
+                  onChange={(e) => setMotif(e.target.value)}
+                  rows={3}
+                  style={{ resize: "none" }}
+                />
+              </div>
+            </div>
+            <div className="m-foot">
               <button
+                className="btn btn-outline"
                 onClick={() => setModalStatut(null)}
-                className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition"
-                disabled={actionLoading}
-              >
+                disabled={actionLoading}>
                 Annuler
               </button>
               <button
+                className="btn btn-primary"
                 onClick={handleChangerStatut}
-                className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 rounded-lg transition disabled:opacity-50"
-                disabled={actionLoading}
-              >
-                {actionLoading ? 'En cours...' : 'Confirmer'}
+                disabled={actionLoading}>
+                {actionLoading ? "En cours…" : "Confirmer"}
               </button>
             </div>
           </div>
