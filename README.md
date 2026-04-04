@@ -95,3 +95,44 @@ GMAO - Gestion de Maintenance Assistée par Ordinateur | Stack: Django 5.2 LTS +
       `-- .env
 
 ================================================================================
+  SEED (Données de test)
+================================================================================
+
+  1. Créer une management command avec le script creat_command.sh
+     ─────────────────────────────────────────────────────────────
+     ⚠️  Ce script nécessite un terminal Bash (Git Bash sous Windows).
+
+     cd backend
+     bash creat_command.sh <app> <nom_commande>
+
+     Exemples :
+       bash creat_command.sh actifs seed_actifs
+       bash creat_command.sh organisation seed_equipe
+
+     Cela génère automatiquement :
+       apps/<app>/management/__init__.py
+       apps/<app>/management/commands/__init__.py
+       apps/<app>/management/commands/<nom_commande>.py   (template prêt à remplir)
+
+  2. Écrire la logique du seed
+     ──────────────────────────
+     Ouvrir le fichier généré et ajouter les imports de modèles
+     ainsi que la logique de création d'objets dans la méthode handle().
+
+  3. Exécuter le seed
+     ─────────────────
+     ⚠️  Le venv doit être activé avant d'exécuter la commande.
+
+     cd backend
+     venv\Scripts\activate        (Windows)
+     source venv/bin/activate      (Mac/Linux)
+
+     python manage.py <nom_commande>
+
+     Exemples :
+       python manage.py seed_actifs
+       python manage.py seed_equipe
+
+  Seeds disponibles :
+     - seed_actifs   (app actifs)       : ~100 actifs sur 4 niveaux + historiques, indisponibilités, remplacements
+     - seed_equipe   (app organisation) : équipes et appartenances
