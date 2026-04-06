@@ -17,6 +17,7 @@ import {
   Package,
   BarChart2,
   GitBranch,
+  Package2
 } from 'lucide-react'
 import useAuthStore from "@/store/authStore";
 import api from "@/services/api";
@@ -55,6 +56,13 @@ const navSections = [
       { to: '/actifs/arborescence', icon: GitBranch, label: 'Arborescence' },
     ],
   },
+  {
+  label: 'Magasin',
+  items: [
+    { to: '/magasin/dashboard', icon: BarChart2, label: 'Dashboard Magasin' },
+    { to: '/magasin',           icon: Package2,  label: 'Catalogue pièces'  },
+  ],
+},
 ]
 
 export default function Sidebar() {
