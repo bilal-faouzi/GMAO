@@ -5,6 +5,7 @@ import {
   deleteActif,
   changerStatut,
 } from "../../services/actifService";
+import { getSites } from "../../services/organisationService";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +18,8 @@ import {
   Trash2,
   Filter,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   Select,
@@ -79,6 +82,7 @@ const TYPES = {
 };
 
 const ALL = "__all__";
+const PAGE_SIZE = 10;
 
 function StatutBadge({ statut }) {
   const cfg = STATUTS[statut] || {
@@ -108,34 +112,67 @@ function TypeBadge({ type }) {
   );
 }
 
+// ─── Composant Pagination ─────────────────────────────────────────────────────
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function ListeActifs() {
   const navigate = useNavigate();
   const [actifs, setActifs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ search: "", statut: "", type: "" });
+  const [filters, setFilters] = useState({
+    search: "",
+    statut: "",
+    type: "",
+    site: "",
+    parentFilter: "",
+  });
   const [showFilters, setShowFilters] = useState(false);
   const [modalStatut, setModalStatut] = useState(null);
   const [nouveauStatut, setNouveauStatut] = useState("");
   const [motif, setMotif] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [erreur, setErreur] = useState(null);
+  const [sites, setSites] = useState([]);
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  // Charger la liste des sites pour le filtre
+  useEffect(() => {
+    getSites()
+      .then((res) => {
+        setSites(res.data.results || res.data);
+      })
+      .catch(() => {});
+  }, []);
 
   const buildParams = useCallback(() => {
-    const params = {};
+    const params = { page, page_size: PAGE_SIZE };
     if (filters.search?.trim()) params.search = filters.search.trim();
     if (filters.statut) params.statut = filters.statut;
     if (filters.type) params.type = filters.type;
+    if (filters.site) params.idSite = filters.site; // correspond au filterset_field backend
+    if (filters.parentFilter) params.is_parent = filters.parentFilter;
     return params;
-  }, [filters]);
+  }, [filters, page]);
 
   const charger = useCallback(async () => {
     setLoading(true);
     setErreur(null);
     try {
       const res = await getActifs(buildParams());
-      setActifs(res.data.results || res.data);
+      // Réponse paginée : { count, next, previous, results }
+      if (res.data.results !== undefined) {
+        setActifs(res.data.results);
+        setTotal(res.data.count);
+      } else {
+        // fallback si pagination non activée côté backend
+        setActifs(res.data);
+        setTotal(res.data.length);
+      }
     } catch {
       setErreur("Erreur lors du chargement des actifs");
     } finally {
@@ -146,6 +183,12 @@ export default function ListeActifs() {
   useEffect(() => {
     charger();
   }, [charger]);
+
+  // Remettre à la page 1 quand les filtres changent
+  const setFiltersAndReset = (updater) => {
+    setPage(1);
+    setFilters(updater);
+  };
 
   const handleDelete = async (id) => {
     if (
@@ -181,9 +224,28 @@ export default function ListeActifs() {
     }
   };
 
-  const hasFilters = !!(filters.statut || filters.type);
-  const filterCount = [filters.statut, filters.type].filter(Boolean).length;
-  const clearFilters = () => setFilters({ search: "", statut: "", type: "" });
+  const hasFilters = !!(
+    filters.statut ||
+    filters.type ||
+    filters.site ||
+    filters.parentFilter
+  );
+  const filterCount = [
+    filters.statut,
+    filters.type,
+    filters.site,
+    filters.parentFilter,
+  ].filter(Boolean).length;
+  const clearFilters = () => {
+    setPage(1);
+    setFilters({
+      search: "",
+      statut: "",
+      type: "",
+      site: "",
+      parentFilter: "",
+    });
+  };
 
   const stats = {
     total: actifs.length,
@@ -230,7 +292,7 @@ export default function ListeActifs() {
       {/* Stats */}
       <div className="stats-row">
         <div className="stat-chip">
-          <strong>{stats.total}</strong>&nbsp;actifs
+          <strong>{total}</strong>&nbsp;actifs
         </div>
         <div className="stat-chip">
           <span
@@ -265,7 +327,7 @@ export default function ListeActifs() {
               placeholder="Rechercher code, libellé, série..."
               value={filters.search}
               onChange={(e) =>
-                setFilters((f) => ({ ...f, search: e.target.value }))
+                setFiltersAndReset((f) => ({ ...f, search: e.target.value }))
               }
               onKeyDown={(e) => e.key === "Enter" && charger()}
             />
@@ -291,10 +353,14 @@ export default function ListeActifs() {
 
         {showFilters && (
           <div className="filters-exp">
+            {/* Filtre statut */}
             <Select
               value={filters.statut || ALL}
               onValueChange={(v) =>
-                setFilters((f) => ({ ...f, statut: v === ALL ? "" : v }))
+                setFiltersAndReset((f) => ({
+                  ...f,
+                  statut: v === ALL ? "" : v,
+                }))
               }>
               <SelectTrigger className="sel-mini">
                 <SelectValue placeholder="Tous les statuts" />
@@ -308,10 +374,12 @@ export default function ListeActifs() {
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Filtre type */}
             <Select
               value={filters.type || ALL}
               onValueChange={(v) =>
-                setFilters((f) => ({ ...f, type: v === ALL ? "" : v }))
+                setFiltersAndReset((f) => ({ ...f, type: v === ALL ? "" : v }))
               }>
               <SelectTrigger className="sel-mini">
                 <SelectValue placeholder="Tous les types" />
@@ -325,6 +393,44 @@ export default function ListeActifs() {
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Filtre site */}
+            <Select
+              value={filters.site || ALL}
+              onValueChange={(v) =>
+                setFiltersAndReset((f) => ({ ...f, site: v === ALL ? "" : v }))
+              }>
+              <SelectTrigger className="sel-mini">
+                <SelectValue placeholder="Tous les sites" />
+              </SelectTrigger>
+              <SelectContent className="z-[9999]">
+                <SelectItem value={ALL}>Tous les sites</SelectItem>
+                {sites.map((s) => (
+                  <SelectItem key={s.id} value={String(s.id)}>
+                    {s.libelle}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Filtre parent / enfant */}
+            <Select
+              value={filters.parentFilter || ALL}
+              onValueChange={(v) =>
+                setFiltersAndReset((f) => ({
+                  ...f,
+                  parentFilter: v === ALL ? "" : v,
+                }))
+              }>
+              <SelectTrigger className="sel-mini">
+                <SelectValue placeholder="Parent / Enfant" />
+              </SelectTrigger>
+              <SelectContent className="z-[9999]">
+                <SelectItem value={ALL}>Parent / Enfant</SelectItem>
+                <SelectItem value="true">Parent (sans parent)</SelectItem>
+                <SelectItem value="false">Enfant (sous-actif)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         )}
       </div>
@@ -334,7 +440,9 @@ export default function ListeActifs() {
         <div className="tbl-head">
           <span className="tbl-title">Liste des actifs</span>
           <span className="tbl-count">
-            {loading ? "Chargement…" : `${actifs.length} actif(s)`}
+            {loading
+              ? "Chargement…"
+              : `${total} actif${total > 1 ? "s" : ""} · page ${page}/${totalPages || 1}`}
           </span>
         </div>
         <div style={{ overflowX: "auto" }}>
@@ -435,6 +543,38 @@ export default function ListeActifs() {
           </table>
         </div>
       </div>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 8,
+            marginTop: 12,
+          }}>
+          <Button
+            className="btn btn-outline btn-icon"
+            disabled={page === 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}>
+            <ChevronLeft size={16} />
+          </Button>
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              fontSize: 13,
+              color: "var(--text-secondary)",
+            }}>
+            {page} / {totalPages}
+          </span>
+          <Button
+            className="btn btn-outline btn-icon"
+            disabled={page === totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+            <ChevronRight size={16} />
+          </Button>
+        </div>
+      )}
 
       {/* Modal changer statut */}
       {modalStatut && (
