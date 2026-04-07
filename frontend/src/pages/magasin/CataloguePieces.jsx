@@ -1,156 +1,283 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getPieces, deletePiece, sortiePiece, entreePiece } from '../../services/magasinService';
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  getPieces,
+  deletePiece,
+  sortiePiece,
+  entreePiece,
+} from "../../services/magasinService";
+import {
+  Plus,
+  Eye,
+  Pencil,
+  Trash2,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+} from "lucide-react";
+
+const PAGE_SIZE = 10;
+
+const fmtQty = (v) => {
+  const n = parseFloat(v);
+  return isNaN(n) ? v : n % 1 === 0 ? String(Math.trunc(n)) : String(n);
+};
 
 export default function CataloguePieces() {
   const navigate = useNavigate();
-  const [pieces, setPieces]     = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [search, setSearch]     = useState('');
+  const [pieces, setPieces] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [filtreAlerte, setFiltreAlerte] = useState(false);
-  const [modal, setModal]       = useState(null); // { type: 'sortie'|'entree', piece }
-  const [quantite, setQuantite] = useState('');
-  const [commentaire, setCommentaire] = useState('');
-  const [errModal, setErrModal] = useState('');
+  const [filtreCategorie, setFiltreCategorie] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [modal, setModal] = useState(null);
+  const [quantite, setQuantite] = useState("");
+  const [commentaire, setCommentaire] = useState("");
+  const [errModal, setErrModal] = useState("");
 
-  const charger = async () => {
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  const buildParams = useCallback(() => {
+    const params = { page, page_size: PAGE_SIZE };
+    if (search.trim()) params.search = search.trim();
+    if (filtreAlerte) params.sous_seuil = "true";
+    if (filtreCategorie) params.categorie = filtreCategorie;
+    return params;
+  }, [page, search, filtreAlerte, filtreCategorie]);
+
+  const charger = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await getPieces();
-      setPieces(res.data.results || res.data);
-    } catch(e) { console.error(e); }
-    finally { setLoading(false); }
+      const res = await getPieces(buildParams());
+      if (res.data.results !== undefined) {
+        setPieces(res.data.results);
+        setTotal(res.data.count);
+      } else {
+        setPieces(res.data);
+        setTotal(res.data.length);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [buildParams]);
+
+  useEffect(() => {
+    charger();
+  }, [charger]);
+
+  // Charger les catégories distinctes une seule fois
+  useEffect(() => {
+    getPieces({ page_size: 1000 })
+      .then((res) => {
+        const data = res.data.results || res.data;
+        const cats = [
+          ...new Set(data.map((p) => p.categorie).filter(Boolean)),
+        ].sort();
+        setCategories(cats);
+      })
+      .catch(() => {});
+  }, []);
+
+  const resetFiltersAndPage = (setter) => {
+    setPage(1);
+    setter();
   };
 
-  useEffect(() => { charger(); }, []);
-
   const handleDelete = async (id) => {
-    if (!confirm('Supprimer cette pièce ?')) return;
+    if (!confirm("Supprimer cette pièce ?")) return;
     await deletePiece(id);
     charger();
   };
 
   const handleMouvement = async () => {
-    setErrModal('');
+    setErrModal("");
     try {
-      if (modal.type === 'sortie') {
+      if (modal.type === "sortie") {
         await sortiePiece(modal.piece.id, quantite, commentaire);
       } else {
         await entreePiece(modal.piece.id, quantite, commentaire);
       }
-      setModal(null); setQuantite(''); setCommentaire('');
+      setModal(null);
+      setQuantite("");
+      setCommentaire("");
       charger();
-    } catch(e) {
-      setErrModal(e.response?.data?.error || 'Erreur');
+    } catch (e) {
+      setErrModal(e.response?.data?.error || "Erreur");
     }
   };
 
-  const filtered = pieces.filter(p => {
-    const matchSearch = p.reference.toLowerCase().includes(search.toLowerCase()) ||
-                        p.designation.toLowerCase().includes(search.toLowerCase());
-    const matchAlerte = filtreAlerte ? p.est_sous_seuil : true;
-    return matchSearch && matchAlerte;
-  });
-
   return (
-    <div className="p-6 text-white">
+    <div className="page">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold">Catalogue des pièces</h1>
-          <p className="text-gray-400 text-sm mt-1">{pieces.length} références</p>
+      <div className="hdr">
+        <div className="hdr-l">
+          <h1>Catalogue des pièces</h1>
+          <p>{total} références</p>
         </div>
         <button
-          onClick={() => navigate('/magasin/nouveau')}
-          className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm transition"
-        >
-          + Nouvelle pièce
+          className="btn btn-primary"
+          onClick={() => navigate("/magasin/nouveau")}>
+          <Plus size={14} /> Nouvelle pièce
         </button>
       </div>
 
       {/* Filtres */}
-      <div className="flex gap-3 mb-6 flex-wrap">
-        <input
-          type="text"
-          placeholder="Rechercher référence, désignation..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="bg-gray-800 text-white rounded-lg px-3 py-2 text-sm border border-gray-700 outline-none focus:border-purple-500 flex-1 min-w-[200px]"
-        />
-        <button
-          onClick={() => setFiltreAlerte(!filtreAlerte)}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition border ${
-            filtreAlerte
-              ? 'bg-red-500/20 border-red-500/40 text-red-400'
-              : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white'
-          }`}
-        >
-          {filtreAlerte ? '🔴 Alertes uniquement' : '🔴 Voir alertes'}
-        </button>
+      <div className="filter-card">
+        <div className="filter-row">
+          <div className="search-wrap">
+            <Search className="search-icon" />
+            <input
+              type="text"
+              placeholder="Rechercher référence, désignation..."
+              value={search}
+              onChange={(e) =>
+                resetFiltersAndPage(() => setSearch(e.target.value))
+              }
+              className="search-input"
+            />
+          </div>
+          <select
+            value={filtreCategorie}
+            onChange={(e) =>
+              resetFiltersAndPage(() => setFiltreCategorie(e.target.value))
+            }
+            className="finput"
+            style={{ width: "auto", minWidth: 160 }}>
+            <option value="">Toutes catégories</option>
+            {categories.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() =>
+              resetFiltersAndPage(() => setFiltreAlerte(!filtreAlerte))
+            }
+            className={`pill ${filtreAlerte ? "active" : ""}`}>
+            {filtreAlerte ? "🔴 Alertes uniquement" : "🔴 Voir alertes"}
+          </button>
+        </div>
       </div>
 
       {/* Tableau */}
-      <div className="bg-gray-800 rounded-xl overflow-hidden border border-gray-700">
+      <div className="tbl-card">
         {loading ? (
-          <div className="p-12 text-center text-gray-400">Chargement...</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-12 text-center text-gray-400">Aucune pièce trouvée</div>
+          <p className="empty">Chargement...</p>
+        ) : pieces.length === 0 ? (
+          <p className="empty">Aucune pièce trouvée</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-700/50 text-gray-400 uppercase text-xs">
+          <table>
+            <thead>
               <tr>
-                <th className="px-4 py-3 text-left">Référence</th>
-                <th className="px-4 py-3 text-left">Désignation</th>
-                <th className="px-4 py-3 text-left">Stock</th>
-                <th className="px-4 py-3 text-left">Seuil min</th>
-                <th className="px-4 py-3 text-left">Emplacement</th>
-                <th className="px-4 py-3 text-left">Prix unit.</th>
-                <th className="px-4 py-3 text-left">Actions</th>
+                <th>Référence</th>
+                <th>Désignation</th>
+                <th>Stock</th>
+                <th>Seuil min</th>
+                <th>Emplacement</th>
+                <th>Prix unit.</th>
+                <th className="text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700">
-              {filtered.map(p => (
-                <tr key={p.id} className="hover:bg-gray-700/30 transition">
-                  <td className="px-4 py-3">
-                    <span className="font-mono text-purple-300">{p.reference}</span>
+            <tbody>
+              {pieces.map((p) => (
+                <tr key={p.id} onClick={() => navigate(`/magasin/${p.id}`)}>
+                  <td>
+                    <span className="code-mono">{p.reference}</span>
                     {p.est_sous_seuil && (
-                      <span className="ml-2 text-xs bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full">alerte</span>
+                      <span
+                        className="badge"
+                        style={{
+                          background: "var(--status-red-bg)",
+                          color: "var(--status-red-text)",
+                          marginLeft: 8,
+                        }}>
+                        <span
+                          className="bdot"
+                          style={{ background: "var(--status-red-dot)" }}
+                        />
+                        alerte
+                      </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 font-medium">{p.designation}</td>
-                  <td className="px-4 py-3">
-                    <span className={`font-bold ${p.est_sous_seuil ? 'text-red-400' : 'text-green-400'}`}>
-                      {p.quantiteStock}
+                  <td className="desig">{p.designation}</td>
+                  <td>
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        color: p.est_sous_seuil
+                          ? "var(--status-red-text)"
+                          : "var(--status-green-text)",
+                      }}>
+                      {fmtQty(p.quantiteStock)}
                     </span>
-                    <span className="text-gray-500 text-xs ml-1">{p.unite}</span>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: "var(--text-muted)",
+                        marginLeft: 4,
+                      }}>
+                      {p.unite}
+                    </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-400">{p.seuilMinimum} {p.unite}</td>
-                  <td className="px-4 py-3 text-gray-400 font-mono text-xs">{p.emplacement || '—'}</td>
-                  <td className="px-4 py-3 text-gray-400">
-                    {p.prixUnitaire ? `${p.prixUnitaire} MAD` : '—'}
+                  <td style={{ color: "var(--text-muted)" }}>
+                    {fmtQty(p.seuilMinimum)} {p.unite}
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-1 flex-wrap">
+                  <td>
+                    <span className="code-mono">{p.emplacement || "—"}</span>
+                  </td>
+                  <td style={{ color: "var(--text-muted)" }}>
+                    {p.prixUnitaire ? `${p.prixUnitaire} MAD` : "—"}
+                  </td>
+                  <td>
+                    <div
+                      style={{ display: "flex", gap: 4, flexWrap: "wrap" }}
+                      className="justify-center">
                       <button
-                        onClick={() => navigate(`/magasin/${p.id}`)}
-                        className="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded transition"
-                      >Détail</button>
+                        className="btn btn-ghost btn-icon"
+                        title="Entrée"
+                        onClick={() => {
+                          setModal({ type: "entree", piece: p });
+                          setQuantite("");
+                          setErrModal("");
+                        }}
+                        style={{ color: "var(--status-green-text)" }}>
+                        <ArrowUpFromLine size={14} />
+                      </button>
                       <button
-                        onClick={() => { setModal({type:'entree', piece:p}); setQuantite(''); setErrModal(''); }}
-                        className="text-xs bg-green-600/20 hover:bg-green-600/40 text-green-400 px-2 py-1 rounded transition"
-                      >+ Entrée</button>
+                        className="btn btn-ghost btn-icon"
+                        title="Sortie"
+                        onClick={() => {
+                          setModal({ type: "sortie", piece: p });
+                          setQuantite("");
+                          setErrModal("");
+                        }}
+                        style={{ color: "var(--status-red-text)" }}>
+                        <ArrowDownToLine size={14} />
+                      </button>
                       <button
-                        onClick={() => { setModal({type:'sortie', piece:p}); setQuantite(''); setErrModal(''); }}
-                        className="text-xs bg-red-600/20 hover:bg-red-600/40 text-red-400 px-2 py-1 rounded transition"
-                      >- Sortie</button>
-                      <button
+                        className="btn btn-ghost btn-icon"
+                        title="Modifier"
                         onClick={() => navigate(`/magasin/${p.id}/modifier`)}
-                        className="text-xs bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 px-2 py-1 rounded transition"
-                      >Modifier</button>
+                        style={{ color: "var(--status-blue-text)" }}>
+                        <Pencil size={14} />
+                      </button>
                       <button
+                        className="btn btn-ghost btn-icon"
+                        title="Supprimer"
                         onClick={() => handleDelete(p.id)}
-                        className="text-xs bg-red-600/20 hover:bg-red-600/40 text-red-400 px-2 py-1 rounded transition"
-                      >×</button>
+                        style={{ color: "var(--status-red-text)" }}>
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -160,43 +287,110 @@ export default function CataloguePieces() {
         )}
       </div>
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 8,
+            marginTop: 12,
+          }}>
+          <button
+            className="btn btn-outline btn-icon"
+            disabled={page === 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}>
+            <ChevronLeft size={16} />
+          </button>
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              fontSize: 13,
+              color: "var(--text-secondary)",
+            }}>
+            {page} / {totalPages}
+          </span>
+          <button
+            className="btn btn-outline btn-icon"
+            disabled={page === totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
+
       {/* Modal Entrée/Sortie */}
       {modal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-2xl border border-gray-700 p-6 w-full max-w-sm">
-            <h2 className="text-lg font-semibold mb-1">
-              {modal.type === 'entree' ? '+ Entrée stock' : '- Sortie stock'}
-            </h2>
-            <p className="text-gray-400 text-sm mb-4 font-mono">{modal.piece.reference} — {modal.piece.designation}</p>
-            <p className="text-xs text-gray-500 mb-4">
-              Stock actuel : <span className="text-white font-bold">{modal.piece.quantiteStock} {modal.piece.unite}</span>
-            </p>
-            {errModal && (
-              <div className="bg-red-500/20 border border-red-500/40 text-red-400 rounded-lg p-3 mb-3 text-xs">{errModal}</div>
-            )}
-            <input
-              type="number"
-              placeholder="Quantité"
-              value={quantite}
-              onChange={e => setQuantite(e.target.value)}
-              className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none mb-3"
-            />
-            <textarea
-              placeholder="Commentaire (optionnel)"
-              value={commentaire}
-              onChange={e => setCommentaire(e.target.value)}
-              className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none mb-4 resize-none h-16"
-            />
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => setModal(null)} className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition">Annuler</button>
+        <div className="backdrop">
+          <div className="modal modal-sm">
+            <div className="m-hdr">
+              <span className="m-title">
+                {modal.type === "entree" ? "+ Entrée stock" : "- Sortie stock"}
+              </span>
+              <button className="m-close" onClick={() => setModal(null)}>
+                ✕
+              </button>
+            </div>
+            <div className="m-body-plain">
+              <p className="code-mono" style={{ marginBottom: 4 }}>
+                {modal.piece.reference} — {modal.piece.designation}
+              </p>
+              <p
+                style={{
+                  fontSize: 12,
+                  color: "var(--text-muted)",
+                  marginBottom: 16,
+                }}>
+                Stock actuel :{" "}
+                <strong style={{ color: "var(--text-primary)" }}>
+                  {fmtQty(modal.piece.quantiteStock)} {modal.piece.unite}
+                </strong>
+              </p>
+              {errModal && (
+                <div
+                  className="alert-warn"
+                  style={{ marginTop: 0, marginBottom: 12 }}>
+                  {errModal}
+                </div>
+              )}
+              <div className="fg" style={{ marginBottom: 12 }}>
+                <label className="flabel">Quantité</label>
+                <input
+                  type="number"
+                  placeholder="Quantité"
+                  value={quantite}
+                  onChange={(e) => setQuantite(e.target.value)}
+                  className="finput"
+                />
+              </div>
+              <div className="fg" style={{ marginBottom: 0 }}>
+                <label className="flabel">Commentaire (optionnel)</label>
+                <textarea
+                  placeholder="Commentaire"
+                  value={commentaire}
+                  onChange={(e) => setCommentaire(e.target.value)}
+                  className="finput"
+                  style={{ resize: "none", height: 64 }}
+                />
+              </div>
+            </div>
+            <div className="m-foot">
               <button
+                className="btn btn-outline"
+                onClick={() => setModal(null)}>
+                Annuler
+              </button>
+              <button
+                className={
+                  modal.type === "entree" ? "btn btn-primary" : "btn btn-danger"
+                }
                 onClick={handleMouvement}
-                className={`px-4 py-2 text-sm rounded-lg transition ${
-                  modal.type === 'entree'
-                    ? 'bg-green-600 hover:bg-green-700'
-                    : 'bg-red-600 hover:bg-red-700'
-                }`}
-              >
+                style={
+                  modal.type === "entree"
+                    ? { background: "var(--color-success)" }
+                    : {}
+                }>
                 Confirmer
               </button>
             </div>

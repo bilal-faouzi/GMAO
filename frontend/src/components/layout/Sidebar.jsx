@@ -93,7 +93,7 @@ const navSections = [
     icon: Store,
     items: [
       { to: "/magasin/dashboard", icon: BarChart2, label: "Dashboard Magasin" },
-      { to: "/magasin", icon: Package2, label: "Catalogue pièces" },
+      { to: "/magasin", icon: Package2, label: "Catalogue pièces", end: true },
     ],
   },
 ];

@@ -8,6 +8,7 @@ import {
   PowerOff,
   ChevronLeft,
   ChevronRight,
+  X,
 } from "lucide-react";
 
 import {
@@ -535,8 +536,9 @@ export default function Utilisateurs() {
                       </div>
                       <Button
                         onClick={() => handleRemoveRole(r.id)}
-                        className="text-text-muted hover:text-danger transition-colors text-lg leading-none">
-                        ×
+                        className="text-text-muted hover:text-danger transition-colors text-lg leading-none"
+                        variant="ghost">
+                        <X size={13} />
                       </Button>
                     </div>
                   ))
@@ -559,7 +561,7 @@ export default function Utilisateurs() {
                   .map((r) => (
                     <div
                       key={r.id}
-                      className="flex items-center justify-between p-2.5 rounded-lg border border-border">
+                      className="flex items-center justify-between p-2.5 rounded-md border border-border">
                       <div>
                         <span className="text-sm font-medium text-text">
                           {r.code}
@@ -570,9 +572,9 @@ export default function Utilisateurs() {
                       </div>
                       <Button
                         onClick={() => handleAssignRole(r.id)}
-                        variant="custom"
-                        className="flex py-2">
-                        Assigner
+                        variant="ghost"
+                        className="flex py-2 text-green-600 hover:text-green-700 transition-colors text-lg leading-none">
+                        <Plus size={13} />
                       </Button>
                     </div>
                   ))}

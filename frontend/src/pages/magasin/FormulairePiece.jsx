@@ -1,6 +1,11 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { getPiece, createPiece, updatePiece } from '../../services/magasinService';
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  getPiece,
+  createPiece,
+  updatePiece,
+} from "../../services/magasinService";
+import { ArrowLeft } from "lucide-react";
 
 export default function FormulairePiece() {
   const { id } = useParams();
@@ -8,23 +13,36 @@ export default function FormulairePiece() {
   const isEdit = Boolean(id);
 
   const [form, setForm] = useState({
-    reference:'', designation:'', categorie:'', unite:'piece',
-    emplacement:'', quantiteStock:'0', seuilMinimum:'0',
-    prixUnitaire:'', fournisseur:'', referenceConstructeur:'', estActif:true,
+    reference: "",
+    designation: "",
+    categorie: "",
+    unite: "piece",
+    emplacement: "",
+    quantiteStock: "0",
+    seuilMinimum: "0",
+    prixUnitaire: "",
+    fournisseur: "",
+    referenceConstructeur: "",
+    estActif: true,
   });
   const [loading, setLoading] = useState(false);
-  const [erreur, setErreur]   = useState(null);
+  const [erreur, setErreur] = useState(null);
 
   useEffect(() => {
     if (isEdit) {
-      getPiece(id).then(r => {
+      getPiece(id).then((r) => {
         const p = r.data;
         setForm({
-          reference: p.reference, designation: p.designation,
-          categorie: p.categorie||'', unite: p.unite,
-          emplacement: p.emplacement||'', quantiteStock: p.quantiteStock,
-          seuilMinimum: p.seuilMinimum, prixUnitaire: p.prixUnitaire||'',
-          fournisseur: p.fournisseur||'', referenceConstructeur: p.referenceConstructeur||'',
+          reference: p.reference,
+          designation: p.designation,
+          categorie: p.categorie || "",
+          unite: p.unite,
+          emplacement: p.emplacement || "",
+          quantiteStock: p.quantiteStock,
+          seuilMinimum: p.seuilMinimum,
+          prixUnitaire: p.prixUnitaire || "",
+          fournisseur: p.fournisseur || "",
+          referenceConstructeur: p.referenceConstructeur || "",
           estActif: p.estActif,
         });
       });
@@ -33,75 +51,154 @@ export default function FormulairePiece() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm(f => ({ ...f, [name]: type==='checkbox' ? checked : value }));
+    setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); setErreur(null);
+    setLoading(true);
+    setErreur(null);
     try {
       const payload = { ...form };
       if (!payload.prixUnitaire) delete payload.prixUnitaire;
       isEdit ? await updatePiece(id, payload) : await createPiece(payload);
-      navigate('/magasin');
-    } catch(e) { setErreur(e.response?.data || 'Erreur'); }
-    finally { setLoading(false); }
+      navigate("/magasin");
+    } catch (e) {
+      setErreur(e.response?.data || "Erreur");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const Field = ({ label, name, type='text', required }) => (
-    <div>
-      <label className="block text-xs text-gray-400 mb-1">{label}{required && ' *'}</label>
-      <input type={type} name={name} value={form[name]} onChange={handleChange}
-        className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-purple-500"/>
+  const Field = ({ label, name, type = "text", required }) => (
+    <div className="fg">
+      <label className="flabel">
+        {label}
+        {required && <span className="req"> *</span>}
+      </label>
+      <input
+        type={type}
+        name={name}
+        value={form[name]}
+        onChange={handleChange}
+        className="finput"
+      />
     </div>
   );
 
   return (
-    <div className="p-6 text-white max-w-2xl">
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/magasin')} className="text-gray-400 hover:text-white text-sm transition">← Retour</button>
-        <h1 className="text-2xl font-semibold">{isEdit ? 'Modifier la pièce' : 'Nouvelle pièce'}</h1>
+    <div className="page" style={{ maxWidth: 720 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <button className="btn btn-ghost" onClick={() => navigate("/magasin")}>
+          <ArrowLeft size={14} /> Retour
+        </button>
+        <h1 style={{ fontSize: 22, fontWeight: 600 }}>
+          {isEdit ? "Modifier la pièce" : "Nouvelle pièce"}
+        </h1>
       </div>
 
       {erreur && (
-        <div className="bg-red-500/20 border border-red-500/40 text-red-400 rounded-lg p-4 mb-6 text-sm">
-          {typeof erreur==='object' ? JSON.stringify(erreur) : erreur}
+        <div className="alert-warn">
+          {typeof erreur === "object" ? JSON.stringify(erreur) : erreur}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
-          <h2 className="text-xs text-gray-500 uppercase tracking-wider mb-4">Identification</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form
+        onSubmit={handleSubmit}
+        style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div className="tbl-card" style={{ padding: "18px 22px" }}>
+          <div
+            className="tbl-head"
+            style={{
+              padding: 0,
+              paddingBottom: 14,
+              borderBottom: "1px solid var(--border-subtle)",
+            }}>
+            <span className="tbl-title">Identification</span>
+          </div>
+          <div className="m-body" style={{ padding: "14px 0 0" }}>
             <Field label="Référence" name="reference" required />
             <Field label="Désignation" name="designation" required />
             <Field label="Catégorie" name="categorie" />
             <Field label="Unité (pièce/kg/L/m...)" name="unite" />
             <Field label="Emplacement (ex: A1-E3-N2)" name="emplacement" />
             <Field label="Fournisseur" name="fournisseur" />
-            <Field label="Référence constructeur" name="referenceConstructeur" />
+            <div className="span2">
+              <Field
+                label="Référence constructeur"
+                name="referenceConstructeur"
+              />
+            </div>
           </div>
         </div>
 
-        <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
-          <h2 className="text-xs text-gray-500 uppercase tracking-wider mb-4">Stock & Prix</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Field label="Quantité en stock" name="quantiteStock" type="number" />
-            <Field label="Seuil minimum" name="seuilMinimum" type="number" />
-            <Field label="Prix unitaire (MAD)" name="prixUnitaire" type="number" />
+        <div className="tbl-card" style={{ padding: "18px 22px" }}>
+          <div
+            className="tbl-head"
+            style={{
+              padding: 0,
+              paddingBottom: 14,
+              borderBottom: "1px solid var(--border-subtle)",
+            }}>
+            <span className="tbl-title">Stock & Prix</span>
           </div>
-          <label className="flex items-center gap-2 mt-4 cursor-pointer">
-            <input type="checkbox" name="estActif" checked={form.estActif} onChange={handleChange} className="w-4 h-4 accent-purple-500"/>
-            <span className="text-sm text-gray-300">Actif (visible dans le catalogue)</span>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              gap: 14,
+              paddingTop: 14,
+            }}>
+            <Field
+              label="Quantité en stock"
+              name="quantiteStock"
+              type="number"
+            />
+            <Field label="Seuil minimum" name="seuilMinimum" type="number" />
+            <Field
+              label="Prix unitaire (MAD)"
+              name="prixUnitaire"
+              type="number"
+            />
+          </div>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginTop: 14,
+              cursor: "pointer",
+            }}>
+            <input
+              type="checkbox"
+              name="estActif"
+              checked={form.estActif}
+              onChange={handleChange}
+              style={{
+                width: 16,
+                height: 16,
+                accentColor: "var(--color-primary)",
+              }}
+            />
+            <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+              Actif (visible dans le catalogue)
+            </span>
           </label>
         </div>
 
-        <div className="flex gap-3 justify-end">
-          <button type="button" onClick={() => navigate('/magasin')}
-            className="px-5 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition text-white">Annuler</button>
-          <button type="submit" disabled={loading}
-            className="px-5 py-2 text-sm bg-purple-600 hover:bg-purple-700 rounded-lg transition text-white disabled:opacity-50">
-            {loading ? 'Enregistrement...' : isEdit ? 'Mettre à jour' : 'Créer la pièce'}
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={() => navigate("/magasin")}>
+            Annuler
+          </button>
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            {loading
+              ? "Enregistrement..."
+              : isEdit
+                ? "Mettre à jour"
+                : "Créer la pièce"}
           </button>
         </div>
       </form>

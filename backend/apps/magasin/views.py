@@ -3,6 +3,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from django.db.models import Sum, F, Count
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
@@ -12,14 +13,28 @@ from .models import Piece, MouvementStock
 from .serializers import PieceSerializer, MouvementStockSerializer
 
 
+class PiecePagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
 class PieceViewSet(viewsets.ModelViewSet):
     queryset = Piece.objects.all()
     serializer_class = PieceSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = PiecePagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['categorie', 'estActif']
     search_fields = ['reference', 'designation', 'fournisseur']
-    ordering_fields = ['reference', 'designation', 'quantiteStock']
+    ordering_fields = ['reference', 'designation', 'quantiteStock', 'prixUnitaire']
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        sous_seuil = self.request.query_params.get('sous_seuil')
+        if sous_seuil is not None and sous_seuil.lower() in ('true', '1'):
+            qs = qs.filter(quantiteStock__lte=F('seuilMinimum'))
+        return qs
 
     @action(detail=True, methods=['post'])
     def sortie(self, request, pk=None):
