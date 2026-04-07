@@ -233,7 +233,9 @@ export default function Utilisateurs() {
               </tr>
             ) : (
               filtered.map((u) => (
-                <tr key={u.id} className="hover:bg-surface transition-colors">
+                <tr
+                  key={u.id}
+                  className={`hover:bg-surface ${u.est_actif ? "" : "bg-elevated border-border-subtle opacity-50 grayscale"} transition-colors`}>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-blue-100 dark:bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0">

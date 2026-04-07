@@ -1,67 +1,99 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { getActif, createActif, updateActif, getActifs } from '../../services/actifService';
-import { getSites, getUnites } from '../../services/organisationService';
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  getActif,
+  createActif,
+  updateActif,
+  getActifs,
+} from "../../services/actifService";
+import { getSites, getUnites } from "../../services/organisationService";
+import { ArrowLeft, Save, X } from "lucide-react";
 
-// Constantes extraites
-const ACTIF_TYPES = {
-  EQUIPEMENT: { value: 'equipement', label: 'Équipement' },
-  INFRASTRUCTURE: { value: 'infrastructure', label: 'Infrastructure' },
-  VEHICULE: { value: 'vehicule', label: 'Véhicule' },
-  AUTRE: { value: 'autre', label: 'Autre' }
-};
+// ─── Constantes ───────────────────────────────────────────────────────────────
 
-const STATUTS = {
-  ACTIF: { value: 'actif', label: 'Actif' },
-  EN_PANNE: { value: 'en_panne', label: 'En panne' },
-  EN_MAINTENANCE: { value: 'en_maintenance', label: 'En maintenance' },
-  RETIRE: { value: 'retire', label: 'Retiré' }
-};
+const ACTIF_TYPES = [
+  { value: "equipement", label: "Équipement" },
+  { value: "infrastructure", label: "Infrastructure" },
+  { value: "vehicule", label: "Véhicule" },
+  { value: "autre", label: "Autre" },
+];
+
+const STATUTS = [
+  { value: "actif", label: "Actif" },
+  { value: "en_panne", label: "En panne" },
+  { value: "en_maintenance", label: "En maintenance" },
+  { value: "retire", label: "Retiré" },
+];
 
 const initialFormState = {
-  code: '', libelle: '', description: '',
-  type: 'equipement', statut: 'actif',
-  idSite: '', idUnite: '', idParent: '',
-  dateAcquisition: '', valeur: '',
-  fabricant: '', modele: '', numSerie: '',
+  code: "",
+  libelle: "",
+  description: "",
+  type: "equipement",
+  statut: "actif",
+  idSite: "",
+  idUnite: "",
+  idParent: "",
+  dateAcquisition: "",
+  valeur: "",
+  fabricant: "",
+  modele: "",
+  numSerie: "",
   estActif: true,
 };
 
-// 💡 DÉPLACÉ À L'EXTÉRIEUR : Composant Field réutilisable
-const Field = ({ label, name, type = 'text', options, required = false, value, onChange, error, step }) => (
-  <div>
-    <label htmlFor={name} className="block text-sm text-gray-400 mb-1">
-      {label}{required && <span className="text-red-500 ml-1">*</span>}
-    </label>
-    {options ? (
-      <select
-        id={name}
-        name={name}
-        value={value}
-        onChange={onChange}
-        aria-required={required}
-        className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-purple-500 transition-colors"
-      >
-        <option value="">— Sélectionner —</option>
-        {options.map(o => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-    ) : (
-      <input
-        id={name}
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        aria-required={required}
-        step={step}
-        className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-purple-500 transition-colors"
-      />
-    )}
-    {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
-  </div>
-);
+// ─── Field ────────────────────────────────────────────────────────────────────
+
+function Field({
+  label,
+  name,
+  type = "text",
+  options,
+  required,
+  value,
+  onChange,
+  error,
+  step,
+}) {
+  return (
+    <div className="fg">
+      <label htmlFor={name} className="flabel">
+        {label}
+        {required && <span className="req"> *</span>}
+      </label>
+      {options ? (
+        <select
+          id={name}
+          name={name}
+          value={value}
+          onChange={onChange}
+          aria-required={required}
+          className={`fsel${error ? " err" : ""}`}>
+          <option value="">— Sélectionner —</option>
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <input
+          id={name}
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          aria-required={required}
+          step={step}
+          className={`finput${error ? " err" : ""}`}
+        />
+      )}
+      {error && <span className="ferr">{error}</span>}
+    </div>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function FormulaireActif() {
   const { id } = useParams();
@@ -77,319 +109,365 @@ export default function FormulaireActif() {
   const [errors, setErrors] = useState({});
   const [isDirty, setIsDirty] = useState(false);
 
-  // Formatage des dates pour l'input type="date"
   const formatDateForInput = (date) => {
-    if (!date) return '';
+    if (!date) return "";
     const d = new Date(date);
-    if (isNaN(d.getTime())) return '';
-    return d.toISOString().split('T')[0];
+    if (isNaN(d.getTime())) return "";
+    return d.toISOString().split("T")[0];
   };
 
-  // Validation du formulaire
   const validateForm = useCallback(() => {
     const newErrors = {};
-    if (!form.code?.trim()) newErrors.code = 'Le code est requis';
-    if (!form.libelle?.trim()) newErrors.libelle = 'Le libellé est requis';
-    if (form.valeur && isNaN(parseFloat(form.valeur))) newErrors.valeur = 'La valeur doit être un nombre';
-    if (form.dateAcquisition && isNaN(new Date(form.dateAcquisition).getTime())) {
-      newErrors.dateAcquisition = 'Date invalide';
-    }
+    if (!form.code?.trim()) newErrors.code = "Le code est requis";
+    if (!form.libelle?.trim()) newErrors.libelle = "Le libellé est requis";
+    if (form.valeur && isNaN(parseFloat(form.valeur)))
+      newErrors.valeur = "La valeur doit être un nombre";
+    if (form.dateAcquisition && isNaN(new Date(form.dateAcquisition).getTime()))
+      newErrors.dateAcquisition = "Date invalide";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }, [form.code, form.libelle, form.valeur, form.dateAcquisition]);
 
-  // Chargement initial
   useEffect(() => {
     const init = async () => {
       try {
-        const [s, u, a] = await Promise.all([getSites(), getUnites(), getActifs()]);
+        const [s, u, a] = await Promise.all([
+          getSites(),
+          getUnites(),
+          getActifs(),
+        ]);
         setSites(s.data.results || s.data);
         setUnites(u.data.results || u.data);
         setActifs(a.data.results || a.data);
-        
         if (isEdit) {
           const res = await getActif(id);
           const a2 = res.data;
           setForm({
-            code: a2.code || '',
-            libelle: a2.libelle || '',
-            description: a2.description || '',
-            type: a2.type || 'equipement',
-            statut: a2.statut || 'actif',
-            idSite: a2.idSite || '',
-            idUnite: a2.idUnite || '',
-            idParent: a2.idParent || '',
+            code: a2.code || "",
+            libelle: a2.libelle || "",
+            description: a2.description || "",
+            type: a2.type || "equipement",
+            statut: a2.statut || "actif",
+            idSite: a2.idSite || "",
+            idUnite: a2.idUnite || "",
+            idParent: a2.idParent || "",
             dateAcquisition: formatDateForInput(a2.dateAcquisition),
-            valeur: a2.valeur || '',
-            fabricant: a2.fabricant || '',
-            modele: a2.modele || '',
-            numSerie: a2.numSerie || '',
+            valeur: a2.valeur || "",
+            fabricant: a2.fabricant || "",
+            modele: a2.modele || "",
+            numSerie: a2.numSerie || "",
             estActif: a2.estActif !== undefined ? a2.estActif : true,
           });
         }
-      } catch (e) {
-        console.error(e);
-        setErreur('Erreur lors du chargement des données');
+      } catch {
+        setErreur("Erreur lors du chargement des données");
       }
     };
     init();
   }, [id, isEdit]);
 
-  // Alerte avant de quitter si modifications non sauvegardées
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (isDirty) {
         e.preventDefault();
-        e.returnValue = '';
+        e.returnValue = "";
       }
     };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isDirty]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
+    setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
     setIsDirty(true);
-    // Effacer l'erreur du champ modifié
-    if (errors[name]) {
-      setErrors(err => ({ ...err, [name]: undefined }));
-    }
+    if (errors[name]) setErrors((err) => ({ ...err, [name]: undefined }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
     setLoading(true);
     setErreur(null);
     try {
       const payload = { ...form };
-      // Nettoyer les champs vides
       if (!payload.idSite) delete payload.idSite;
       if (!payload.idUnite) delete payload.idUnite;
       if (!payload.idParent) delete payload.idParent;
       if (!payload.dateAcquisition) delete payload.dateAcquisition;
       if (!payload.valeur) delete payload.valeur;
-
-      if (isEdit) {
-        await updateActif(id, payload);
-      } else {
-        await createActif(payload);
-      }
-      navigate('/actifs');
+      if (isEdit) await updateActif(id, payload);
+      else await createActif(payload);
+      navigate("/actifs");
     } catch (e) {
-      setErreur(e.response?.data || 'Une erreur est survenue.');
+      setErreur(e.response?.data || "Une erreur est survenue.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Options mémorisées pour éviter les recalculs
-  const siteOptions = useMemo(() => 
-    sites.map(s => ({ value: s.id, label: `${s.code} — ${s.libelle}` })),
-    [sites]
+  const siteOptions = useMemo(
+    () =>
+      sites.map((s) => ({ value: s.id, label: `${s.code} — ${s.libelle}` })),
+    [sites],
   );
-
-  const uniteOptions = useMemo(() => 
-    unites.map(u => ({ value: u.id, label: `${u.code} — ${u.libelle}` })),
-    [unites]
+  const uniteOptions = useMemo(
+    () =>
+      unites.map((u) => ({ value: u.id, label: `${u.code} — ${u.libelle}` })),
+    [unites],
   );
-
-  const typeOptions = useMemo(() => Object.values(ACTIF_TYPES), []);
-  const statutOptions = useMemo(() => Object.values(STATUTS), []);
-
-  const parentOptions = useMemo(() => 
-    actifs.filter(a => a.id !== id).map(a => ({
-      value: a.id,
-      label: `${a.code} — ${a.libelle}`
-    })),
-    [actifs, id]
+  const parentOptions = useMemo(
+    () =>
+      actifs
+        .filter((a) => a.id !== id)
+        .map((a) => ({ value: a.id, label: `${a.code} — ${a.libelle}` })),
+    [actifs, id],
   );
 
   return (
-    <div className="p-6 text-white max-w-3xl mx-auto">
+    <div className="page" style={{ maxWidth: 720, margin: "0 auto" }}>
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          onClick={() => navigate('/actifs')}
-          className="text-gray-400 hover:text-white transition text-sm flex items-center gap-1"
-        >
-          <span>&larr;</span> Retour
-        </button>
-        <h1 className="text-2xl font-semibold">
-          {isEdit ? "Modifier l'actif" : 'Nouvel actif'}
-        </h1>
+      <div className="hdr">
+        <div
+          className="hdr-l"
+          style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            className="btn btn-ghost btn-icon"
+            onClick={() => navigate("/actifs")}
+            title="Retour">
+            <ArrowLeft size={16} />
+          </button>
+          <h1>{isEdit ? "Modifier l'actif" : "Nouvel actif"}</h1>
+        </div>
       </div>
 
+      {/* Erreur globale */}
       {erreur && (
-        <div className="bg-red-500/20 border border-red-500/40 text-red-400 rounded-lg p-4 mb-6 text-sm">
-          {typeof erreur === 'object' ? JSON.stringify(erreur) : erreur}
+        <div
+          style={{
+            background: "var(--status-red-bg)",
+            border: "1px solid rgba(239,68,68,.25)",
+            color: "var(--status-red-text)",
+            borderRadius: "var(--r-sm)",
+            padding: "10px 14px",
+            fontSize: 13,
+          }}>
+          {typeof erreur === "object" ? JSON.stringify(erreur) : erreur}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Identification */}
-        <div className="bg-gray-800 rounded-xl p-5 border border-gray-700 shadow-sm">
-          <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">Identification</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field 
-              label="Code" 
-              name="code" 
-              required 
-              value={form.code} 
-              onChange={handleChange} 
-              error={errors.code} 
-            />
-            <Field 
-              label="Libellé" 
-              name="libelle" 
-              required 
-              value={form.libelle} 
-              onChange={handleChange} 
-              error={errors.libelle} 
-            />
-            <Field 
-              label="Type" 
-              name="type" 
-              options={typeOptions} 
-              value={form.type} 
-              onChange={handleChange} 
-              error={errors.type} 
-            />
-            <Field 
-              label="Statut" 
-              name="statut" 
-              options={statutOptions} 
-              value={form.statut} 
-              onChange={handleChange} 
-              error={errors.statut} 
-            />
+      <form
+        onSubmit={handleSubmit}
+        style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* Section: Identification */}
+        <div className="tbl-card" style={{ padding: "18px 22px" }}>
+          <div
+            className="tbl-head"
+            style={{
+              padding: 0,
+              paddingBottom: 12,
+              borderBottom: "1px solid var(--border-subtle)",
+            }}>
+            <span className="tbl-title">Identification</span>
           </div>
-          <div className="mt-4">
-            <label htmlFor="description" className="block text-sm text-gray-400 mb-1">Description</label>
-            <textarea
-              id="description"
-              name="description"
-              value={form.description}
+          <div className="m-body" style={{ padding: "14px 0 0", gap: 12 }}>
+            <Field
+              label="Code"
+              name="code"
+              required
+              value={form.code}
               onChange={handleChange}
-              rows={3}
-              className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-purple-500 resize-none transition-colors"
+              error={errors.code}
             />
+            <Field
+              label="Libellé"
+              name="libelle"
+              required
+              value={form.libelle}
+              onChange={handleChange}
+              error={errors.libelle}
+            />
+            <Field
+              label="Type"
+              name="type"
+              options={ACTIF_TYPES}
+              value={form.type}
+              onChange={handleChange}
+            />
+            <Field
+              label="Statut"
+              name="statut"
+              options={STATUTS}
+              value={form.statut}
+              onChange={handleChange}
+            />
+            <div className="span2 fg">
+              <label htmlFor="description" className="flabel">
+                Description
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                value={form.description}
+                onChange={handleChange}
+                rows={3}
+                className="finput"
+                style={{ resize: "none" }}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Localisation */}
-        <div className="bg-gray-800 rounded-xl p-5 border border-gray-700 shadow-sm">
-          <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">Localisation</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field 
-              label="Site" 
-              name="idSite" 
-              options={siteOptions} 
-              value={form.idSite} 
-              onChange={handleChange} 
-              error={errors.idSite} 
-            />
-            <Field 
-              label="Unité" 
-              name="idUnite" 
-              options={uniteOptions} 
-              value={form.idUnite} 
-              onChange={handleChange} 
-              error={errors.idUnite} 
-            />
+        {/* Section: Localisation */}
+        <div className="tbl-card" style={{ padding: "18px 22px" }}>
+          <div
+            className="tbl-head"
+            style={{
+              padding: 0,
+              paddingBottom: 12,
+              borderBottom: "1px solid var(--border-subtle)",
+            }}>
+            <span className="tbl-title">Localisation</span>
           </div>
-          <div className="mt-4">
-            <label htmlFor="idParent" className="block text-sm text-gray-400 mb-1">Actif parent (sous-actif de...)</label>
-            <select
-              id="idParent"
-              name="idParent"
-              value={form.idParent}
+          <div className="m-body" style={{ padding: "14px 0 0", gap: 12 }}>
+            <Field
+              label="Site"
+              name="idSite"
+              options={siteOptions}
+              value={form.idSite}
               onChange={handleChange}
-              className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-purple-500 transition-colors"
-            >
-              <option value="">— Aucun parent (actif racine) —</option>
-              {parentOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
+            />
+            <Field
+              label="Unité"
+              name="idUnite"
+              options={uniteOptions}
+              value={form.idUnite}
+              onChange={handleChange}
+            />
+            <div className="span2 fg">
+              <label htmlFor="idParent" className="flabel">
+                Actif parent (sous-actif de...)
+              </label>
+              <select
+                id="idParent"
+                name="idParent"
+                value={form.idParent}
+                onChange={handleChange}
+                className="fsel">
+                <option value="">— Aucun parent (actif racine) —</option>
+                {parentOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
-        {/* Caractéristiques techniques */}
-        <div className="bg-gray-800 rounded-xl p-5 border border-gray-700 shadow-sm">
-          <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">Caractéristiques techniques</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field 
-              label="Fabricant" 
-              name="fabricant" 
-              value={form.fabricant} 
-              onChange={handleChange} 
-              error={errors.fabricant} 
-            />
-            <Field 
-              label="Modèle" 
-              name="modele" 
-              value={form.modele} 
-              onChange={handleChange} 
-              error={errors.modele} 
-            />
-            <Field 
-              label="Numéro de série" 
-              name="numSerie" 
-              value={form.numSerie} 
-              onChange={handleChange} 
-              error={errors.numSerie} 
-            />
-            <Field 
-              label="Date d'acquisition" 
-              name="dateAcquisition" 
-              type="date" 
-              value={form.dateAcquisition} 
-              onChange={handleChange} 
-              error={errors.dateAcquisition} 
-            />
-            <Field 
-              label="Valeur (MAD)" 
-              name="valeur" 
-              type="number" 
-              step="0.01" 
-              value={form.valeur} 
-              onChange={handleChange} 
-              error={errors.valeur} 
-            />
+        {/* Section: Caractéristiques techniques */}
+        <div className="tbl-card" style={{ padding: "18px 22px" }}>
+          <div
+            className="tbl-head"
+            style={{
+              padding: 0,
+              paddingBottom: 12,
+              borderBottom: "1px solid var(--border-subtle)",
+            }}>
+            <span className="tbl-title">Caractéristiques techniques</span>
           </div>
-          <div className="mt-4 flex items-center gap-3">
-            <input
-              type="checkbox"
-              name="estActif"
-              id="estActif"
-              checked={form.estActif}
+          <div className="m-body" style={{ padding: "14px 0 0", gap: 12 }}>
+            <Field
+              label="Fabricant"
+              name="fabricant"
+              value={form.fabricant}
               onChange={handleChange}
-              className="w-4 h-4 accent-purple-500 rounded bg-gray-700 border-gray-600 focus:ring-purple-500 focus:ring-offset-gray-800"
             />
-            <label htmlFor="estActif" className="text-sm text-gray-300 select-none cursor-pointer">
-              Actif (visible dans les listes)
-            </label>
+            <Field
+              label="Modèle"
+              name="modele"
+              value={form.modele}
+              onChange={handleChange}
+            />
+            <Field
+              label="Numéro de série"
+              name="numSerie"
+              value={form.numSerie}
+              onChange={handleChange}
+            />
+            <Field
+              label="Date d'acquisition"
+              name="dateAcquisition"
+              type="date"
+              value={form.dateAcquisition}
+              onChange={handleChange}
+              error={errors.dateAcquisition}
+            />
+            <Field
+              label="Valeur (MAD)"
+              name="valeur"
+              type="number"
+              step="0.01"
+              value={form.valeur}
+              onChange={handleChange}
+              error={errors.valeur}
+            />
+            <div
+              className="span2"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginTop: 4,
+              }}>
+              <input
+                type="checkbox"
+                name="estActif"
+                id="estActif"
+                checked={form.estActif}
+                onChange={handleChange}
+                style={{
+                  width: 16,
+                  height: 16,
+                  accentColor: "var(--color-primary)",
+                  cursor: "pointer",
+                }}
+              />
+              <label
+                htmlFor="estActif"
+                style={{
+                  fontSize: 13,
+                  color: "var(--text-secondary)",
+                  cursor: "pointer",
+                  userSelect: "none",
+                }}>
+                Actif (visible dans les listes)
+              </label>
+            </div>
           </div>
         </div>
 
         {/* Boutons */}
-        <div className="flex gap-3 justify-end pt-2">
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            justifyContent: "flex-end",
+            paddingTop: 4,
+          }}>
           <button
             type="button"
-            onClick={() => navigate('/actifs')}
-            className="px-5 py-2.5 text-sm font-medium bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-          >
-            Annuler
+            className="btn btn-outline"
+            onClick={() => navigate("/actifs")}>
+            <X size={13} /> Annuler
           </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-5 py-2.5 text-sm font-medium bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-          >
-            {loading ? 'Enregistrement...' : isEdit ? 'Mettre à jour' : "Créer l'actif"}
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            <Save size={13} />{" "}
+            {loading
+              ? "Enregistrement…"
+              : isEdit
+                ? "Mettre à jour"
+                : "Créer l'actif"}
           </button>
         </div>
       </form>

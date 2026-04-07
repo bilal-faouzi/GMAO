@@ -64,6 +64,11 @@ module.exports = {
         pop: "var(--shadow-pop)",
       },
 
+      // ✅ Custom font sizes
+      fontSize: {
+        xxs: ["0.565rem", { lineHeight: "0.875rem" }],
+      },
+
       // ✅ Transitions
       transitionDuration: {
         fast: "150ms",

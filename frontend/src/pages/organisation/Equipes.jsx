@@ -62,7 +62,7 @@ function RoleBadge({ role }) {
   };
   return (
     <span
-      className={`text-xs px-2 py-0.5 rounded-full font-medium ${styles[role] || styles.MEMBRE}`}>
+      className={`text-xxs px-2 py-0.5  rounded-full font-medium ${styles[role] || styles.MEMBRE}`}>
       {role}
     </span>
   );
@@ -166,7 +166,7 @@ function MembresPanel({ equipe, onClose }) {
           membres.map((m) => (
             <div
               key={m.id}
-              className="flex items-center justify-between p-2 mx-2 my-1 bg-slate-100 shadow-md hover:ring dark:bg-neutral-900/50 inset-shadow-sm rounded-sm bg-surface">
+              className="flex items-center justify-between p-2 mx-2 my-1  shadow-md hover:ring dark:bg-neutral-900/50 inset-shadow-sm rounded-sm bg-surface">
               <div>
                 <p className="text-sm text-text">{m.utilisateur_nom}</p>
                 <RoleBadge role={m.niveauRole} />

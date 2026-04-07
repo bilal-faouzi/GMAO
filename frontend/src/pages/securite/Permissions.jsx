@@ -16,10 +16,14 @@ import {
 } from "@/components/ui/select";
 
 const actionColor = (action) => {
-  if (action === "READ") return "bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400";
-  if (action === "CREATE") return "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
-  if (action === "UPDATE") return "bg-orange-100 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400";
-  if (action === "DELETE") return "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400";
+  if (action === "READ")
+    return "bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400";
+  if (action === "CREATE")
+    return "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
+  if (action === "UPDATE")
+    return "bg-orange-100 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400";
+  if (action === "DELETE")
+    return "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400";
   return "bg-surface text-text-secondary";
 };
 
@@ -175,7 +179,7 @@ export default function Permissions() {
                 {perms.map((p) => (
                   <div
                     key={p.id}
-                    className="flex items-center justify-between p-3 gap-3 bg-surface rounded-lg">
+                    className="flex items-center justify-between p-3 gap-3 bg-elevated rounded-sm">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <span
                         className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${actionColor(p.action)}`}>
@@ -253,7 +257,9 @@ export default function Permissions() {
                 </code>
               </div>
             )}
-            {error && <p className="text-red-700 dark:text-red-400 text-xs">{error}</p>}
+            {error && (
+              <p className="text-red-700 dark:text-red-400 text-xs">{error}</p>
+            )}
             <div className="flex gap-3 pt-2">
               <Button
                 type="submit"

@@ -1,97 +1,263 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getDashboard } from '../../services/actifService';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { getDashboard } from "../../services/actifService";
+import { Plus, ArrowRight, Package, BarChart2, Activity } from "lucide-react";
+
+// ─── Config ───────────────────────────────────────────────────────────────────
 
 const STATUT_CONFIG = {
-  actif:           { label: 'Actifs',          color: 'text-green-400',  bg: 'bg-green-500/20',  border: 'border-green-500/30' },
-  en_panne:        { label: 'En panne',         color: 'text-red-400',    bg: 'bg-red-500/20',    border: 'border-red-500/30' },
-  en_maintenance:  { label: 'En maintenance',   color: 'text-amber-400',  bg: 'bg-amber-500/20',  border: 'border-amber-500/30' },
-  retire:          { label: 'Retirés',          color: 'text-gray-400',   bg: 'bg-gray-500/20',   border: 'border-gray-500/30' },
+  actif: {
+    label: "Actifs",
+    bg: "var(--status-green-bg)",
+    text: "var(--status-green-text)",
+    dot: "var(--status-green-dot)",
+  },
+  en_panne: {
+    label: "En panne",
+    bg: "var(--status-red-bg)",
+    text: "var(--status-red-text)",
+    dot: "var(--status-red-dot)",
+  },
+  en_maintenance: {
+    label: "En maintenance",
+    bg: "var(--status-orange-bg)",
+    text: "var(--status-orange-text)",
+    dot: "var(--status-orange-dot)",
+  },
+  retire: {
+    label: "Retirés",
+    bg: "var(--status-gray-bg)",
+    text: "var(--status-gray-text)",
+    dot: "var(--status-gray-dot)",
+  },
 };
 
 export default function DashboardActifs() {
   const navigate = useNavigate();
-  const [data, setData]     = useState(null);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getDashboard()
-      .then(res => setData(res.data))
+      .then((res) => setData(res.data))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="p-6 text-gray-400">Chargement...</div>;
-  if (!data)   return <div className="p-6 text-red-400">Erreur de chargement.</div>;
+  if (loading)
+    return (
+      <div className="page">
+        <div className="hdr">
+          <div className="hdr-l">
+            <h1>Dashboard Actifs</h1>
+            <p>Chargement…</p>
+          </div>
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))",
+            gap: 16,
+          }}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                background: "var(--bg-surface)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "var(--r)",
+                padding: 20,
+              }}>
+              <div
+                className="skeleton"
+                style={{ width: "60%", height: 14, marginBottom: 12 }}
+              />
+              <div className="skeleton" style={{ width: "40%", height: 32 }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+
+  if (!data)
+    return (
+      <div className="page">
+        <div
+          style={{
+            background: "var(--status-red-bg)",
+            color: "var(--status-red-text)",
+            padding: "12px 16px",
+            borderRadius: "var(--r-sm)",
+            fontSize: 13,
+          }}>
+          Erreur de chargement.
+        </div>
+      </div>
+    );
 
   const getStatutNb = (statut) =>
-    data.par_statut.find(s => s.statut === statut)?.nb || 0;
-
-  const maxNb = Math.max(...data.par_statut.map(s => s.nb), 1);
+    data.par_statut.find((s) => s.statut === statut)?.nb || 0;
+  const maxNb = Math.max(...data.par_statut.map((s) => s.nb), 1);
 
   return (
-    <div className="p-6 text-white">
+    <div className="page">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold">Dashboard Actifs</h1>
-          <p className="text-gray-400 text-sm mt-1">Vue d'ensemble du parc d'actifs</p>
+      <div className="hdr">
+        <div className="hdr-l">
+          <h1>Dashboard Actifs</h1>
+          <p>Vue d'ensemble du parc d'équipements</p>
         </div>
-        <button
-          onClick={() => navigate('/actifs')}
-          className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition"
-        >
-          Liste des actifs
+        <button className="btn btn-outline" onClick={() => navigate("/actifs")}>
+          <Package size={14} /> Liste des actifs
         </button>
       </div>
 
-      {/* Cards statuts */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      {/* KPI Cards */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))",
+          gap: 12,
+        }}>
         {/* Total */}
-        <div className="bg-gray-800 rounded-xl p-5 border border-gray-700 md:col-span-1">
-          <p className="text-gray-400 text-sm mb-1">Total actifs</p>
-          <p className="text-4xl font-bold text-white">{data.total}</p>
-          <p className="text-sm text-purple-400 mt-2">
-            Taux dispo : {data.taux_disponibilite} %
+        <div
+          style={{
+            background: "var(--bg-surface)",
+            border: "1px solid var(--border-subtle)",
+            borderRadius: "var(--r)",
+            padding: "18px 20px",
+          }}>
+          <p
+            style={{
+              fontSize: 12,
+              color: "var(--text-muted)",
+              marginBottom: 4,
+            }}>
+            Total actifs
+          </p>
+          <p
+            style={{
+              fontSize: 32,
+              fontWeight: 700,
+              color: "var(--text-primary)",
+              lineHeight: 1.1,
+            }}>
+            {data.total}
+          </p>
+          <p
+            style={{
+              fontSize: 12,
+              color: "var(--color-primary)",
+              marginTop: 8,
+            }}>
+            <Activity
+              size={12}
+              style={{
+                display: "inline",
+                marginRight: 4,
+                verticalAlign: "middle",
+              }}
+            />
+            Dispo : {data.taux_disponibilite} %
           </p>
         </div>
 
         {/* Par statut */}
-        {Object.entries(STATUT_CONFIG).map(([key, cfg]) => (
-          <div
-            key={key}
-            className={`rounded-xl p-5 border ${cfg.bg} ${cfg.border} cursor-pointer hover:opacity-80 transition`}
-            onClick={() => navigate(`/actifs?statut=${key}`)}
-          >
-            <p className={`text-sm mb-1 ${cfg.color}`}>{cfg.label}</p>
-            <p className={`text-4xl font-bold ${cfg.color}`}>{getStatutNb(key)}</p>
-            <p className="text-xs text-gray-500 mt-2">
-              {data.total ? Math.round(getStatutNb(key) / data.total * 100) : 0} %
-            </p>
-          </div>
-        ))}
+        {Object.entries(STATUT_CONFIG).map(([key, cfg]) => {
+          const nb = getStatutNb(key);
+          return (
+            <div
+              key={key}
+              onClick={() => navigate(`/actifs?statut=${key}`)}
+              style={{
+                background: cfg.bg,
+                border: `1px solid ${cfg.dot}22`,
+                borderRadius: "var(--r)",
+                padding: "18px 20px",
+                cursor: "pointer",
+                transition: "opacity .15s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = ".85")}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}>
+              <p style={{ fontSize: 12, color: cfg.text, marginBottom: 4 }}>
+                {cfg.label}
+              </p>
+              <p
+                style={{
+                  fontSize: 32,
+                  fontWeight: 700,
+                  color: cfg.text,
+                  lineHeight: 1.1,
+                }}>
+                {nb}
+              </p>
+              <p
+                style={{
+                  fontSize: 11,
+                  color: "var(--text-muted)",
+                  marginTop: 8,
+                }}>
+                {data.total ? Math.round((nb / data.total) * 100) : 0} %
+              </p>
+            </div>
+          );
+        })}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Graphe barres */}
-        <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
-          <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-5">
-            Répartition par statut
-          </h2>
-          <div className="space-y-4">
+      {/* Grille 2 colonnes */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        {/* Répartition par statut */}
+        <div className="tbl-card" style={{ padding: "18px 22px" }}>
+          <div
+            className="tbl-head"
+            style={{
+              padding: 0,
+              paddingBottom: 14,
+              borderBottom: "1px solid var(--border-subtle)",
+            }}>
+            <span className="tbl-title">Répartition par statut</span>
+            <BarChart2 size={14} style={{ color: "var(--text-muted)" }} />
+          </div>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 14,
+              marginTop: 16,
+            }}>
             {Object.entries(STATUT_CONFIG).map(([key, cfg]) => {
               const nb = getStatutNb(key);
               const pct = Math.round((nb / maxNb) * 100);
               return (
                 <div key={key}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className={cfg.color}>{cfg.label}</span>
-                    <span className="text-white font-medium">{nb}</span>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      fontSize: 13,
+                      marginBottom: 5,
+                    }}>
+                    <span style={{ color: cfg.text }}>{cfg.label}</span>
+                    <span
+                      style={{ color: "var(--text-primary)", fontWeight: 600 }}>
+                      {nb}
+                    </span>
                   </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2">
+                  <div
+                    style={{
+                      width: "100%",
+                      height: 6,
+                      borderRadius: 99,
+                      background: "var(--bg-active)",
+                    }}>
                     <div
-                      className={`h-2 rounded-full transition-all duration-500 ${cfg.bg.replace('/20', '')}`}
-                      style={{ width: `${pct}%` }}
+                      style={{
+                        width: `${pct}%`,
+                        height: 6,
+                        borderRadius: 99,
+                        background: cfg.dot,
+                        transition: "width .5s ease",
+                      }}
                     />
                   </div>
                 </div>
@@ -99,55 +265,139 @@ export default function DashboardActifs() {
             })}
           </div>
 
-          {/* Taux disponibilité */}
-          <div className="mt-6 pt-5 border-t border-gray-700">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-400">Taux de disponibilité global</span>
-              <span className="text-green-400 font-bold">{data.taux_disponibilite} %</span>
+          {/* Taux dispo */}
+          <div
+            style={{
+              marginTop: 20,
+              paddingTop: 16,
+              borderTop: "1px solid var(--border-subtle)",
+            }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 13,
+                marginBottom: 6,
+              }}>
+              <span style={{ color: "var(--text-secondary)" }}>
+                Taux de disponibilité global
+              </span>
+              <span
+                style={{ color: "var(--status-green-text)", fontWeight: 700 }}>
+                {data.taux_disponibilite} %
+              </span>
             </div>
-            <div className="w-full bg-gray-700 rounded-full h-3">
+            <div
+              style={{
+                width: "100%",
+                height: 8,
+                borderRadius: 99,
+                background: "var(--bg-active)",
+              }}>
               <div
-                className="h-3 rounded-full bg-green-500 transition-all duration-700"
-                style={{ width: `${data.taux_disponibilite}%` }}
+                style={{
+                  width: `${data.taux_disponibilite}%`,
+                  height: 8,
+                  borderRadius: 99,
+                  background: "var(--status-green-dot)",
+                  transition: "width .7s ease",
+                }}
               />
             </div>
           </div>
         </div>
 
         {/* Derniers actifs */}
-        <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
-          <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">
-            Derniers actifs ajoutés
-          </h2>
+        <div
+          className="tbl-card"
+          style={{
+            padding: "18px 22px",
+            display: "flex",
+            flexDirection: "column",
+          }}>
+          <div
+            className="tbl-head"
+            style={{
+              padding: 0,
+              paddingBottom: 14,
+              borderBottom: "1px solid var(--border-subtle)",
+            }}>
+            <span className="tbl-title">Derniers actifs ajoutés</span>
+          </div>
+
           {data.actifs_recents.length === 0 ? (
-            <p className="text-gray-500 text-sm text-center py-8">Aucun actif</p>
+            <p
+              style={{
+                textAlign: "center",
+                padding: "40px 0",
+                color: "var(--text-muted)",
+                fontSize: 14,
+              }}>
+              Aucun actif
+            </p>
           ) : (
-            <div className="space-y-3">
-              {data.actifs_recents.map(actif => {
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+                marginTop: 12,
+                flex: 1,
+              }}>
+              {data.actifs_recents.map((actif) => {
                 const cfg = STATUT_CONFIG[actif.statut];
                 return (
                   <div
                     key={actif.id}
-                    className="flex items-center justify-between p-3 bg-gray-700/40 rounded-lg cursor-pointer hover:bg-gray-700/60 transition"
                     onClick={() => navigate(`/actifs/${actif.id}`)}
-                  >
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "10px 12px",
+                      borderRadius: "var(--r-sm)",
+                      background: "var(--bg-elevated)",
+                      cursor: "pointer",
+                      transition: "background .15s",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = "var(--bg-hover)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = "var(--bg-elevated)")
+                    }>
                     <div>
-                      <p className="text-sm font-medium font-mono text-purple-300">{actif.code}</p>
-                      <p className="text-xs text-gray-400">{actif.libelle}</p>
+                      <p
+                        className="code-mono"
+                        style={{ fontWeight: 600, fontSize: 12 }}>
+                        {actif.code}
+                      </p>
+                      <p
+                        style={{
+                          fontSize: 12,
+                          color: "var(--text-muted)",
+                          marginTop: 1,
+                        }}>
+                        {actif.libelle}
+                      </p>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${cfg?.bg} ${cfg?.color}`}>
-                      {actif.statut.replace('_', ' ')}
+                    <span
+                      className="badge"
+                      style={{ background: cfg?.bg, color: cfg?.text }}>
+                      <span className="bdot" style={{ background: cfg?.dot }} />
+                      {cfg?.label || actif.statut}
                     </span>
                   </div>
                 );
               })}
             </div>
           )}
+
           <button
-            onClick={() => navigate('/actifs/nouveau')}
-            className="w-full mt-4 py-2 text-sm text-purple-400 border border-purple-500/30 rounded-lg hover:bg-purple-500/10 transition"
-          >
-            + Ajouter un actif
+            className="btn btn-outline"
+            onClick={() => navigate("/actifs/nouveau")}
+            style={{ width: "100%", justifyContent: "center", marginTop: 14 }}>
+            <Plus size={13} /> Ajouter un actif
           </button>
         </div>
       </div>
