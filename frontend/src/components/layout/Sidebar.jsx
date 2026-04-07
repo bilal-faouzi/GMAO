@@ -22,6 +22,8 @@ import {
   ChevronDown,
   Drama,
   Pyramid,
+  Package2,
+  Store,
 } from "lucide-react";
 import useAuthStore from "@/store/authStore";
 import api from "@/services/api";
@@ -84,6 +86,14 @@ const navSections = [
         end: true,
       },
       { to: "/actifs/arborescence", icon: GitBranch, label: "Arborescence" },
+    ],
+  },
+  {
+    label: "Magasin",
+    icon: Store,
+    items: [
+      { to: "/magasin/dashboard", icon: BarChart2, label: "Dashboard Magasin" },
+      { to: "/magasin", icon: Package2, label: "Catalogue pièces" },
     ],
   },
 ];

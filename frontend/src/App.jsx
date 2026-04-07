@@ -23,6 +23,10 @@ import ArborescenceActifs from "@/pages/actifs/ArborescenceActifs";
 import ActifsRacines from "@/pages/actifs/ActifsRacines";
 import ActifArborescencePage from "@/pages/actifs/ActifArborescencePage";
 import ThemeProvider from "./providers/ThemProvider";
+import CataloguePieces from "@/pages/magasin/CataloguePieces";
+import DetailPiece from "@/pages/magasin/DetailPiece";
+import FormulairePiece from "@/pages/magasin/FormulairePiece";
+import DashboardMagasin from "@/pages/magasin/DashboardMagasin";
 
 export default function App() {
   return (
@@ -64,6 +68,11 @@ export default function App() {
               path="actifs/:id/arborescence"
               element={<ActifArborescencePage />}
             />
+            <Route path="magasin" element={<CataloguePieces />} />
+            <Route path="magasin/dashboard" element={<DashboardMagasin />} />
+            <Route path="magasin/nouveau" element={<FormulairePiece />} />
+            <Route path="magasin/:id" element={<DetailPiece />} />
+            <Route path="magasin/:id/modifier" element={<FormulairePiece />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
