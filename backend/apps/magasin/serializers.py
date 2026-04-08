@@ -30,6 +30,7 @@ class MouvementStockSerializer(serializers.ModelSerializer):
             'id':          str(obj.idPiece.id),
             'reference':   obj.idPiece.reference,
             'designation': obj.idPiece.designation,
+            'unite':       obj.idPiece.unite,
         }
 
     def get_magasinier_detail(self, obj):

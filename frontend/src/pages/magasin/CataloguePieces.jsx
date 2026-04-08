@@ -18,6 +18,13 @@ import {
   ChevronRight,
   Filter,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const PAGE_SIZE = 10;
 
@@ -145,20 +152,27 @@ export default function CataloguePieces() {
               className="search-input"
             />
           </div>
-          <select
-            value={filtreCategorie}
-            onChange={(e) =>
-              resetFiltersAndPage(() => setFiltreCategorie(e.target.value))
-            }
-            className="finput"
-            style={{ width: "auto", minWidth: 160 }}>
-            <option value="">Toutes catégories</option>
-            {categories.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+          <Select
+            value={filtreCategorie || "__all__"}
+            onValueChange={(v) =>
+              resetFiltersAndPage(() =>
+                setFiltreCategorie(v === "__all__" ? "" : v),
+              )
+            }>
+            <SelectTrigger
+              className="finput"
+              style={{ width: "auto", minWidth: 160 }}>
+              <SelectValue placeholder="Toutes catégories" />
+            </SelectTrigger>
+            <SelectContent className="z-[9999]">
+              <SelectItem value="__all__">Toutes catégories</SelectItem>
+              {categories.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <button
             onClick={() =>
               resetFiltersAndPage(() => setFiltreAlerte(!filtreAlerte))

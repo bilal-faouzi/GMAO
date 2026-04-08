@@ -21,6 +21,11 @@ const MOUVEMENT_CONFIG = {
   },
 };
 
+const fmtQty = (v) => {
+  const n = parseFloat(v);
+  return isNaN(n) ? v : n % 1 === 0 ? String(Math.trunc(n)) : String(n);
+};
+
 export default function DashboardMagasin() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
@@ -286,10 +291,10 @@ export default function DashboardMagasin() {
                         fontWeight: 700,
                         color: "var(--status-red-text)",
                       }}>
-                      {p.quantiteStock} {p.unite}
+                      {fmtQty(p.quantiteStock)} {p.unite}
                     </p>
                     <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                      min: {p.seuilMinimum}
+                      min: {fmtQty(p.seuilMinimum)} {p.unite}
                     </p>
                   </div>
                 </div>
@@ -381,7 +386,7 @@ export default function DashboardMagasin() {
                           fontWeight: 700,
                           color: "var(--text-primary)",
                         }}>
-                        {m.quantite}
+                        {fmtQty(m.quantite)} {m.piece_detail?.unite}
                       </span>
                     </div>
                   </div>

@@ -19,6 +19,11 @@ import {
   FolderTree,
   Package,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -142,56 +147,72 @@ function TreeNode({ actif, selectedId, onSelect, level = 0 }) {
 
   return (
     <div>
-      <div
-        onClick={() => onSelect(actif.id)}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          padding: "6px 10px",
-          paddingLeft: 10 + level * 18,
-          cursor: "pointer",
-          borderRadius: "var(--r-sm)",
-          background: isSelected ? "var(--color-primary-soft)" : "transparent",
-          color: isSelected ? "var(--accent)" : "var(--text-primary)",
-          fontSize: 13,
-          fontWeight: isSelected ? 600 : 400,
-          transition: "all .15s",
-          userSelect: "none",
-        }}
-        onMouseEnter={(e) => {
-          if (!isSelected) e.currentTarget.style.background = "var(--bg-hover)";
-        }}
-        onMouseLeave={(e) => {
-          if (!isSelected) e.currentTarget.style.background = "transparent";
-        }}>
-        {hasChildren ? (
-          <span
-            onClick={(e) => {
-              e.stopPropagation();
-              setExpanded((v) => !v);
-            }}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div
+            onClick={() => onSelect(actif.id)}
             style={{
               display: "flex",
               alignItems: "center",
-              flexShrink: 0,
+              gap: 6,
+              padding: "6px 10px",
+              paddingLeft: 10 + level * 18,
               cursor: "pointer",
+              borderRadius: "var(--r-sm)",
+              background: isSelected
+                ? "var(--color-primary-soft)"
+                : "transparent",
+              color: isSelected ? "var(--accent)" : "var(--text-primary)",
+              fontSize: 13,
+              fontWeight: isSelected ? 600 : 400,
+              transition: "all .15s",
+              userSelect: "none",
+            }}
+            onMouseEnter={(e) => {
+              if (!isSelected)
+                e.currentTarget.style.background = "var(--bg-hover)";
+            }}
+            onMouseLeave={(e) => {
+              if (!isSelected) e.currentTarget.style.background = "transparent";
             }}>
-            {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            {hasChildren ? (
+              <span
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setExpanded((v) => !v);
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  flexShrink: 0,
+                  cursor: "pointer",
+                }}>
+                {expanded ? (
+                  <ChevronDown size={14} />
+                ) : (
+                  <ChevronRight size={14} />
+                )}
+              </span>
+            ) : (
+              <span style={{ width: 14, flexShrink: 0 }} />
+            )}
+            <Package size={14} style={{ flexShrink: 0, opacity: 0.6 }} />
+            <span
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}>
+              {actif.code} — {actif.libelle}
+            </span>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <span>
+            {actif.code} — {actif.libelle}
           </span>
-        ) : (
-          <span style={{ width: 14, flexShrink: 0 }} />
-        )}
-        <Package size={14} style={{ flexShrink: 0, opacity: 0.6 }} />
-        <span
-          style={{
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}>
-          {actif.code} — {actif.libelle}
-        </span>
-      </div>
+        </TooltipContent>
+      </Tooltip>
       {hasChildren && expanded && (
         <div>
           {actif.sous_actifs.map((child) => (

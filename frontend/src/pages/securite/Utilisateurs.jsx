@@ -561,19 +561,22 @@ export default function Utilisateurs() {
                   .map((r) => (
                     <div
                       key={r.id}
-                      className="flex items-center justify-between p-2.5 rounded-md border border-border">
+                      className={`flex items-center justify-between p-2.5 rounded-md border border-border ${!r.est_actif ? "backdrop-grayscale" : ""}`}>
                       <div>
-                        <span className="text-sm font-medium text-text">
+                        <span
+                          className={`text-sm font-medium text-text ${!r.est_actif ? "line-through text-text-muted" : ""}`}>
                           {r.code}
                         </span>
-                        <span className="text-xs text-text-muted ml-2">
+                        <span
+                          className={`r.est text-xs text-text-muted ml-2 ${!r.est_actif ? "line-through" : ""}`}>
                           {r.libelle}
                         </span>
                       </div>
                       <Button
                         onClick={() => handleAssignRole(r.id)}
                         variant="ghost"
-                        className="flex py-2 text-green-600 hover:text-green-700 transition-colors text-lg leading-none">
+                        disabled={!r.est_actif}
+                        className={`flex py-2 ${!r.est_actif ? "text-text-muted hover:text-text-muted" : "text-green-600 hover:text-green-700"}  transition-colors text-lg leading-none`}>
                         <Plus size={13} />
                       </Button>
                     </div>

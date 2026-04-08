@@ -24,6 +24,8 @@ import {
   Pyramid,
   Package2,
   Store,
+  Hammer,
+  ClipboardCheck,
 } from "lucide-react";
 import useAuthStore from "@/store/authStore";
 import api from "@/services/api";
@@ -96,6 +98,14 @@ const navSections = [
       { to: "/magasin", icon: Package2, label: "Catalogue pièces", end: true },
     ],
   },
+  {
+    label: "Sous-Traitants",
+    icon: Hammer,
+    items: [
+      { to: "/soustraitants/dashboard", icon: ClipboardCheck, label: "Dashboard Sous-Traitants" },
+      { to: "/soustraitants", icon: Hammer, label: "Liste Sous-Traitants", end: true },
+    ],
+  },
 ];
 
 export default function Sidebar() {
@@ -121,9 +131,8 @@ export default function Sidebar() {
 
   const toggleGroup = (i) => {
     setOpenGroups((prev) => {
-      const next = new Set(prev);
-      next.has(i) ? next.delete(i) : next.add(i);
-      return next;
+      if (prev.has(i)) return new Set();
+      return new Set([i]);
     });
   };
 

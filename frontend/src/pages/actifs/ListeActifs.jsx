@@ -476,7 +476,9 @@ export default function ListeActifs() {
                 </tr>
               ) : (
                 actifs.map((actif) => (
-                  <tr key={actif.id}>
+                  <tr
+                    key={actif.id}
+                    onClick={() => navigate(`/actifs/${actif.id}`)}>
                     <td>
                       <span className="code-mono" style={{ fontWeight: 600 }}>
                         {actif.code}
@@ -499,13 +501,6 @@ export default function ListeActifs() {
                           gap: 4,
                           justifyContent: "center",
                         }}>
-                        <button
-                          className="act-btn"
-                          title="Détail"
-                          disabled={actionLoading}
-                          onClick={() => navigate(`/actifs/${actif.id}`)}>
-                          <Eye size={14} />
-                        </button>
                         <button
                           className="act-btn"
                           title="Modifier"
