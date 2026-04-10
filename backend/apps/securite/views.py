@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.db.models import Q
+from django.db.models import Q, Count
 
 
 from .models import Utilisateur, SessionActive, JournalAudit, Role, Permission, UtilisateurRole, RolePermission
@@ -741,6 +741,12 @@ class JournalAuditView(APIView):
     def get(self, request):
         queryset = JournalAudit.objects.order_by('-horodatage')
 
+        # Stats globales par action (avant tout filtre)
+        stats = {
+            row['action']: row['total']
+            for row in JournalAudit.objects.values('action').annotate(total=Count('id'))
+        }
+
         # Filtres
         action = request.query_params.get('action')
         module = request.query_params.get('module')
@@ -777,6 +783,7 @@ class JournalAuditView(APIView):
         total = queryset.count()
         start = (page - 1) * page_size
         end = start + page_size
+        
 
         serializer = JournalAuditSerializer(queryset[start:end], many=True)
 
@@ -785,5 +792,6 @@ class JournalAuditView(APIView):
             'page': page,
             'page_size': page_size,
             'total_pages': (total + page_size - 1) // page_size,
+            'stats': stats,
             'results': serializer.data
         })

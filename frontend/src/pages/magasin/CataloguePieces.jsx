@@ -1,11 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  getPieces,
-  deletePiece,
-  sortiePiece,
-  entreePiece,
-} from "../../services/magasinService";
+import { getPieces, deletePiece } from "../../services/magasinService";
+import MouvementStockModal from "../../components/MouvementStockModal";
 import {
   Plus,
   Eye,
@@ -42,9 +38,6 @@ export default function CataloguePieces() {
   const [filtreCategorie, setFiltreCategorie] = useState("");
   const [categories, setCategories] = useState([]);
   const [modal, setModal] = useState(null);
-  const [quantite, setQuantite] = useState("");
-  const [commentaire, setCommentaire] = useState("");
-  const [errModal, setErrModal] = useState("");
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -103,23 +96,6 @@ export default function CataloguePieces() {
     if (!confirm("Supprimer cette pièce ?")) return;
     await deletePiece(id);
     charger();
-  };
-
-  const handleMouvement = async () => {
-    setErrModal("");
-    try {
-      if (modal.type === "sortie") {
-        await sortiePiece(modal.piece.id, quantite, commentaire);
-      } else {
-        await entreePiece(modal.piece.id, quantite, commentaire);
-      }
-      setModal(null);
-      setQuantite("");
-      setCommentaire("");
-      charger();
-    } catch (e) {
-      setErrModal(e.response?.data?.error || "Erreur");
-    }
   };
 
   return (
@@ -259,10 +235,9 @@ export default function CataloguePieces() {
                       <button
                         className="btn btn-ghost btn-icon"
                         title="Entrée"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setModal({ type: "entree", piece: p });
-                          setQuantite("");
-                          setErrModal("");
                         }}
                         style={{ color: "var(--status-green-text)" }}>
                         <ArrowUpFromLine size={14} />
@@ -270,10 +245,9 @@ export default function CataloguePieces() {
                       <button
                         className="btn btn-ghost btn-icon"
                         title="Sortie"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setModal({ type: "sortie", piece: p });
-                          setQuantite("");
-                          setErrModal("");
                         }}
                         style={{ color: "var(--status-red-text)" }}>
                         <ArrowDownToLine size={14} />
@@ -336,80 +310,15 @@ export default function CataloguePieces() {
 
       {/* Modal Entrée/Sortie */}
       {modal && (
-        <div className="backdrop">
-          <div className="modal modal-sm">
-            <div className="m-hdr">
-              <span className="m-title">
-                {modal.type === "entree" ? "+ Entrée stock" : "- Sortie stock"}
-              </span>
-              <button className="m-close" onClick={() => setModal(null)}>
-                ✕
-              </button>
-            </div>
-            <div className="m-body-plain">
-              <p className="code-mono" style={{ marginBottom: 4 }}>
-                {modal.piece.reference} — {modal.piece.designation}
-              </p>
-              <p
-                style={{
-                  fontSize: 12,
-                  color: "var(--text-muted)",
-                  marginBottom: 16,
-                }}>
-                Stock actuel :{" "}
-                <strong style={{ color: "var(--text-primary)" }}>
-                  {fmtQty(modal.piece.quantiteStock)} {modal.piece.unite}
-                </strong>
-              </p>
-              {errModal && (
-                <div
-                  className="alert-warn"
-                  style={{ marginTop: 0, marginBottom: 12 }}>
-                  {errModal}
-                </div>
-              )}
-              <div className="fg" style={{ marginBottom: 12 }}>
-                <label className="flabel">Quantité</label>
-                <input
-                  type="number"
-                  placeholder="Quantité"
-                  value={quantite}
-                  onChange={(e) => setQuantite(e.target.value)}
-                  className="finput"
-                />
-              </div>
-              <div className="fg" style={{ marginBottom: 0 }}>
-                <label className="flabel">Commentaire (optionnel)</label>
-                <textarea
-                  placeholder="Commentaire"
-                  value={commentaire}
-                  onChange={(e) => setCommentaire(e.target.value)}
-                  className="finput"
-                  style={{ resize: "none", height: 64 }}
-                />
-              </div>
-            </div>
-            <div className="m-foot">
-              <button
-                className="btn btn-outline"
-                onClick={() => setModal(null)}>
-                Annuler
-              </button>
-              <button
-                className={
-                  modal.type === "entree" ? "btn btn-primary" : "btn btn-danger"
-                }
-                onClick={handleMouvement}
-                style={
-                  modal.type === "entree"
-                    ? { background: "var(--color-success)" }
-                    : {}
-                }>
-                Confirmer
-              </button>
-            </div>
-          </div>
-        </div>
+        <MouvementStockModal
+          type={modal.type}
+          piece={modal.piece}
+          onClose={() => setModal(null)}
+          onSuccess={() => {
+            setModal(null);
+            charger();
+          }}
+        />
       )}
     </div>
   );

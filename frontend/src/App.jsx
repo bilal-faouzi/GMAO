@@ -3,6 +3,7 @@ import Layout from "@/components/layout/Layout";
 import Login from "@/pages/auth/Login";
 import Dashboard from "@/pages/dashboard/Dashboard";
 import Utilisateurs from "@/pages/securite/Utilisateurs";
+import UserDetail from "@/pages/securite/UserDetail";
 import Roles from "@/pages/securite/Roles";
 import Permissions from "@/pages/securite/Permissions";
 import Sessions from "@/pages/securite/Sessions";
@@ -44,6 +45,7 @@ export default function App() {
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="utilisateurs" element={<Utilisateurs />} />
+              <Route path="utilisateurs/:id" element={<UserDetail />} />
               <Route path="roles" element={<Roles />} />
               <Route path="permissions" element={<Permissions />} />
               <Route path="sessions" element={<Sessions />} />

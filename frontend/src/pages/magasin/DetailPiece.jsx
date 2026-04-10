@@ -1,12 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  getPiece,
-  getMouvementsByPiece,
-  sortiePiece,
-  entreePiece,
-} from "../../services/magasinService";
+import { getPiece, getMouvementsByPiece } from "../../services/magasinService";
 import { ArrowLeft, Pencil } from "lucide-react";
+import MouvementStockModal from "../../components/MouvementStockModal";
 
 const fmtQty = (v) => {
   const n = parseFloat(v);
@@ -38,9 +34,6 @@ export default function DetailPiece() {
   const [mouvements, setMouvements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
-  const [quantite, setQuantite] = useState("");
-  const [commentaire, setCommentaire] = useState("");
-  const [errModal, setErrModal] = useState("");
 
   const charger = async () => {
     try {
@@ -60,20 +53,6 @@ export default function DetailPiece() {
   useEffect(() => {
     charger();
   }, [id]);
-
-  const handleMouvement = async () => {
-    setErrModal("");
-    try {
-      if (modal === "sortie") await sortiePiece(id, quantite, commentaire);
-      else await entreePiece(id, quantite, commentaire);
-      setModal(null);
-      setQuantite("");
-      setCommentaire("");
-      charger();
-    } catch (e) {
-      setErrModal(e.response?.data?.error || "Erreur");
-    }
-  };
 
   if (loading)
     return (
@@ -158,8 +137,6 @@ export default function DetailPiece() {
             className="btn btn-primary"
             onClick={() => {
               setModal("entree");
-              setQuantite("");
-              setErrModal("");
             }}
             style={{ background: "var(--color-success)" }}>
             + Entrée
@@ -168,8 +145,6 @@ export default function DetailPiece() {
             className="btn btn-danger"
             onClick={() => {
               setModal("sortie");
-              setQuantite("");
-              setErrModal("");
             }}>
             - Sortie
           </button>
@@ -348,77 +323,15 @@ export default function DetailPiece() {
 
       {/* Modal */}
       {modal && (
-        <div className="backdrop">
-          <div className="modal modal-sm">
-            <div className="m-hdr">
-              <span className="m-title">
-                {modal === "entree" ? "+ Entrée stock" : "- Sortie stock"}
-              </span>
-              <button className="m-close" onClick={() => setModal(null)}>
-                ✕
-              </button>
-            </div>
-            <div className="m-body-plain">
-              <p
-                style={{
-                  fontSize: 13,
-                  color: "var(--text-muted)",
-                  marginBottom: 16,
-                }}>
-                Stock actuel :{" "}
-                <strong style={{ color: "var(--text-primary)" }}>
-                  {fmtQty(piece.quantiteStock)} {piece.unite}
-                </strong>
-              </p>
-              {errModal && (
-                <div
-                  className="alert-warn"
-                  style={{ marginTop: 0, marginBottom: 12 }}>
-                  {errModal}
-                </div>
-              )}
-              <div className="fg" style={{ marginBottom: 12 }}>
-                <label className="flabel">Quantité</label>
-                <input
-                  type="number"
-                  placeholder="Quantité"
-                  value={quantite}
-                  onChange={(e) => setQuantite(e.target.value)}
-                  className="finput"
-                />
-              </div>
-              <div className="fg" style={{ marginBottom: 0 }}>
-                <label className="flabel">Commentaire (optionnel)</label>
-                <textarea
-                  placeholder="Commentaire"
-                  value={commentaire}
-                  onChange={(e) => setCommentaire(e.target.value)}
-                  className="finput"
-                  style={{ resize: "none", height: 64 }}
-                />
-              </div>
-            </div>
-            <div className="m-foot">
-              <button
-                className="btn btn-outline"
-                onClick={() => setModal(null)}>
-                Annuler
-              </button>
-              <button
-                className={
-                  modal === "entree" ? "btn btn-primary" : "btn btn-danger"
-                }
-                onClick={handleMouvement}
-                style={
-                  modal === "entree"
-                    ? { background: "var(--color-success)" }
-                    : {}
-                }>
-                Confirmer
-              </button>
-            </div>
-          </div>
-        </div>
+        <MouvementStockModal
+          type={modal}
+          piece={piece}
+          onClose={() => setModal(null)}
+          onSuccess={() => {
+            setModal(null);
+            charger();
+          }}
+        />
       )}
     </div>
   );

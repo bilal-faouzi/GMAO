@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Plus,
   Search,
@@ -31,6 +32,7 @@ import { useFormErrors } from "@/hooks/useFormErrors";
 const labelCls = "text-xs text-text-secondary mb-1 block";
 
 export default function Utilisateurs() {
+  const navigate = useNavigate();
   const [utilisateurs, setUtilisateurs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
@@ -236,6 +238,8 @@ export default function Utilisateurs() {
               filtered.map((u) => (
                 <tr
                   key={u.id}
+                  onClick={() => navigate(`/utilisateurs/${u.id}`)}
+                  style={{ cursor: "pointer" }}
                   className={`hover:bg-surface ${u.est_actif ? "" : "bg-elevated border-border-subtle opacity-50 grayscale"} transition-colors`}>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">

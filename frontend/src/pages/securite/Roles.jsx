@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Key, Shield, PowerOff, Power } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Key,
+  Shield,
+  PowerOff,
+  Power,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import {
   getRoles,
   getPermissions,
@@ -78,6 +87,10 @@ export default function Roles() {
   const [allPermissions, setAllPermissions] = useState([]);
   const [form, setForm] = useState({ code: "", libelle: "", niveau: "" });
   const [selectedNiveau, setSelectedNiveau] = useState(null);
+  const [expandedRoles, setExpandedRoles] = useState({});
+
+  const toggleExpand = (id) =>
+    setExpandedRoles((prev) => ({ ...prev, [id]: !prev[id] }));
 
   const { errors, setApiErrors, clearErrors, inputCls } = useFormErrors();
 
@@ -299,12 +312,27 @@ export default function Roles() {
 
               {/* Permissions preview */}
               <div>
-                <p className="text-xs text-text-muted mb-2">
-                  Permissions ({role.permissions?.length || 0}) :
-                </p>
+                <div
+                  className="flex items-center justify-between cursor-pointer mb-2"
+                  onClick={() =>
+                    role.permissions?.length > 3 && toggleExpand(role.id)
+                  }>
+                  <p className="text-xs text-text-muted">
+                    Permissions ({role.permissions?.length || 0}) :
+                  </p>
+                  {role.permissions?.length > 3 &&
+                    (expandedRoles[role.id] ? (
+                      <ChevronUp size={14} className="text-text-muted" />
+                    ) : (
+                      <ChevronDown size={14} className="text-text-muted" />
+                    ))}
+                </div>
                 <div className="flex flex-wrap gap-1">
                   {role.permissions?.length > 0 ? (
-                    role.permissions.slice(0, 3).map((p) => (
+                    (expandedRoles[role.id]
+                      ? role.permissions
+                      : role.permissions.slice(0, 3)
+                    ).map((p) => (
                       <span
                         key={p.id}
                         className="text-xs px-2 py-0.5 rounded-full bg-surface text-text-secondary border border-border">
@@ -316,8 +344,10 @@ export default function Roles() {
                       Aucune permission
                     </span>
                   )}
-                  {role.permissions?.length > 3 && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-surface text-text-muted border border-border">
+                  {!expandedRoles[role.id] && role.permissions?.length > 3 && (
+                    <span
+                      className="text-xs px-2 py-0.5 rounded-full bg-surface text-text-muted border border-border cursor-pointer hover:bg-hover"
+                      onClick={() => toggleExpand(role.id)}>
                       +{role.permissions.length - 3}
                     </span>
                   )}
