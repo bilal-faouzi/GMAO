@@ -31,6 +31,15 @@ import ListeSousTraitants from "@/pages/soustraitants/ListeSousTraitants";
 import DetailSousTraitant from "@/pages/soustraitants/DetailSousTraitant";
 import FormulaireSousTraitant from "@/pages/soustraitants/FormulaireSousTraitant";
 import DashboardSousTraitants from "@/pages/soustraitants/DashboardSousTraitants";
+import ListeDemandes      from '@/pages/ordres/ListeDemandes'
+import FormulaireDemande  from '@/pages/ordres/FormulaireDemande'
+import DashboardOTs       from '@/pages/ordres/DashboardOTs'
+import ListeOTs           from '@/pages/ordres/ListeOTs'
+import DetailOT           from '@/pages/ordres/DetailOT'
+import FormulaireOT       from '@/pages/ordres/FormulaireOT'
+import InterfaceMagasinier from '@/pages/magasin/InterfaceMagasinier'
+import DeclarerPanne from '@/pages/ordres/DeclarerPanne'
+import GestionOTs from '@/pages/ordres/GestionOTs'
 import { TooltipProvider } from "./components/ui/tooltip";
 
 export default function App() {
@@ -39,7 +48,7 @@ export default function App() {
       <TooltipProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/login" element={<Login />} />
+            <Route path="login" element={<Login />} />
             <Route path="/" element={<Layout />}>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
@@ -102,8 +111,22 @@ export default function App() {
                 path="soustraitants/:id/modifier"
                 element={<FormulaireSousTraitant />}
               />
+
+              {/* ── Interventions (Ordres) — statiques AVANT :id ── */}
+              <Route path="ordres/demandes" element={<ListeDemandes />} />
+              <Route path="ordres/demandes/nouveau" element={<FormulaireDemande />} />
+              <Route path="ordres/ots/dashboard" element={<DashboardOTs />} />
+              <Route path="ordres/ots/nouveau" element={<FormulaireOT />} />
+              <Route path="ordres/ots" element={<ListeOTs />} />
+              {/* ── Interventions — dynamiques APRÈS ── */}
+              <Route path="ordres/ots/:id" element={<DetailOT />} />
+              <Route path="ordres/ots/:id/modifier" element={<FormulaireOT />} />
             </Route>
+            
+            <Route path="magasin/sortie" element={<InterfaceMagasinier />} />
+            <Route path="ordres/declarer" element={<DeclarerPanne />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="ordres/gestion" element={<GestionOTs />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>

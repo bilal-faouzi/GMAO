@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -26,6 +26,10 @@ import {
   Store,
   Hammer,
   ClipboardCheck,
+   FileText,
+   ArrowDownToLine,
+   AlertTriangle,
+   Settings2
 } from "lucide-react";
 import useAuthStore from "@/store/authStore";
 import api from "@/services/api";
@@ -96,6 +100,7 @@ const navSections = [
     items: [
       { to: "/magasin/dashboard", icon: BarChart2, label: "Dashboard Magasin" },
       { to: "/magasin", icon: Package2, label: "Catalogue pièces", end: true },
+      { to: "/magasin/sortie",     icon: ArrowDownToLine,  label: "Sortie pièces",     end: true },
     ],
   },
   {
@@ -106,6 +111,19 @@ const navSections = [
       { to: "/soustraitants", icon: Hammer, label: "Liste Sous-Traitants", end: true },
     ],
   },
+{
+  label: "Interventions",
+  icon: ClipboardCheck,
+  items: [
+    { to: "/ordres/demandes",       icon: FileText,       label: "Demandes (DI)"  },
+    { to: "/ordres/ots",            icon: ClipboardCheck, label: "Ordres (OT)",   end: true },
+    { to: "/ordres/ots/dashboard",  icon: BarChart2,      label: "Dashboard OT"   },
+    { to: '/ordres/declarer', icon: AlertTriangle, label: 'Déclarer une panne', end: true },
+    { to: '/ordres/gestion', icon: Settings2, label: 'Gestion OT (Resp.)', end: true },
+  ],
+},
+
+
 ];
 
 export default function Sidebar() {
@@ -113,21 +131,30 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Ouvre par défaut le groupe qui contient la page active
-  const initialOpen = navSections.reduce((acc, s, i) => {
-    if (
-      s.label &&
-      s.items.some((item) =>
-        item.end
-          ? location.pathname === item.to
-          : location.pathname.startsWith(item.to),
+  // Calcule les groupes ouverts basé sur la location actuelle
+  const getOpenGroups = (pathname) => {
+    return navSections.reduce((acc, s, i) => {
+      if (
+        s.label &&
+        s.items.some((item) =>
+          item.end
+            ? pathname === item.to
+            : pathname.startsWith(item.to),
+        )
       )
-    )
-      acc.add(i);
-    return acc;
-  }, new Set());
+        acc.add(i);
+      return acc;
+    }, new Set());
+  };
 
-  const [openGroups, setOpenGroups] = useState(initialOpen);
+  const [openGroups, setOpenGroups] = useState(() =>
+    getOpenGroups(location.pathname),
+  );
+
+  // Mets à jour les groupes ouverts quand la location change
+  useEffect(() => {
+    setOpenGroups(getOpenGroups(location.pathname));
+  }, [location.pathname]);
 
   const toggleGroup = (i) => {
     setOpenGroups((prev) => {
