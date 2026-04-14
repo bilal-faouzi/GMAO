@@ -1,0 +1,249 @@
+/* ============================================================
+   THEME.CSS — Source unique de vérité pour les couleurs
+   Modifiez UNIQUEMENT ce fichier pour changer l'apparence globale
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
+
+/* ──────────────────────────────────────────────
+   1. TOKENS DE DESIGN (indépendants du thème)
+   ────────────────────────────────────────────── */
+:root {
+  /* --- Typographie --- */
+  --font-sans: 'DM Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-size-base: 16px;
+  --line-height-base: 1.6;
+
+  /* --- Espacement --- */
+  --space-xxs:  4px;
+  --space-xs:   8px;
+  --space-sm:   12px;
+  --space:      16px;
+  --space-md:   20px;
+  --space-lg:   24px;
+  --space-xl:   32px;
+  --space-2xl:  40px;
+
+  /* --- Border radius --- */
+  --radius-sm: 8px;
+  --radius:    16px;
+  --radius-lg: 24px;
+
+  /* --- Transitions --- */
+  --transition-fast:    150ms ease;
+  --transition-default: 220ms ease;
+
+  /* --- Couleur accent (invariable selon thème) --- */
+  --color-primary:      #4f46e5;
+  --color-primary-dark: #4338ca;
+  --color-success:      #22c55e;
+  --color-warning:      #f59e0b;
+  --color-danger:       #ef4444;
+}
+
+/* ──────────────────────────────────────────────
+   2. THÈME CLAIR — teinte bleu-ardoise élégante
+   ────────────────────────────────────────────── */
+:root {
+  color-scheme: light;
+
+  /* Arrière-plans — nuancés de bleu lavande */
+  --color-bg:       #edf1f8;   /* fond de page bleu très doux */
+  --color-surface:  #f9fafe;   /* cartes — blanc légèrement bleuté */
+  --color-elevated: #f0f3fb;   /* inputs, éléments surélevés */
+  --color-hover:    #e2e9f5;   /* hover */
+  --color-showcase:  #e5ebf5;   /* sections mises en avant */
+  --color-active:   #d5deef;   /* active / selected */
+
+  /* Bordures — bleu ardoise */
+  --color-border:        rgba(51, 65, 100, 0.16);
+  --color-border-subtle: rgba(51, 65, 100, 0.09);
+
+  /* Texte — marine profond pour un contraste fort */
+  --color-text:           #0b1426;
+  --color-text-secondary: #2c3e5a;
+  --color-text-muted:     #546483;
+
+  /* Couleurs sémantiques (variantes soft pour light) */
+  --color-primary-soft: rgba(79,  70,  229, 0.10);
+  --color-success-soft: rgba(22, 163,  74, 0.12);
+  --color-danger-soft:  rgba(220,  38,  38, 0.10);
+
+  /* Sidebar — fond bleuté */
+  --color-sidebar-bg:     #f5f7fc;
+  --color-sidebar-border: rgba(51, 65, 100, 0.12);
+  --color-sidebar-text:   #3d5278;
+  --color-sidebar-active: #4f46e5;
+  --color-sidebar-hover:  #e5ebf5;
+
+  /* Ombres — plus présentes et bleutées */
+  --shadow-soft: 0 18px 40px rgba(25, 40, 80, 0.10);
+  --shadow-card: 0 4px 16px rgba(25, 40, 80, 0.07), 0 1px 3px rgba(25, 40, 80, 0.04);
+  --shadow-pop:  0 14px 32px rgba(25, 40, 80, 0.14);
+
+  /* ── Status / badge — couleurs lisibles sur fond clair ── */
+  --status-green-bg:   rgba(22, 163, 74, 0.10);
+  --status-green-text: #15803d;
+  --status-green-dot:  #16a34a;
+
+  --status-orange-bg:   rgba(234, 88, 12, 0.10);
+  --status-orange-text: #c2410c;
+  --status-orange-dot:  #ea580c;
+
+  --status-red-bg:   rgba(220, 38, 38, 0.10);
+  --status-red-text: #b91c1c;
+  --status-red-dot:  #dc2626;
+
+  --status-blue-bg:   rgba(37, 99, 235, 0.10);
+  --status-blue-text: #1d4ed8;
+  --status-blue-dot:  #2563eb;
+
+  --status-gray-bg:   rgba(75, 85, 99, 0.10);
+  --status-gray-text: #374151;
+  --status-gray-dot:  #4b5563;
+
+  --status-stone-bg:   rgba(87, 83, 78, 0.10);
+  --status-stone-text: #57534e;
+  --status-stone-dot:  #78716c;
+
+  --status-purple-bg:   rgba(124, 58, 237, 0.10);
+  --status-purple-text: #6d28d9;
+  --status-purple-dot:  #7c3aed;
+
+  --status-cyan-bg:   rgba(8, 145, 178, 0.10);
+  --status-cyan-text: #0e7490;
+  --status-cyan-dot:  #0891b2;
+
+  --status-yellow-bg:   rgba(161, 98, 7, 0.10);
+  --status-yellow-text: #a16207;
+  --status-yellow-dot:  #ca8a04;
+
+  /* ── Criticité (1 = critique → 4 = basse) ── */
+  --crit-1: #dc2626;
+  --crit-2: #ea580c;
+  --crit-3: #ca8a04;
+  --crit-4: #16a34a;
+}
+
+/* ──────────────────────────────────────────────
+   3. THÈME SOMBRE
+   Pour modifier le dark mode : changez les valeurs ici
+   ────────────────────────────────────────────── */
+.dark {
+  color-scheme: dark;
+
+  /* Arrière-plans */
+  --color-bg:       #09090b;
+  --color-surface:  #111113;
+  --color-elevated: #18181b;
+  --color-hover:    #1f1f23;
+  --color-active:   #27272a;
+
+  /* Bordures */
+  --color-border:        rgba(255, 255, 255, 0.09);
+  --color-border-subtle: rgba(255, 255, 255, 0.06);
+
+  /* Texte */
+  --color-text:           #fafafa;
+  --color-text-secondary: #a1a1aa;
+  --color-text-muted:     #52525b;
+
+  /* Couleurs sémantiques (variantes soft pour dark) */
+  --color-primary-soft: rgba(99, 102, 241, 0.18);
+  --color-success-soft: rgba(34, 197,  94, 0.14);
+  --color-danger-soft:  rgba(239,  68,  68, 0.14);
+
+  /* Sidebar */
+  --color-sidebar-bg:     #111113;
+  --color-sidebar-border: rgba(255, 255, 255, 0.07);
+  --color-sidebar-text:   #a1a1aa;
+  --color-sidebar-active: #6366f1;
+  --color-sidebar-hover:  #1f1f23;
+
+  /* ── Status / badge — couleurs lisibles sur fond sombre ── */
+  --status-green-bg:   rgba(34, 197, 94, 0.12);
+  --status-green-text: #4ade80;
+  --status-green-dot:  #22c55e;
+
+  --status-orange-bg:   rgba(249, 115, 22, 0.12);
+  --status-orange-text: #fdba74;
+  --status-orange-dot:  #f97316;
+
+  --status-red-bg:   rgba(239, 68, 68, 0.12);
+  --status-red-text: #f87171;
+  --status-red-dot:  #ef4444;
+
+  --status-blue-bg:   rgba(59, 130, 246, 0.12);
+  --status-blue-text: #93c5fd;
+  --status-blue-dot:  #3b82f6;
+
+  --status-gray-bg:   rgba(107, 114, 128, 0.12);
+  --status-gray-text: #9ca3af;
+  --status-gray-dot:  #6b7280;
+
+  --status-stone-bg:   rgba(120, 113, 108, 0.12);
+  --status-stone-text: #a8a29e;
+  --status-stone-dot:  #78716c;
+
+  --status-purple-bg:   rgba(168, 85, 247, 0.12);
+  --status-purple-text: #c4b5fd;
+  --status-purple-dot:  #a855f7;
+
+  --status-cyan-bg:   rgba(14, 165, 233, 0.12);
+  --status-cyan-text: #7dd3fc;
+  --status-cyan-dot:  #0ea5e9;
+
+  --status-yellow-bg:   rgba(234, 179, 8, 0.12);
+  --status-yellow-text: #facc15;
+  --status-yellow-dot:  #eab308;
+
+  /* ── Criticité (1 = critique → 4 = basse) ── */
+  --crit-1: #ef4444;
+  --crit-2: #f97316;
+  --crit-3: #eab308;
+  --crit-4: #22c55e;
+
+  /* Ombres (plus prononcées en dark) */
+  --shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 10px 24px rgba(0, 0, 0, 0.30);
+  --shadow-pop:  0 14px 32px rgba(0, 0, 0, 0.40);
+}
+
+/* ──────────────────────────────────────────────
+   4. RESET GLOBAL
+   ────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: var(--font-size-base);
+}
+
+body {
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  line-height: var(--line-height-base);
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition:
+    background-color var(--transition-default),
+    color var(--transition-default);
+}
+
+img, picture, video, canvas, svg { display: block; max-width: 100%; }
+button, input, select, textarea { font: inherit; }
+ul { list-style: none; }
+a { color: inherit; text-decoration: none; }
+
+/* ──────────────────────────────────────────────
+   5. SCROLLBAR
+   ────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--color-bg); }
+::-webkit-scrollbar-thumb { background: var(--color-active); border-radius: 3px; }

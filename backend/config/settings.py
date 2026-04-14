@@ -37,6 +37,22 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+<<<<<<< HEAD
+=======
+    'corsheaders',
+    # Third party
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
+    # GMAO apps
+'apps.core',
+'apps.securite',
+'apps.organisation',
+'apps.actifs', 
+'apps.magasin',
+'apps.soustraitants',
+'django_filters',
+>>>>>>> dev
 ]
 
 MIDDLEWARE = [
@@ -120,3 +136,11 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+<<<<<<< HEAD
+=======
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",   # ← PORT 5173 pas 3000 !
+    "http://127.0.0.1:5173",
+]
+CORS_ALLOW_CREDENTIALS = True
+>>>>>>> dev

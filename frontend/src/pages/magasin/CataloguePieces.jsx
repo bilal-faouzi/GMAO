@@ -1,0 +1,325 @@
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { getPieces, deletePiece } from "../../services/magasinService";
+import MouvementStockModal from "../../components/MouvementStockModal";
+import {
+  Plus,
+  Eye,
+  Pencil,
+  Trash2,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+} from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const PAGE_SIZE = 10;
+
+const fmtQty = (v) => {
+  const n = parseFloat(v);
+  return isNaN(n) ? v : n % 1 === 0 ? String(Math.trunc(n)) : String(n);
+};
+
+export default function CataloguePieces() {
+  const navigate = useNavigate();
+  const [pieces, setPieces] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filtreAlerte, setFiltreAlerte] = useState(false);
+  const [filtreCategorie, setFiltreCategorie] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [modal, setModal] = useState(null);
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  const buildParams = useCallback(() => {
+    const params = { page, page_size: PAGE_SIZE };
+    if (search.trim()) params.search = search.trim();
+    if (filtreAlerte) params.sous_seuil = "true";
+    if (filtreCategorie) params.categorie = filtreCategorie;
+    return params;
+  }, [page, search, filtreAlerte, filtreCategorie]);
+
+  const charger = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await getPieces(buildParams());
+      if (res.data.results !== undefined) {
+        setPieces(res.data.results);
+        setTotal(res.data.count);
+      } else {
+        setPieces(res.data);
+        setTotal(res.data.length);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [buildParams]);
+
+  useEffect(() => {
+    charger();
+  }, [charger]);
+
+  // Charger les catégories distinctes une seule fois
+  useEffect(() => {
+    getPieces({ page_size: 1000 })
+      .then((res) => {
+        const data = res.data.results || res.data;
+        const cats = [
+          ...new Set(data.map((p) => p.categorie).filter(Boolean)),
+        ].sort();
+        setCategories(cats);
+      })
+      .catch(() => {});
+  }, []);
+
+  const resetFiltersAndPage = (setter) => {
+    setPage(1);
+    setter();
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm("Supprimer cette pièce ?")) return;
+    await deletePiece(id);
+    charger();
+  };
+
+  return (
+    <div className="page">
+      {/* Header */}
+      <div className="hdr">
+        <div className="hdr-l">
+          <h1>Catalogue des pièces</h1>
+          <p>{total} références</p>
+        </div>
+        <button
+          className="btn btn-primary"
+          onClick={() => navigate("/magasin/nouveau")}>
+          <Plus size={14} /> Nouvelle pièce
+        </button>
+      </div>
+
+      {/* Filtres */}
+      <div className="filter-card">
+        <div className="filter-row">
+          <div className="search-wrap">
+            <Search className="search-icon" />
+            <input
+              type="text"
+              placeholder="Rechercher référence, désignation..."
+              value={search}
+              onChange={(e) =>
+                resetFiltersAndPage(() => setSearch(e.target.value))
+              }
+              className="search-input"
+            />
+          </div>
+          <Select
+            value={filtreCategorie || "__all__"}
+            onValueChange={(v) =>
+              resetFiltersAndPage(() =>
+                setFiltreCategorie(v === "__all__" ? "" : v),
+              )
+            }>
+            <SelectTrigger
+              className="finput"
+              style={{ width: "auto", minWidth: 160 }}>
+              <SelectValue placeholder="Toutes catégories" />
+            </SelectTrigger>
+            <SelectContent className="z-[9999]">
+              <SelectItem value="__all__">Toutes catégories</SelectItem>
+              {categories.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <button
+            onClick={() =>
+              resetFiltersAndPage(() => setFiltreAlerte(!filtreAlerte))
+            }
+            className={`pill ${filtreAlerte ? "active" : ""}`}>
+            {filtreAlerte ? "🔴 Alertes uniquement" : "🔴 Voir alertes"}
+          </button>
+        </div>
+      </div>
+
+      {/* Tableau */}
+      <div className="tbl-card">
+        {loading ? (
+          <p className="empty">Chargement...</p>
+        ) : pieces.length === 0 ? (
+          <p className="empty">Aucune pièce trouvée</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Référence</th>
+                <th>Désignation</th>
+                <th>Stock</th>
+                <th>Seuil min</th>
+                <th>Emplacement</th>
+                <th>Prix unit.</th>
+                <th className="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pieces.map((p) => (
+                <tr key={p.id} onClick={() => navigate(`/magasin/${p.id}`)}>
+                  <td>
+                    <span className="code-mono">{p.reference}</span>
+                    {p.est_sous_seuil && (
+                      <span
+                        className="badge"
+                        style={{
+                          background: "var(--status-red-bg)",
+                          color: "var(--status-red-text)",
+                          marginLeft: 8,
+                        }}>
+                        <span
+                          className="bdot"
+                          style={{ background: "var(--status-red-dot)" }}
+                        />
+                        alerte
+                      </span>
+                    )}
+                  </td>
+                  <td className="desig">{p.designation}</td>
+                  <td>
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        color: p.est_sous_seuil
+                          ? "var(--status-red-text)"
+                          : "var(--status-green-text)",
+                      }}>
+                      {fmtQty(p.quantiteStock)}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: "var(--text-muted)",
+                        marginLeft: 4,
+                      }}>
+                      {p.unite}
+                    </span>
+                  </td>
+                  <td style={{ color: "var(--text-muted)" }}>
+                    {fmtQty(p.seuilMinimum)} {p.unite}
+                  </td>
+                  <td>
+                    <span className="code-mono">{p.emplacement || "—"}</span>
+                  </td>
+                  <td style={{ color: "var(--text-muted)" }}>
+                    {p.prixUnitaire ? `${p.prixUnitaire} MAD` : "—"}
+                  </td>
+                  <td>
+                    <div
+                      style={{ display: "flex", gap: 4, flexWrap: "wrap" }}
+                      className="justify-center">
+                      <button
+                        className="btn btn-ghost btn-icon"
+                        title="Entrée"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setModal({ type: "entree", piece: p });
+                        }}
+                        style={{ color: "var(--status-green-text)" }}>
+                        <ArrowUpFromLine size={14} />
+                      </button>
+                      <button
+                        className="btn btn-ghost btn-icon"
+                        title="Sortie"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setModal({ type: "sortie", piece: p });
+                        }}
+                        style={{ color: "var(--status-red-text)" }}>
+                        <ArrowDownToLine size={14} />
+                      </button>
+                      <button
+                        className="btn btn-ghost btn-icon"
+                        title="Modifier"
+                        onClick={() => navigate(`/magasin/${p.id}/modifier`)}
+                        style={{ color: "var(--status-blue-text)" }}>
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        className="btn btn-ghost btn-icon"
+                        title="Supprimer"
+                        onClick={() => handleDelete(p.id)}
+                        style={{ color: "var(--status-red-text)" }}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 8,
+            marginTop: 12,
+          }}>
+          <button
+            className="btn btn-outline btn-icon"
+            disabled={page === 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}>
+            <ChevronLeft size={16} />
+          </button>
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              fontSize: 13,
+              color: "var(--text-secondary)",
+            }}>
+            {page} / {totalPages}
+          </span>
+          <button
+            className="btn btn-outline btn-icon"
+            disabled={page === totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* Modal Entrée/Sortie */}
+      {modal && (
+        <MouvementStockModal
+          type={modal.type}
+          piece={modal.piece}
+          onClose={() => setModal(null)}
+          onSuccess={() => {
+            setModal(null);
+            charger();
+          }}
+        />
+      )}
+    </div>
+  );
+}
