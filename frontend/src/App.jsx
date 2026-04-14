@@ -37,10 +37,12 @@ import DashboardOTs       from '@/pages/ordres/DashboardOTs'
 import ListeOTs           from '@/pages/ordres/ListeOTs'
 import DetailOT           from '@/pages/ordres/DetailOT'
 import FormulaireOT       from '@/pages/ordres/FormulaireOT'
+import CompteRenduOT      from '@/pages/ordres/CompteRenduOT'
 import InterfaceMagasinier from '@/pages/magasin/InterfaceMagasinier'
 import DeclarerPanne from '@/pages/ordres/DeclarerPanne'
 import GestionOTs from '@/pages/ordres/GestionOTs'
 import { TooltipProvider } from "./components/ui/tooltip";
+import ValidationOperateur from '@/pages/ordres/ValidationOperateur'
 
 export default function App() {
   return (
@@ -121,12 +123,18 @@ export default function App() {
               {/* ── Interventions — dynamiques APRÈS ── */}
               <Route path="ordres/ots/:id" element={<DetailOT />} />
               <Route path="ordres/ots/:id/modifier" element={<FormulaireOT />} />
+              <Route path="ordres/ots/:id/rapport" element={<CompteRenduOT />} />
+
+              {/* ── Interventions supplémentaires ── */}
+              <Route path="ordres/declarer" element={<DeclarerPanne />} />
+              <Route path="ordres/gestion" element={<GestionOTs />} />
+              <Route path="ordres/validation" element={<ValidationOperateur />} />
+              
+              {/* ── Magasin supplémentaire ── */}
+              <Route path="magasin/sortie" element={<InterfaceMagasinier />} />
             </Route>
             
-            <Route path="magasin/sortie" element={<InterfaceMagasinier />} />
-            <Route path="ordres/declarer" element={<DeclarerPanne />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            <Route path="ordres/gestion" element={<GestionOTs />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>

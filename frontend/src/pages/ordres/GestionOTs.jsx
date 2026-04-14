@@ -142,6 +142,8 @@ export default function GestionOTs() {
   const [newComment, setNewComment]         = useState('');
   const [estInterne, setEstInterne]         = useState(false);
   const [submitting, setSubmitting]         = useState(false);
+  const [modalAffectationAuto, setModalAffectationAuto] = useState(false);
+  const [otAffectationAuto, setOtAffectationAuto] = useState(null);
 
   const charger = async () => {
     setLoading(true);
@@ -185,9 +187,41 @@ export default function GestionOTs() {
   };
 
   const handleValider = async (id) => {
-    await validerDemande(id);
-    charger();
-    setOnglet('ots');
+    try {
+      await validerDemande(id);
+      // Rafraîchir et récupérer l'OT nouvellement créé
+      const params = {};
+      if (filtreStatut)   params.statut   = filtreStatut;
+      if (filtrePriorite) params.priorite = filtrePriorite;
+      const [oRes, dRes] = await Promise.all([
+        getOTs(params),
+        getDemandes({ statut: 'en_attente' })
+      ]);
+      
+      const allOTs = oRes.data.results || oRes.data;
+      const allDemandes = dRes.data.results || dRes.data;
+      
+      setOTs(allOTs);
+      setDemandes(allDemandes);
+      setOnglet('ots');
+      
+      // Trouver le nouvel OT créé pour cette demande
+      const demandeObj = demandes.find(d => d.id === id);
+      if (demandeObj) {
+        const newOT = allOTs.find(ot => ot.idDemandeIntervention?.toString() === id?.toString() || ot.idDemandeIntervention === demandeObj.id);
+        if (newOT) {
+          // Attendre un peu pour s'assurer que le DOM est à jour
+          setTimeout(() => {
+            setOtSelectionne(newOT);
+            setOtAffectationAuto(newOT);
+            setModalAffectationAuto(true);
+            setPanneauOnglet('actions');
+          }, 200);
+        }
+      }
+    } catch(e) {
+      console.error('Erreur validation:', e);
+    }
   };
 
   const handleRejeter = async () => {
@@ -559,6 +593,36 @@ export default function GestionOTs() {
                 {submitting ? '...' : 'Enregistrer'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal Affectation Automatique (après création OT) ── */}
+      {modalAffectationAuto && otAffectationAuto && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-2xl border border-gray-700 p-6 w-full max-w-md">
+            <h2 className="text-lg font-semibold mb-1">✅ Nouvel OT créé</h2>
+            <p className="text-gray-400 text-sm mb-4">
+              <span className="font-mono text-purple-300">{otAffectationAuto.numero}</span>
+              {' '}- {otAffectationAuto.actif_detail?.code}
+            </p>
+            
+            <p className="text-sm text-gray-300 mb-4 font-medium">
+              Qui allez-vous affecter à cette intervention ?
+            </p>
+            
+            <AffectationForm 
+              otId={otAffectationAuto.id} 
+              onSuccess={() => {
+                setModalAffectationAuto(false);
+                charger();
+              }}
+            />
+            
+            <button onClick={() => setModalAffectationAuto(false)}
+              className="w-full mt-3 px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition text-gray-300">
+              Ignorer pour maintenant
+            </button>
           </div>
         </div>
       )}

@@ -29,7 +29,8 @@ import {
    FileText,
    ArrowDownToLine,
    AlertTriangle,
-   Settings2
+   Settings2,
+   CheckCircle2,
 } from "lucide-react";
 import useAuthStore from "@/store/authStore";
 import api from "@/services/api";
@@ -120,6 +121,7 @@ const navSections = [
     { to: "/ordres/ots/dashboard",  icon: BarChart2,      label: "Dashboard OT"   },
     { to: '/ordres/declarer', icon: AlertTriangle, label: 'Déclarer une panne', end: true },
     { to: '/ordres/gestion', icon: Settings2, label: 'Gestion OT (Resp.)', end: true },
+    { to: '/ordres/validation', icon: CheckCircle2, label: 'Valider interventions', end: true },
   ],
 },
 

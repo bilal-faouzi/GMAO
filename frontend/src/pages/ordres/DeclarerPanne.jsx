@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createDemande, getDemandes } from '../../services/ordreService';
 import { getActifs } from '../../services/actifService';
+import { Upload, X, Image } from 'lucide-react';
 
 const URGENCE_INFO = {
   critique: { label: '🔴 Critique',  desc: 'Production arrêtée — intervention immédiate requise',  cls: 'border-red-500/50 bg-red-500/10 text-red-300' },
@@ -24,6 +25,8 @@ export default function DeclarerPanne() {
   const [actifSearch, setActifSearch] = useState('');
   const [actifSelectionne, setActifSelectionne] = useState(null);
   const [form, setForm] = useState({ idActif: '', urgence: 'normale', description: '' });
+  const [images, setImages] = useState([]);
+  const [previewImages, setPreviewImages] = useState([]);
   const [erreur, setErreur]     = useState('');
   const [succes, setSucces]     = useState('');
 
@@ -37,6 +40,23 @@ export default function DeclarerPanne() {
     a.libelle?.toLowerCase().includes(actifSearch.toLowerCase())
   );
 
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    const newImages = [...images, ...files];
+    const newPreviews = newImages.map(f => URL.createObjectURL(f));
+    setImages(newImages);
+    setPreviewImages(newPreviews);
+    e.target.value = '';
+  };
+
+  const removeImage = (index) => {
+    const newImages = images.filter((_, i) => i !== index);
+    const newPreviews = previewImages.filter((_, i) => i !== index);
+    URL.revokeObjectURL(previewImages[index]);
+    setImages(newImages);
+    setPreviewImages(newPreviews);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErreur(''); setSucces('');
@@ -44,9 +64,30 @@ export default function DeclarerPanne() {
     if (!form.description.trim()) return setErreur('Décrivez le problème observé.');
     setLoading(true);
     try {
+      // Créer la demande d'abord
       const res = await createDemande(form);
+      const demandeId = res.data.id;
+      
+      // Téléverser les images si présentes
+      if (images.length > 0) {
+        const formData = new FormData();
+        images.forEach(img => formData.append('fichiers', img));
+        try {
+          await fetch(`/api/v1/ordres/demandes/${demandeId}/telecharger_fichiers/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            }
+          });
+        } catch(e) {
+          console.warn('Erreur upload images (non-bloquant)', e);
+        }
+      }
+      
       setSucces(`✅ Demande ${res.data.numero} enregistrée avec succès. Le responsable a été notifié.`);
       setForm({ idActif: '', urgence: 'normale', description: '' });
+      setImages([]); setPreviewImages([]);
       setActifSelectionne(null); setActifSearch('');
       const r = await getDemandes();
       setMesDemandes((r.data.results || r.data).slice(0, 10));
@@ -162,6 +203,44 @@ export default function DeclarerPanne() {
               <p className="text-xs text-gray-500 mt-1">
                 {form.description.length} caractères — plus vous êtes précis, plus vite l'intervention sera réalisée
               </p>
+            </div>
+
+            {/* Upload images */}
+            <div>
+              <label className="block text-xs text-gray-400 mb-2 font-medium">
+                Ajouter des photos (optionnel)
+              </label>
+              <label className="flex flex-col items-center justify-center w-full p-4 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-purple-500 transition bg-gray-700/30">
+                <div className="flex flex-col items-center justify-center py-2">
+                  <Upload size={20} className="text-purple-400 mb-1" />
+                  <p className="text-xs text-gray-400 text-center">Cliquez pour ajouter des images<br/><span className="text-gray-500">JPG, PNG max 5MB</span></p>
+                </div>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+              </label>
+              
+              {/* Aperçu des images */}
+              {previewImages.length > 0 && (
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {previewImages.map((preview, i) => (
+                    <div key={i} className="relative group rounded-lg overflow-hidden border border-gray-600">
+                      <img src={preview} alt={`preview-${i}`} className="w-full h-20 object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(i)}
+                        className="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <button type="submit" disabled={loading}
