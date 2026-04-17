@@ -518,16 +518,18 @@ export default function ListeActifs() {
                           className="act-btn"
                           title="Modifier"
                           disabled={actionLoading}
-                          onClick={() =>
-                            navigate(`/actifs/${actif.id}/modifier`)
-                          }>
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/actifs/${actif.id}/modifier`);
+                          }}>
                           <Pencil size={14} />
                         </button>
                         <button
                           className="act-btn"
                           title="Changer statut"
                           disabled={actionLoading}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setModalStatut(actif);
                             setNouveauStatut(actif.statut);
                             setMotif("");
@@ -538,7 +540,10 @@ export default function ListeActifs() {
                           className="act-btn"
                           title="Supprimer"
                           disabled={actionLoading}
-                          onClick={() => handleDelete(actif.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(actif.id);
+                          }}
                           style={{ color: "var(--status-red-text)" }}>
                           <Trash2 size={14} />
                         </button>
