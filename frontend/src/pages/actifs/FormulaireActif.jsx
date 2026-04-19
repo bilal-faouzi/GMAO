@@ -6,7 +6,11 @@ import {
   updateActif,
   getActifs,
 } from "../../services/actifService";
-import { getSites, getUnites } from "../../services/organisationService";
+import {
+  getSites,
+  getUnites,
+  getSecteurs,
+} from "../../services/organisationService";
 import { ArrowLeft, Save, X } from "lucide-react";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -108,6 +112,7 @@ export default function FormulaireActif() {
   const [erreur, setErreur] = useState(null);
   const [errors, setErrors] = useState({});
   const [isDirty, setIsDirty] = useState(false);
+  const [secteurs, setSecteurs] = useState([]);
 
   const formatDateForInput = (date) => {
     if (!date) return "";
@@ -120,25 +125,28 @@ export default function FormulaireActif() {
     const newErrors = {};
     if (!form.code?.trim()) newErrors.code = "Le code est requis";
     if (!form.libelle?.trim()) newErrors.libelle = "Le libellé est requis";
+    if (!form.idSite) newErrors.idSite = "Le site est requis";
     if (form.valeur && isNaN(parseFloat(form.valeur)))
       newErrors.valeur = "La valeur doit être un nombre";
     if (form.dateAcquisition && isNaN(new Date(form.dateAcquisition).getTime()))
       newErrors.dateAcquisition = "Date invalide";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [form.code, form.libelle, form.valeur, form.dateAcquisition]);
+  }, [form.code, form.libelle, form.valeur, form.dateAcquisition, form.idSite]);
 
   useEffect(() => {
     const init = async () => {
       try {
-        const [s, u, a] = await Promise.all([
+        const [s, u, a, sec] = await Promise.all([
           getSites(),
           getUnites(),
           getActifs(),
+          getSecteurs(),
         ]);
         setSites(s.data.results || s.data);
         setUnites(u.data.results || u.data);
         setActifs(a.data.results || a.data);
+        setSecteurs(sec.data.results || sec.data);
         if (isEdit) {
           const res = await getActif(id);
           const a2 = res.data;
@@ -179,7 +187,11 @@ export default function FormulaireActif() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
+    setForm((f) => ({
+      ...f,
+      [name]: type === "checkbox" ? checked : value,
+      ...(name === "idSite" ? { idUnite: "" } : {}),
+    }));
     setIsDirty(true);
     if (errors[name]) setErrors((err) => ({ ...err, [name]: undefined }));
   };
@@ -211,11 +223,22 @@ export default function FormulaireActif() {
       sites.map((s) => ({ value: s.id, label: `${s.code} — ${s.libelle}` })),
     [sites],
   );
-  const uniteOptions = useMemo(
-    () =>
-      unites.map((u) => ({ value: u.id, label: `${u.code} — ${u.libelle}` })),
-    [unites],
-  );
+  const uniteOptions = useMemo(() => {
+    if (!form.idSite) return [];
+    // Récupérer les IDs des secteurs appartenant au site sélectionné
+    const secteurIds = new Set(
+      secteurs
+        .filter(
+          (sec) =>
+            String(sec.site) === String(form.idSite) ||
+            String(sec.site?.id) === String(form.idSite),
+        )
+        .map((sec) => sec.id),
+    );
+    return unites
+      .filter((u) => secteurIds.has(u.secteur) || secteurIds.has(u.secteur?.id))
+      .map((u) => ({ value: u.id, label: `${u.code} — ${u.libelle}` }));
+  }, [unites, secteurs, form.idSite]);
   const parentOptions = useMemo(
     () =>
       actifs
@@ -333,17 +356,38 @@ export default function FormulaireActif() {
             <Field
               label="Site"
               name="idSite"
+              required
               options={siteOptions}
               value={form.idSite}
               onChange={handleChange}
+              error={errors.idSite}
             />
-            <Field
-              label="Unité"
-              name="idUnite"
-              options={uniteOptions}
-              value={form.idUnite}
-              onChange={handleChange}
-            />
+            <div className="fg">
+              <label htmlFor="idUnite" className="flabel">
+                Unité
+              </label>
+              <select
+                id="idUnite"
+                name="idUnite"
+                value={form.idUnite}
+                onChange={handleChange}
+                disabled={!form.idSite}
+                className={`fsel${!form.idSite ? " disabled" : ""}`}
+                title={
+                  !form.idSite ? "Veuillez d'abord sélectionner un site" : ""
+                }>
+                <option value="">
+                  {!form.idSite
+                    ? "— Sélectionner un site d'abord —"
+                    : "— Sélectionner —"}
+                </option>
+                {uniteOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="span2 fg">
               <label htmlFor="idParent" className="flabel">
                 Actif parent (sous-actif de...)
