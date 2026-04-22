@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   getActif,
@@ -6,7 +6,11 @@ import {
   updateActif,
   deleteActif,
 } from "../../services/actifService";
-import { getSites, getUnites } from "../../services/organisationService";
+import {
+  getSites,
+  getUnites,
+  getSecteurs,
+} from "../../services/organisationService";
 import {
   ArrowLeft,
   ChevronRight,
@@ -287,6 +291,7 @@ function ActifFormModal({
   editActif,
   sites,
   unites,
+  secteurs, // ← nouveau prop
 }) {
   const isEdit = Boolean(editActif);
   const [form, setForm] = useState(initialFormState);
@@ -324,7 +329,12 @@ function ActifFormModal({
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
+    setForm((f) => ({
+      ...f,
+      [name]: type === "checkbox" ? checked : value,
+      // Réinitialise l'unité quand le site change
+      ...(name === "idSite" ? { idUnite: "" } : {}),
+    }));
     if (errors[name]) setErrors((err) => ({ ...err, [name]: undefined }));
   };
 
@@ -363,16 +373,31 @@ function ActifFormModal({
     }
   };
 
-  if (!open) return null;
+  // ── Options filtrées site → secteur → unité ────────────────────────────────
+  const siteOpts = useMemo(
+    () =>
+      sites.map((s) => ({ value: s.id, label: `${s.code} — ${s.libelle}` })),
+    [sites],
+  );
 
-  const siteOpts = sites.map((s) => ({
-    value: s.id,
-    label: `${s.code} — ${s.libelle}`,
-  }));
-  const uniteOpts = unites.map((u) => ({
-    value: u.id,
-    label: `${u.code} — ${u.libelle}`,
-  }));
+  const uniteOpts = useMemo(() => {
+    if (!form.idSite) return [];
+    // IDs des secteurs appartenant au site sélectionné
+    const secteurIds = new Set(
+      secteurs
+        .filter(
+          (sec) =>
+            String(sec.site) === String(form.idSite) ||
+            String(sec.site?.id) === String(form.idSite),
+        )
+        .map((sec) => sec.id),
+    );
+    return unites
+      .filter((u) => secteurIds.has(u.secteur) || secteurIds.has(u.secteur?.id))
+      .map((u) => ({ value: u.id, label: `${u.code} — ${u.libelle}` }));
+  }, [unites, secteurs, form.idSite]);
+
+  if (!open) return null;
 
   return (
     <div className="backdrop">
@@ -462,6 +487,8 @@ function ActifFormModal({
                 style={{ resize: "none" }}
               />
             </div>
+
+            {/* Site — sélection obligatoire avant l'unité */}
             <div className="fg">
               <label className="flabel">Site</label>
               <select
@@ -469,7 +496,7 @@ function ActifFormModal({
                 value={form.idSite}
                 onChange={handleChange}
                 className="fsel">
-                <option value="">— Aucun —</option>
+                <option value="">— Sélectionner —</option>
                 {siteOpts.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -477,14 +504,24 @@ function ActifFormModal({
                 ))}
               </select>
             </div>
+
+            {/* Unité — désactivée tant qu'aucun site n'est choisi */}
             <div className="fg">
               <label className="flabel">Unité</label>
               <select
                 name="idUnite"
                 value={form.idUnite}
                 onChange={handleChange}
-                className="fsel">
-                <option value="">— Aucune —</option>
+                disabled={!form.idSite}
+                className={`fsel${!form.idSite ? " disabled" : ""}`}
+                title={
+                  !form.idSite ? "Veuillez d'abord sélectionner un site" : ""
+                }>
+                <option value="">
+                  {!form.idSite
+                    ? "— Sélectionner un site d'abord —"
+                    : "— Sélectionner —"}
+                </option>
                 {uniteOpts.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -492,6 +529,7 @@ function ActifFormModal({
                 ))}
               </select>
             </div>
+
             <div className="fg span2">
               <label className="flabel">Parent</label>
               <input
@@ -591,6 +629,7 @@ export default function ActifArborescencePage() {
   const [loading, setLoading] = useState(true);
   const [sites, setSites] = useState([]);
   const [unites, setUnites] = useState([]);
+  const [secteurs, setSecteurs] = useState([]); // ← nouveau state
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [parentForNew, setParentForNew] = useState(null);
@@ -598,20 +637,20 @@ export default function ActifArborescencePage() {
   const chargerArbre = useCallback(async () => {
     setLoading(true);
     try {
-      const [rootRes, sitesRes, unitesRes] = await Promise.all([
+      const [rootRes, sitesRes, unitesRes, secteursRes] = await Promise.all([
         getActif(id),
         getSites(),
         getUnites(),
+        getSecteurs(), // ← ajout du fetch secteurs
       ]);
       setRootActif(rootRes.data);
       setSites(sitesRes.data.results || sitesRes.data);
       setUnites(unitesRes.data.results || unitesRes.data);
-      // Select root by default if nothing selected or if current selection was deleted
+      setSecteurs(secteursRes.data.results || secteursRes.data); // ← stockage
       if (!selectedId || selectedId === id) {
         setSelectedActif(rootRes.data);
         setSelectedId(id);
       } else {
-        // Find selected in tree
         const found = findInTree(rootRes.data, selectedId);
         if (found) {
           setSelectedActif(found);
@@ -634,7 +673,6 @@ export default function ActifArborescencePage() {
   const handleSelect = useCallback(
     async (actifId) => {
       setSelectedId(actifId);
-      // Find in tree first
       if (rootActif) {
         const found = findInTree(rootActif, actifId);
         if (found) {
@@ -642,7 +680,6 @@ export default function ActifArborescencePage() {
           return;
         }
       }
-      // Fallback: fetch from API
       try {
         const res = await getActif(actifId);
         setSelectedActif(res.data);
@@ -1087,7 +1124,7 @@ export default function ActifArborescencePage() {
                   gridTemplateColumns: "1fr 1fr",
                   gap: 16,
                 }}>
-                {/* Identification — Hero card with prominent code + badges */}
+                {/* Identification */}
                 <div
                   style={{
                     background: "var(--bg-surface)",
@@ -1111,7 +1148,6 @@ export default function ActifArborescencePage() {
                       Identification
                     </span>
                   </div>
-                  {/* Code prominent */}
                   <div
                     style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <div
@@ -1151,12 +1187,10 @@ export default function ActifArborescencePage() {
                       </div>
                     </div>
                   </div>
-                  {/* Type + Statut as badges */}
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <StatutBadge statut={selectedActif.statut} />
                     <TypeBadge type={selectedActif.type} />
                   </div>
-                  {/* Description */}
                   {selectedActif.description && (
                     <div
                       style={{
@@ -1173,7 +1207,7 @@ export default function ActifArborescencePage() {
                   )}
                 </div>
 
-                {/* Localisation — Stacked location cards */}
+                {/* Localisation */}
                 <div
                   style={{
                     background: "var(--bg-surface)",
@@ -1282,7 +1316,7 @@ export default function ActifArborescencePage() {
                   </div>
                 </div>
 
-                {/* Caractéristiques techniques — Grid of mini cards */}
+                {/* Caractéristiques techniques */}
                 <div
                   style={{
                     background: "var(--bg-surface)",
@@ -1348,7 +1382,6 @@ export default function ActifArborescencePage() {
                       </div>
                     ))}
                   </div>
-                  {/* N° de série full width */}
                   <div
                     style={{
                       marginTop: 10,
@@ -1393,7 +1426,7 @@ export default function ActifArborescencePage() {
                   </div>
                 </div>
 
-                {/* Informations financières — Big stat numbers */}
+                {/* Informations financières */}
                 <div
                   style={{
                     background: "var(--bg-surface)",
@@ -1417,7 +1450,6 @@ export default function ActifArborescencePage() {
                       Informations financières
                     </span>
                   </div>
-                  {/* Valeur hero */}
                   <div
                     style={{
                       textAlign: "center",
@@ -1450,7 +1482,6 @@ export default function ActifArborescencePage() {
                         : "—"}
                     </div>
                   </div>
-                  {/* Bottom stats row */}
                   <div
                     style={{
                       display: "grid",
@@ -1661,7 +1692,7 @@ export default function ActifArborescencePage() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal — secteurs passé en prop */}
       <ActifFormModal
         open={modalOpen}
         onClose={() => {
@@ -1673,6 +1704,7 @@ export default function ActifArborescencePage() {
         editActif={editTarget}
         sites={sites}
         unites={unites}
+        secteurs={secteurs}
       />
     </div>
   );

@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 from django.utils import timezone
 from django.db.models import Count, Avg
 from datetime import timedelta
@@ -34,6 +35,25 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
     ordering_fields = ['dateSignalement', 'urgence']
 
     def perform_create(self, serializer):
+        # Vérifier s'il existe déjà une DI active pour cet actif
+        actif = serializer.validated_data.get('idActif')
+        di_existante = DemandeIntervention.objects.filter(
+            idActif=actif,
+            statut__in=['en_attente']
+        ).first()
+        
+        if di_existante:
+            # Vérifier si l'OT associée est clôturée
+            ot_actifs = OrdreTravail.objects.filter(
+                idDemandeIntervention=di_existante
+            ).exclude(statut='CLOTURE').exists()
+            
+            if ot_actifs:
+                raise ValidationError(
+                    f"Impossible de créer une nouvelle demande. "
+                    f"La demande {di_existante.numero} existe déjà et son OT n'est pas encore terminé(e)."
+                )
+        
         serializer.save(
             idUtilisateurSignalement=getattr(self.request.user, 'utilisateur', None)
         )
@@ -59,6 +79,21 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
             priorite=di.urgence,
             statut='OUVERT',
             description=di.description,
+        )
+
+        # Passer l'actif au statut "en_maintenance"
+        ancien_statut_actif = di.idActif.statut
+        di.idActif.statut = 'en_maintenance'
+        di.idActif.save()
+        
+        # Créer historique du changement de statut de l'actif
+        from apps.actifs.models import HistoriqueStatut
+        HistoriqueStatut.objects.create(
+            idActif=di.idActif,
+            ancienStatut=ancien_statut_actif,
+            nouveauStatut='en_maintenance',
+            motif=f'OT #{ot.numero} créé - Demande Intervention #{di.numero}',
+            modifiePar=getattr(request.user, 'utilisateur', None)
         )
 
         # Appliquer SLA si config existe
@@ -110,6 +145,25 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
     filterset_fields = ['statut', 'type', 'priorite', 'idActif', 'estSousTraite']
     search_fields = ['numero', 'idActif__code', 'description']
     ordering_fields = ['created_at', 'priorite', 'echeanceSLA']
+
+    def perform_create(self, serializer):
+        ot = serializer.save()
+        
+        # Passer l'actif au statut "en_maintenance" lors de la création de l'OT
+        ancien_statut_actif = ot.idActif.statut
+        if ancien_statut_actif != 'en_maintenance':
+            ot.idActif.statut = 'en_maintenance'
+            ot.idActif.save()
+            
+            # Créer historique du changement de statut de l'actif
+            from apps.actifs.models import HistoriqueStatut
+            HistoriqueStatut.objects.create(
+                idActif=ot.idActif,
+                ancienStatut=ancien_statut_actif,
+                nouveauStatut='en_maintenance',
+                motif=f'OT #{ot.numero} créé',
+                modifiePar=getattr(self.request.user, 'utilisateur', None)
+            )
 
     @action(detail=True, methods=['post'])
     def changer_statut(self, request, pk=None):
