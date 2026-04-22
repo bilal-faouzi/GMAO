@@ -1,10 +1,172 @@
 # ✅ RÉSUMÉ DES MODIFICATIONS - Workflow Interventions GMAO
 
-## 📅 Date: Avril 13, 2026
+## 📅 Date: Avril 13, 2026 → **Avril 16, 2026** (Support Audio)
+
+### 🔄 Mise à jour: Avril 16, 2026 - 18:45
+
+**🎤 NOUVELLE FONCTIONNALITÉ:** Enregistrement audio EN DIRECT depuis l'application
 
 ---
 
-## 📝 Fichiers Modifiés
+## 🎙️ [NOUVEAU] Enregistrement Audio Direct - Avril 16, 2026
+
+### ⭐ Feature complète
+
+L'opérateur peut désormais **enregistrer un audio directement depuis son navigateur** lors de la déclaration d'une panne.
+
+```
+Page: /ordres/demandes/nouveau
+Section: "🎤 Enregistrer un audio"
+Fonctionnalités:
+  ✅ Bouton "Démarrer l'enregistrement"
+  ✅ Timer en temps réel (MM:SS)
+  ✅ Bouton "Arrêter"
+  ✅ Lecture audio (bouton ▶)
+  ✅ Support multiple enregistrements
+  ✅ Suppression individuelle fichiers
+  ✅ Envoi avec demande
+```
+
+### Fichiers Modifiés
+
+#### **frontend/src/pages/ordres/DeclarerPanne.jsx** ✏️
+
+**Nouveaux States:**
+```javascript
+const [isRecording, setIsRecording] = useState(false);
+const [recordingTime, setRecordingTime] = useState(0);
+const [mediaRecorder, setMediaRecorder] = useState(null);
+const [recordedAudios, setRecordedAudios] = useState([]);
+```
+
+**Nouveaux Handlers:**
+```javascript
+// startRecording() - Démarre enregistrement via mikro
+// stopRecording() - Arrête et convertit en fichier
+// playRecordedAudio(index) - Lecture audio enregistré
+// removeRecordedAudio(index) - Suppression fichier
+```
+
+**Nouvelle Section UI:**
+```jsx
+{/* Recording audio direct */}
+<div>
+  <label>🎤 Enregistrer un audio (optionnel)</label>
+  
+  {!isRecording ? (
+    <button onClick={startRecording}>Démarrer l'enregistrement</button>
+  ) : (
+    <div className="bg-red-500/20">
+      <p>En cours d'enregistrement...</p>
+      <p>{time} MM:SS</p>
+      <button onClick={stopRecording}>Arrêter</button>
+    </div>
+  )}
+  
+  {recordedAudios.map((recorded) => (
+    <div>
+      <button onClick={() => playRecordedAudio(i)}>▶</button>
+      <p>{recorded.name} - {recorded.duration}s</p>
+      <button onClick={() => removeRecordedAudio(i)}>✕</button>
+    </div>
+  ))}
+</div>
+```
+
+**Timer avec useEffect:**
+```javascript
+useEffect(() => {
+  let interval;
+  if (isRecording) {
+    interval = setInterval(() => {
+      setRecordingTime(t => t + 1);
+    }, 1000);
+  }
+  return () => clearInterval(interval);
+}, [isRecording]);
+```
+
+**Intégration Upload:**
+```javascript
+// recordedAudios convertis automatiquement en audioFiles
+// Envoyés avec images via FormData
+const tousLesFichiers = [...images, ...audioFiles];
+```
+
+### Spécifications
+
+| Propriété | Valeur |
+|-----------|--------|
+| **Format** | WebM (audio) |
+| **Codec** | Vorbis |
+| **Taux** | 44.1 kHz (auto) |
+| **Nom fichier** | recording_TIMESTAMP.webm |
+| **Taille/sec** | ~100 KB |
+| **Sans limite** | Durée illimitée (pratique: 1-5 min) |
+
+### Navigateurs Supportés
+
+✅ Chrome 47+  
+✅ Firefox 29+  
+✅ Safari 14.1+ (iOS 14.5+)  
+✅ Opera 34+  
+❌ Internet Explorer
+
+### Permissions
+
+**Première utilisation:**
+- Navigateur demande: "Autoriser microphone?"
+- Opérateur clique "Autoriser"
+- Mémorisé pour futures utilisations
+
+**Problèmes:**
+- Si refusé: Message d'erreur
+- Solution: Relancer page, autoriser dans paramètres
+
+---
+
+## 🎯 Workflow Complet avec Enregistrement
+
+### Opérateur - Déclaration avec audio en direct
+
+```
+1. Page: /ordres/demandes/nouveau
+2. Sélectionner équipement
+3. Urgence: "Critique"
+4. Description: "Moteur pond roulant - bruit anormal"
+5. ← NOUVEAU: Clic "Démarrer l'enregistrement"
+   - Positionne téléphone près du moteur
+   - Attend 30 secondes du bruit
+6. Clic "Arrêter"
+   - Voir: "recording_XXX.webm (0:30)"
+   - Peut clic ▶ pour écouter
+7. ← Peut ajouter 2ème enregistrement si apprécié
+8. Ajouter photo du problème (optionnel)
+9. Clic "Déclarer la panne"
+10. ✅ Demande créée DI-2026-0042
+11. ✅ Image + Audio(s) uploadés
+12. ✅ Responsable notifié
+```
+
+### Responsable Technique - Audition contexte audio
+
+```
+1. Page: /ordres/demandes
+2. Cherche: "DI-2026-0042"
+3. Click pour voir détails
+4. Section "Pièces jointes":
+   - 📷 photo.jpg
+   - 🎙️ recording_XXX.webm  ← NOUVEAU
+5. Clic 🎙️ pour écouter
+   - Entend le bruit moteur
+   - Contextualise le problème
+6. Meilleur diagnostic → Valider
+7. OT créé avec meilleur contexte
+```
+
+---
+
+## 📝 Fichiers Modifiés (Existants)
 
 ### Frontend
 
@@ -12,21 +174,45 @@
 **Chemin:** `frontend/src/pages/ordres/DeclarerPanne.jsx`
 
 **Modifications:**
-- ✅ Ajout import `Upload`, `X`, `Image` de lucide-react
-- ✅ Ajout states: `images`, `previewImages`
+- ✅ Ajout import `Upload`, `X`, `Image`, `Mic` de lucide-react
+- ✅ Ajout states: `images`, `previewImages`, `audioFiles`
+- ✅ **[NOUVEAU]** States recording: `isRecording`, `recordingTime`, `mediaRecorder`, `recordedAudios`
 - ✅ Fonction `handleImageChange()` → Upload multiple images
 - ✅ Fonction `removeImage()` → Supprimer aperçu
-- ✅ UI de upload: Zone drag-drop avec aperçus
-- ✅ Envoi fichiers via FormData après création demande
+- ✅ **[NOUVEAU]** Fonction `startRecording()` → Démarrer enregistrement
+- ✅ **[NOUVEAU]** Fonction `stopRecording()` → Arrêter + convertir
+- ✅ **[NOUVEAU]** Fonction `playRecordedAudio()` → Écouter audio enregistré
+- ✅ **[NOUVEAU]** Fonction `removeRecordedAudio()` → Supprimer enregistrement
+- ✅ **[NOUVEAU]** useEffect pour timer d'enregistrement
+- ✅ UI de upload: Zone drag-drop avec aperçus images
+- ✅ **[NOUVEAU]** UI recording: Section complète avec état visuel
+- ✅ UI upload audio: Zone sélection fichiers
+- ✅ Envoi tous fichiers via FormData
 - ✅ Tout en FRANÇAIS
 
 **Fonctionnalités:**
 ```
-• Opérateur peut ajouter jusqu'à 5 images
+Images:
+• Opérateur peut ajouter jusqu'à N images
 • Aperçus en temps réel
 • Suppression individuelle images
 • Images envoyées avec la demande
 • Max 5MB par image, format JPG/PNG
+
+Audio Fichier:
+• Opérateur peut ajouter fichiers audio externès
+• Support MP3, WAV, M4A, AAC, OGG, WebM
+• Max 10MB par fichier
+• Affichage nom + taille
+
+Audio Enregistrement ✨ NOUVEAU:
+• Opérateur peut enregistrer directement
+• Format: WebM
+• Timer visible (MM:SS)
+• Bouton ▶ pour écouter avant envoi
+• Bouton ✕ pour supprimer
+• support multiple enregistrements
+• Conversion automatique en fichier
 ```
 
 #### 2. **App.jsx** ✏️

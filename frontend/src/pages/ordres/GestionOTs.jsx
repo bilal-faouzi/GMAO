@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { X, Download, Play } from 'lucide-react';
 import {
   getOTs, getDemandes, validerDemande, rejeterDemande,
   changerStatutOT, affecterEquipe, ajouterCommentaire, cloturerOT
@@ -144,6 +145,9 @@ export default function GestionOTs() {
   const [submitting, setSubmitting]         = useState(false);
   const [modalAffectationAuto, setModalAffectationAuto] = useState(false);
   const [otAffectationAuto, setOtAffectationAuto] = useState(null);
+  const [demandeDetail, setDemandeDetail] = useState(null);
+  const [currentPlayingAudio, setCurrentPlayingAudio] = useState(null);
+  const [playingAudioId, setPlayingAudioId] = useState(null);
 
   const charger = async () => {
     setLoading(true);
@@ -156,8 +160,17 @@ export default function GestionOTs() {
         getDemandes({ statut: 'en_attente' })
       ]);
       const otsData = o.data.results || o.data;
+      const demandesData = d.data.results || d.data;
+      console.log('📊 Demandes loaded from API:');
+      demandesData.forEach(dm => {
+        console.log(`  - ${dm.numero}:`, {
+          nb_pieces_jointes: dm.nb_pieces_jointes,
+          pieces_jointes: dm.pieces_jointes,
+          has_audio: dm.pieces_jointes?.some(p => p.typeFichier?.startsWith('audio')) || false
+        });
+      });
       setOTs(otsData);
-      setDemandes(d.data.results || d.data);
+      setDemandes(demandesData);
       if (otSelectionne) {
         const updated = otsData.find(x => x.id === otSelectionne.id);
         if (updated) setOtSelectionne(updated);
@@ -228,6 +241,51 @@ export default function GestionOTs() {
     await rejeterDemande(modalRejet, motifRejet);
     setModalRejet(null); setMotifRejet('');
     charger();
+  };
+
+  const viewDemandeDetail = (demande) => {
+    console.log('📋 Viewing demande detail:', demande);
+    console.log('📁 pieces_jointes:', demande.pieces_jointes);
+    console.log('👤 signalement_detail:', demande.signalement_detail);
+    console.log('✅ validation_detail:', demande.validation_detail);
+    if (demande.pieces_jointes && demande.pieces_jointes.length > 0) {
+      console.log('🎙️ Audio files found:', demande.pieces_jointes.filter(p => p.typeFichier?.startsWith('audio')));
+    } else {
+      console.warn('⚠️ No pieces_jointes found in demande!');
+    }
+    setDemandeDetail(demande);
+  };
+
+  const playAudio = (audioUrl, audioId) => {
+    console.log('🔊 Playing audio:', { audioUrl, audioId });
+    
+    if (currentPlayingAudio) {
+      currentPlayingAudio.pause();
+      currentPlayingAudio.currentTime = 0;
+    }
+    
+    // Build full URL if it's relative
+    const fullUrl = audioUrl.startsWith('http') ? audioUrl : `http://localhost:8000${audioUrl}`;
+    console.log('🔗 Full audio URL:', fullUrl);
+    
+    const audio = new Audio(fullUrl);
+    setCurrentPlayingAudio(audio);
+    setPlayingAudioId(audioId);
+    
+    audio.addEventListener('ended', () => {
+      setPlayingAudioId(null);
+    });
+    
+    audio.addEventListener('error', (e) => {
+      console.error('❌ Audio error:', e, 'URL was:', fullUrl);
+      console.error('Audio error code:', audio.error?.code, audio.error?.message);
+    });
+    
+    audio.play().catch(err => {
+      console.error('❌ Erreur lecture:', err);
+      console.error('Audio element error:', audio.error);
+      setPlayingAudioId(null);
+    });
   };
 
   const handleCommentaire = async (e) => {
@@ -358,7 +416,14 @@ export default function GestionOTs() {
                   <p className="text-sm font-medium">{d.actif_detail?.code} — {d.actif_detail?.libelle}</p>
                   <p className="text-xs text-gray-400 mt-1 line-clamp-2">{d.description}</p>
                   <p className="text-xs text-gray-500 mt-1">{new Date(d.dateSignalement).toLocaleString('fr-FR')}</p>
+                  {d.nb_pieces_jointes > 0 && (
+                    <p className="text-xs text-blue-400 mt-2">📎 {d.nb_pieces_jointes} fichier(s) joint(s)</p>
+                  )}
                   <div className="flex gap-2 mt-3">
+                    <button onClick={() => viewDemandeDetail(d)}
+                      className="flex-1 py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-lg text-sm font-medium border border-blue-500/30 transition">
+                      👁️ Voir détails
+                    </button>
                     <button onClick={() => handleValider(d.id)}
                       className="flex-1 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium transition">
                       ✓ Valider → Créer OT
@@ -623,6 +688,220 @@ export default function GestionOTs() {
               className="w-full mt-3 px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition text-gray-300">
               Ignorer pour maintenant
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal Détails Demande ────────────────────────── */}
+      {demandeDetail && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-xl border border-gray-700 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            {/* Header */}
+            <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-6 flex justify-between items-start">
+              <div>
+                <h2 className="text-2xl font-bold text-white">{demandeDetail.numero}</h2>
+                <p className="text-gray-400 text-sm mt-1">{demandeDetail.actif_detail?.libelle}</p>
+              </div>
+              <button onClick={() => setDemandeDetail(null)} className="text-gray-400 hover:text-white text-2xl">
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Contenu */}
+            <div className="p-6 space-y-6">
+              {/* Historique Audit */}
+              <div className="bg-gray-700/30 rounded-lg p-4 border border-gray-600">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-lg">📋</span>
+                  <p className="text-sm font-bold text-gray-300 uppercase tracking-wider">Historique Audit</p>
+                </div>
+                <div className="space-y-3 text-sm">
+                  {/* Créée par */}
+                  {demandeDetail.signalement_detail && (
+                    <div className="flex items-start gap-3">
+                      <span className="text-gray-400 min-w-fit">📝 Créée par:</span>
+                      <div>
+                        <p className="text-gray-200 font-medium">
+                          {demandeDetail.signalement_detail.prenom} {demandeDetail.signalement_detail.nom}
+                        </p>
+                        <p className="text-gray-500 text-xs">
+                          {new Date(demandeDetail.signalement_detail.date).toLocaleString('fr-FR')}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Validée/OT créé */}
+                  {demandeDetail.validation_detail && (
+                    <div className="flex items-start gap-3 pt-2 border-t border-gray-600">
+                      <span className="text-gray-400 min-w-fit">✅ OT créé par:</span>
+                      <div>
+                        <p className="text-gray-200 font-medium">
+                          {demandeDetail.validation_detail.prenom} {demandeDetail.validation_detail.nom}
+                        </p>
+                        <p className="text-gray-500 text-xs">
+                          {new Date(demandeDetail.validation_detail.date).toLocaleString('fr-FR')}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {!demandeDetail.signalement_detail && !demandeDetail.validation_detail && (
+                    <p className="text-gray-500 text-xs italic">Aucune information d'audit disponible</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Audio Recordings - PROMINENT */}
+              {demandeDetail.pieces_jointes && demandeDetail.pieces_jointes.filter(p => p.typeFichier?.startsWith('audio')).length > 0 && (
+                <div className="bg-gradient-to-br from-blue-600/20 to-blue-700/10 rounded-lg p-4 border-2 border-blue-500/50 shadow-lg">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-2xl">🎙️</span>
+                    <div>
+                      <p className="text-sm font-bold text-blue-400 uppercase tracking-wider">Enregistrements Audio</p>
+                      <p className="text-xs text-blue-300/70">Écoutez les enregistrements audio de l'opérateur</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {demandeDetail.pieces_jointes
+                      .filter(p => p.typeFichier?.startsWith('audio'))
+                      .map((piece, idx) => (
+                        <div key={idx} className={`bg-blue-600/20 border border-blue-500/40 rounded-lg p-3 hover:bg-blue-600/30 transition ${
+                          playingAudioId === piece.id ? 'ring-2 ring-blue-400 bg-blue-600/40' : ''
+                        }`}>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => playAudio(piece.url, piece.id)}
+                              className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition text-white shadow-md border ${
+                                playingAudioId === piece.id
+                                  ? 'bg-blue-500 border-blue-300 animate-pulse'
+                                  : 'bg-blue-600 hover:bg-blue-700 border-blue-500/50'
+                              }`}
+                            >
+                              {playingAudioId === piece.id ? (
+                                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                              ) : (
+                                <Play size={18} />
+                              )}
+                            </button>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-blue-300">{piece.nomFichier}</p>
+                              <p className="text-xs text-gray-400">📅 {new Date(piece.dateTeleversement).toLocaleString('fr-FR')}</p>
+                            </div>
+                            <a
+                              href={piece.url}
+                              download
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-shrink-0 text-gray-400 hover:text-blue-400 transition"
+                            >
+                              <Download size={18} />
+                            </a>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+              {/* Status & Urgence */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-700/30 rounded-lg p-4 border border-gray-600">
+                  <p className="text-xs text-gray-400 uppercase font-semibold mb-1">Urgence</p>
+                  <p className={`text-lg font-bold ${
+                    demandeDetail.urgence === 'critique' ? 'text-red-400' :
+                    demandeDetail.urgence === 'haute' ? 'text-orange-400' :
+                    demandeDetail.urgence === 'normale' ? 'text-blue-400' :
+                    'text-gray-400'
+                  }`}>
+                    {demandeDetail.urgence?.toUpperCase()}
+                  </p>
+                </div>
+                <div className="bg-gray-700/30 rounded-lg p-4 border border-gray-600">
+                  <p className="text-xs text-gray-400 uppercase font-semibold mb-1">Date</p>
+                  <p className="text-sm text-gray-300 font-mono">{new Date(demandeDetail.dateSignalement).toLocaleString('fr-FR')}</p>
+                </div>
+              </div>
+
+              {/* Équipement */}
+              <div className="bg-blue-500/10 rounded-lg p-4 border border-blue-500/30">
+                <p className="text-xs text-blue-400 uppercase font-semibold mb-2">Équipement</p>
+                <p className="text-sm font-mono text-blue-300">{demandeDetail.actif_detail?.code}</p>
+                <p className="text-sm text-gray-300">{demandeDetail.actif_detail?.libelle}</p>
+              </div>
+
+              {/* Description */}
+              <div className="bg-purple-500/10 rounded-lg p-4 border border-purple-500/30">
+                <p className="text-xs text-purple-400 uppercase font-semibold mb-2">Description du problème</p>
+                <p className="text-sm text-gray-300 leading-relaxed">{demandeDetail.description}</p>
+              </div>
+
+              {/* Pièces jointes */}
+              {demandeDetail.pieces_jointes && demandeDetail.pieces_jointes.filter(p => !p.typeFichier?.startsWith('audio')).length > 0 && (
+                <div className="bg-gray-700/30 rounded-lg p-4 border border-gray-600">
+                  <p className="text-xs text-gray-400 uppercase font-semibold mb-3">📎 Fichiers attachés</p>
+                  <div className="space-y-3">
+                    {demandeDetail.pieces_jointes.filter(p => !p.typeFichier?.startsWith('audio')).map((piece, idx) => {
+                      const isImage = piece.typeFichier?.startsWith('image');
+                      
+                      return (
+                        <div key={idx} className="bg-gray-800 rounded-lg p-3 border border-gray-600 flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            {isImage && (
+                              <>
+                                <div className="flex-shrink-0 w-10 h-10 bg-gray-700 rounded-lg border border-gray-600 overflow-hidden">
+                                  <img src={piece.url} alt={piece.nomFichier} className="w-full h-full object-cover" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-medium text-gray-300 truncate">📸 {piece.nomFichier}</p>
+                                  <p className="text-xs text-gray-500">{new Date(piece.dateTeleversement).toLocaleString('fr-FR')}</p>
+                                </div>
+                              </>
+                            )}
+                            {!isImage && (
+                              <>
+                                <div className="flex-shrink-0 w-8 h-8 bg-gray-700 rounded flex items-center justify-center text-gray-400">📄</div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-medium text-gray-300 truncate">{piece.nomFichier}</p>
+                                  <p className="text-xs text-gray-500">{new Date(piece.dateTeleversement).toLocaleString('fr-FR')}</p>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                          <a
+                            href={piece.url}
+                            download
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-shrink-0 ml-2 text-gray-400 hover:text-gray-200 transition"
+                          >
+                            <Download size={16} />
+                          </a>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Images principales */}
+              {/* Removed - Images already shown in Fichiers attachés section */}
+            </div>
+
+            {/* Footer */}
+            <div className="sticky bottom-0 bg-gray-800 border-t border-gray-700 p-6 flex gap-3">
+              <button onClick={() => setDemandeDetail(null)}
+                className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition text-gray-300">
+                Fermer
+              </button>
+              <button
+                onClick={() => {
+                  handleValider(demandeDetail.id);
+                  setDemandeDetail(null);
+                }}
+                className="flex-1 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium transition text-white">
+                ✓ Valider
+              </button>
+            </div>
           </div>
         </div>
       )}

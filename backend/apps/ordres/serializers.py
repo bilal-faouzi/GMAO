@@ -16,7 +16,9 @@ class PieceJointeDISerializer(serializers.ModelSerializer):
 class DemandeInterventionSerializer(serializers.ModelSerializer):
     actif_detail        = serializers.SerializerMethodField()
     signalement_detail  = serializers.SerializerMethodField()
+    validation_detail   = serializers.SerializerMethodField()
     nb_pieces_jointes   = serializers.SerializerMethodField()
+    pieces_jointes      = serializers.SerializerMethodField()
 
     class Meta:
         model  = DemandeIntervention
@@ -26,16 +28,40 @@ class DemandeInterventionSerializer(serializers.ModelSerializer):
         return {'id': str(obj.idActif.id), 'code': obj.idActif.code, 'libelle': obj.idActif.libelle}
 
     def get_signalement_detail(self, obj):
+        print(f'📝 get_signalement_detail called for {obj.numero}')
+        print(f'   idUtilisateurSignalement: {obj.idUtilisateurSignalement}')
         if obj.idUtilisateurSignalement:
-            return {
+            result = {
                 'id':     str(obj.idUtilisateurSignalement.id),
                 'nom':    obj.idUtilisateurSignalement.nom,
                 'prenom': obj.idUtilisateurSignalement.prenom,
+                'date':   obj.dateSignalement,
             }
+            print(f'   Returning: {result}')
+            return result
+        print(f'   No user, returning None')
+        return None
+
+    def get_validation_detail(self, obj):
+        print(f'✅ get_validation_detail called for {obj.numero}')
+        print(f'   idUtilisateurValidation: {obj.idUtilisateurValidation}')
+        if obj.idUtilisateurValidation:
+            result = {
+                'id':     str(obj.idUtilisateurValidation.id),
+                'nom':    obj.idUtilisateurValidation.nom,
+                'prenom': obj.idUtilisateurValidation.prenom,
+                'date':   obj.dateValidation,
+            }
+            print(f'   Returning: {result}')
+            return result
+        print(f'   No user, returning None')
         return None
 
     def get_nb_pieces_jointes(self, obj):
         return obj.pieces_jointes.count()
+
+    def get_pieces_jointes(self, obj):
+        return PieceJointeDISerializer(obj.pieces_jointes.all(), many=True).data
 
 
 class MembreInterventionSerializer(serializers.ModelSerializer):

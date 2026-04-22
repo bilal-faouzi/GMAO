@@ -10,7 +10,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 
 from .models import (
     DemandeIntervention, OrdreTravail, AffectationEquipe,
-    MembreIntervention, SuiviTemps, PieceUtiliseeOT,
+    MembreIntervention, SuiviTemps, PieceUtiliseeOT, PieceJointeDI,
     CommentaireOT, CauseRacine, HistoriqueStatutOT, ConfigurationSLA
 )
 from .serializers import (
@@ -18,7 +18,8 @@ from .serializers import (
     AffectationEquipeSerializer, MembreInterventionSerializer,
     SuiviTempsSerializer, PieceUtiliseeOTSerializer,
     CommentaireOTSerializer, CauseRacineSerializer,
-    HistoriqueStatutOTSerializer, ConfigurationSLASerializer
+    HistoriqueStatutOTSerializer, ConfigurationSLASerializer,
+    PieceJointeDISerializer
 )
 
 
@@ -34,9 +35,14 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
     ordering_fields = ['dateSignalement', 'urgence']
 
     def perform_create(self, serializer):
+        print(f'📝 Creating demande...')
+        print(f'   User: {self.request.user}')
+        print(f'   User ID: {self.request.user.id if self.request.user else None}')
+        print(f'   Is authenticated: {self.request.user.is_authenticated if self.request.user else False}')
         serializer.save(
-            idUtilisateurSignalement=getattr(self.request.user, 'utilisateur', None)
+            idUtilisateurSignalement=self.request.user if self.request.user.is_authenticated else None
         )
+        print(f'✅ Demande created with user: {serializer.instance.idUtilisateurSignalement}')
 
     @action(detail=True, methods=['post'])
     def valider(self, request, pk=None):
@@ -47,7 +53,7 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         di.statut = 'validee'
-        di.idUtilisateurValidation = getattr(request.user, 'utilisateur', None)
+        di.idUtilisateurValidation = request.user if request.user.is_authenticated else None
         di.dateValidation = timezone.now()
         di.save()
 
@@ -97,6 +103,121 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
         di.dateValidation = timezone.now()
         di.save()
         return Response(DemandeInterventionSerializer(di).data)
+
+    @action(detail=True, methods=['post'])
+    def telecharger_fichiers(self, request, pk=None):
+        """
+        Upload fichiers (images ou audio) pour une demande d'intervention.
+        
+        Types acceptés:
+        - Images: jpg, jpeg, png, gif, bmp (5 MB max chacun)
+        - Audio: mp3, wav, m4a, aac, ogg, webm (10 MB max chacun)
+        """
+        from django.core.files.storage import default_storage
+        import os
+        
+        di = self.get_object()
+        fichiers = request.FILES.getlist('fichiers')
+        
+        print(f'\n🔍 UPLOAD DEBUG: Started upload for demande {di.id}')
+        print(f'📦 Files received: {len(fichiers)}')
+        for f in fichiers:
+            print(f'  - {f.name} ({f.size} bytes, type: {f.content_type})')
+        
+        if not fichiers:
+            return Response(
+                {'error': 'Aucun fichier à télécharger'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        TYPES_IMAGES = {'jpg', 'jpeg', 'png', 'gif', 'bmp'}
+        TYPES_AUDIO = {'mp3', 'wav', 'm4a', 'aac', 'ogg', 'webm'}
+        MAX_SIZE_IMAGE = 5 * 1024 * 1024  # 5 MB
+        MAX_SIZE_AUDIO = 10 * 1024 * 1024  # 10 MB
+        
+        pieces_creees = []
+        erreurs = []
+        
+        for fichier in fichiers:
+            try:
+                print(f'\n📄 Processing: {fichier.name}')
+                # Récupérer l'extension
+                ext = fichier.name.split('.')[-1].lower()
+                print(f'📌 Extension: {ext}')
+                
+                # Valider le type
+                if ext in TYPES_IMAGES:
+                    max_size = MAX_SIZE_IMAGE
+                    type_fichier = 'image'
+                elif ext in TYPES_AUDIO:
+                    max_size = MAX_SIZE_AUDIO
+                    type_fichier = 'audio'
+                    print(f'✅ Audio type detected: {ext}')
+                else:
+                    erreurs.append({
+                        'fichier': fichier.name,
+                        'motif': f'Type non autorisé (.{ext}). Images: jpg/png/gif/bmp, Audio: mp3/wav/m4a/aac/ogg/webm'
+                    })
+                    print(f'❌ Invalid type: {ext}')
+                    continue
+                
+                # Valider la taille
+                if fichier.size > max_size:
+                    max_mb = max_size / (1024 * 1024)
+                    erreurs.append({
+                        'fichier': fichier.name,
+                        'motif': f'Fichier trop volumineux. Max: {max_mb:.0f} MB'
+                    })
+                    print(f'❌ File too large: {fichier.size} > {max_size}')
+                    continue
+                
+                # Sauvegarder le fichier
+                directory = f'demandes_intervention/{di.id}'
+                filename = fichier.name
+                filepath = os.path.join(directory, filename)
+                
+                print(f'💾 Saving to: {filepath}')
+                # Utiliser Django's storage system
+                saved_path = default_storage.save(filepath, fichier)
+                print(f'✅ File saved: {saved_path}')
+                
+                # Générer URL du fichier
+                url = default_storage.url(saved_path)
+                print(f'🔗 URL generated: {url}')
+                
+                # Fallback: ensure URL starts with /media/ if not absolute
+                if not url.startswith('http') and not url.startswith('/media/'):
+                    url = f'/media/{saved_path}'
+                    print(f'🔧 URL corrected to: {url}')
+                
+                # Créer la pièce jointe
+                piece = PieceJointeDI.objects.create(
+                    idDemandeIntervention=di,
+                    nomFichier=fichier.name,
+                    typeFichier=f'{type_fichier}/{ext}',
+                    url=url
+                )
+                
+                print(f'✅ Database record created: {piece.id}')
+                pieces_creees.append(PieceJointeDISerializer(piece).data)
+                
+            except Exception as e:
+                print(f'❌ Error: {str(e)}')
+                erreurs.append({
+                    'fichier': fichier.name,
+                    'motif': str(e)
+                })
+        
+        resultat = {
+            'fichiers_ajoutes': len(pieces_creees),
+            'fichiers': pieces_creees,
+        }
+        
+        if erreurs:
+            resultat['erreurs'] = erreurs
+        
+        print(f'\n✅ UPLOAD COMPLETE: {len(pieces_creees)} files saved, {len(erreurs)} errors')
+        return Response(resultat, status=status.HTTP_200_OK)
     
 class OrdreTravailViewSet(viewsets.ModelViewSet):
     queryset = OrdreTravail.objects.select_related(

@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createDemande, getDemandes } from '../../services/ordreService';
 import { getActifs } from '../../services/actifService';
-import { Upload, X, Image } from 'lucide-react';
+import { Upload, X, Image, Mic } from 'lucide-react';
+import api from '../../services/api';
 
 const URGENCE_INFO = {
   critique: { label: '🔴 Critique',  desc: 'Production arrêtée — intervention immédiate requise',  cls: 'border-red-500/50 bg-red-500/10 text-red-300' },
@@ -27,12 +28,60 @@ export default function DeclarerPanne() {
   const [form, setForm] = useState({ idActif: '', urgence: 'normale', description: '' });
   const [images, setImages] = useState([]);
   const [previewImages, setPreviewImages] = useState([]);
+  const [audioFiles, setAudioFiles] = useState([]);
+  
+  // Audio recording states & refs
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [recordedAudios, setRecordedAudios] = useState([]);
+  const [currentPlayingAudio, setCurrentPlayingAudio] = useState(null);
+  
+  // Use refs to store chunks during recording (doesn't trigger re-renders)
+  const chunksRef = useRef([]);
+  const mediaRecorderRef = useRef(null);
+  const streamRef = useRef(null);
+  const recordingStartTimeRef = useRef(null);
+  
   const [erreur, setErreur]     = useState('');
   const [succes, setSucces]     = useState('');
 
   useEffect(() => {
     getActifs({ estActif: true }).then(r => setActifs(r.data.results || r.data));
     getDemandes().then(r => setMesDemandes((r.data.results || r.data).slice(0, 10)));
+  }, []);
+
+  // Recording timer
+  useEffect(() => {
+    let interval;
+    if (isRecording) {
+      interval = setInterval(() => {
+        setRecordingTime(t => t + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isRecording]);
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      console.log('🧹 Cleaning up...');
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (currentPlayingAudio) {
+        currentPlayingAudio.pause();
+      }
+      // Revoke all blob URLs
+      recordedAudios.forEach(rec => {
+        if (rec.url) {
+          URL.revokeObjectURL(rec.url);
+        }
+      });
+    };
   }, []);
 
   const actifsFiltres = actifs.filter(a =>
@@ -57,6 +106,200 @@ export default function DeclarerPanne() {
     setPreviewImages(newPreviews);
   };
 
+  const startRecording = async () => {
+    try {
+      console.log('🎙️ Starting recording...');
+      
+      // Clear previous chunks
+      chunksRef.current = [];
+      recordingStartTimeRef.current = Date.now();
+      
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      
+      const recorder = new MediaRecorder(stream, { 
+        mimeType: 'audio/webm',
+        audioBitsPerSecond: 128000 
+      });
+      
+      mediaRecorderRef.current = recorder;
+      setMediaRecorder(recorder);
+
+      // Collect chunks
+      recorder.ondataavailable = (e) => {
+        console.log('📊 Data available, chunk size:', e.data.size);
+        chunksRef.current.push(e.data);
+      };
+
+      // On stop, create blob from collected chunks
+      recorder.onstop = () => {
+        console.log('🛑 Recording stopped');
+        console.log('📦 Total chunks collected:', chunksRef.current.length);
+        console.log('📦 Chunk sizes:', chunksRef.current.map(c => c.size));
+        
+        // Calculate duration from timestamp
+        const recordingEndTime = Date.now();
+        const durationMs = recordingEndTime - recordingStartTimeRef.current;
+        const durationSeconds = Math.floor(durationMs / 1000);
+        console.log('⏱️ Recording duration:', durationSeconds, 'seconds');
+        
+        // Create blob from chunks
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        console.log('✅ Blob size:', blob.size, 'bytes');
+        
+        if (blob.size === 0) {
+          console.error('❌ ERROR: Blob is empty!');
+          setErreur('❌ Aucun audio enregistré. Assurez-vous que le microphone fonctionne.');
+          return;
+        }
+
+        const fileName = `recording_${Date.now()}.webm`;
+        console.log('💾 Saving recording:', fileName);
+        
+        // Store the blob in state for playback
+        setRecordedAudios(prev => {
+          console.log('Adding to recordedAudios:', prev.length + 1, 'recordings');
+          return [...prev, {
+            blob: blob,
+            url: URL.createObjectURL(blob),  // Pre-create URL for playback
+            duration: durationSeconds,  // Use calculated duration
+            name: fileName
+          }];
+        });
+        
+        // Also add to audioFiles for upload
+        const file = new File([blob], fileName, { type: 'audio/webm' });
+        console.log('🎵 File object created:', file.name, 'Size:', file.size, 'Type:', file.type);
+        setAudioFiles(prev => {
+          const updated = [...prev, file];
+          console.log('🎙️ audioFiles updated! Now has', updated.length, 'files:', updated.map(f => ({ name: f.name, size: f.size })));
+          return updated;
+        });
+        
+        setRecordingTime(0);
+        console.log('✅ Recording saved successfully with duration:', durationSeconds, 's');
+      };
+
+      recorder.onerror = (e) => {
+        console.error('❌ Recording error:', e.error);
+        setErreur(`Erreur d'enregistrement: ${e.error}`);
+      };
+
+      // Start recording with timeslice to ensure data collection
+      recorder.start(1000);
+      setIsRecording(true);
+      setRecordingTime(0);
+      console.log('✅ Recording started');
+    } catch (err) {
+      console.error('❌ Microphone error:', err);
+      setErreur(`Erreur microphone: ${err.message}. Vérifiez les permissions.`);
+    }
+  };
+
+  const stopRecording = () => {
+    console.log('⏹️ Stopping recording...');
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      
+      // Stop all audio tracks
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => {
+          track.stop();
+          console.log('✅ Audio track stopped');
+        });
+      }
+      
+      setMediaRecorder(null);
+      setIsRecording(false);
+      console.log('✅ Recording stopped and stream closed');
+    }
+  };
+
+  const removeRecordedAudio = (index) => {
+    console.log('🗑️ Removing recorded audio at index:', index);
+    
+    // Revoke the URL to free memory
+    if (recordedAudios[index] && recordedAudios[index].url) {
+      URL.revokeObjectURL(recordedAudios[index].url);
+    }
+    
+    const newRecorded = recordedAudios.filter((_, i) => i !== index);
+    setRecordedAudios(newRecorded);
+    
+    // Also remove from audioFiles
+    const nameToRemove = recordedAudios[index].name;
+    const newAudioFiles = audioFiles.filter(f => f.name !== nameToRemove);
+    setAudioFiles(newAudioFiles);
+    
+    console.log('✅ Removed, remaining recordings:', newRecorded.length);
+  };
+
+  const playRecordedAudio = (index) => {
+    try {
+      console.log('▶️ Playing audio at index:', index);
+      
+      // Stop previous audio if playing
+      if (currentPlayingAudio) {
+        console.log('⏸️ Stopping previous audio');
+        currentPlayingAudio.pause();
+        currentPlayingAudio.currentTime = 0;
+      }
+
+      const recorded = recordedAudios[index];
+      
+      if (!recorded) {
+        console.error('❌ Recording not found at index:', index);
+        setErreur('Enregistrement introuvable');
+        return;
+      }
+
+      if (!recorded.blob || recorded.blob.size === 0) {
+        console.error('❌ Blob is empty', recorded);
+        setErreur('Le fichier audio est vide');
+        return;
+      }
+
+      console.log('📦 Playing blob of size:', recorded.blob.size);
+      
+      // Use pre-created URL or create new one
+      const url = recorded.url || URL.createObjectURL(recorded.blob);
+      console.log('🔗 URL:', url);
+      
+      const audio = new Audio();
+      audio.src = url;
+      
+      // Keep reference to prevent garbage collection
+      setCurrentPlayingAudio(audio);
+      
+      audio.onended = () => {
+        console.log('✅ Playback ended');
+        setCurrentPlayingAudio(null);
+      };
+
+      audio.onerror = (e) => {
+        console.error('❌ Audio error:', e, audio.error);
+        setErreur(`Erreur: ${audio.error?.message || 'Impossible de lire le fichier'}`);
+        setCurrentPlayingAudio(null);
+      };
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log('✅ Audio play() resolved');
+          })
+          .catch(err => {
+            console.error('❌ Play error:', err);
+            setErreur(`Erreur lecture: ${err.message}`);
+            setCurrentPlayingAudio(null);
+          });
+      }
+    } catch (err) {
+      console.error('❌ Play function error:', err);
+      setErreur(`Erreur: ${err.message}`);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErreur(''); setSucces('');
@@ -67,54 +310,78 @@ export default function DeclarerPanne() {
       // Créer la demande d'abord
       const res = await createDemande(form);
       const demandeId = res.data.id;
+      console.log('✅ Demande créée:', demandeId);
       
-      // Téléverser les images si présentes
-      if (images.length > 0) {
+      // Téléverser les fichiers (images ET audio) si présents
+      const tousLesFichiers = [...images, ...audioFiles];
+      console.log('📦 Fichiers à uploader:', tousLesFichiers.length, tousLesFichiers.map(f => ({ name: f.name, size: f.size })));
+      
+      if (tousLesFichiers.length > 0) {
         const formData = new FormData();
-        images.forEach(img => formData.append('fichiers', img));
+        tousLesFichiers.forEach((fichier, idx) => {
+          console.log(`📤 Ajout fichier ${idx + 1}: ${fichier.name} (${fichier.size} bytes)`);
+          formData.append('fichiers', fichier);
+        });
+        
         try {
-          await fetch(`/api/v1/ordres/demandes/${demandeId}/telecharger_fichiers/`, {
-            method: 'POST',
-            body: formData,
+          console.log('🌐 Upload en cours vers: /v1/ordres/demandes/' + demandeId + '/telecharger_fichiers/');
+          const response = await api.post(`/v1/ordres/demandes/${demandeId}/telecharger_fichiers/`, formData, {
             headers: {
-              'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+              'Content-Type': 'multipart/form-data'
             }
           });
+          
+          console.log('📥 Réponse upload:', response.status, response.data);
+          
+          if (response.status === 200) {
+            console.log('✅ Upload réussi! Fichiers ajoutés:', response.data.fichiers_ajoutes);
+          } else {
+            console.error('❌ Erreur upload:', response.data);
+          }
         } catch(e) {
-          console.warn('Erreur upload images (non-bloquant)', e);
+          console.warn('⚠️ Erreur upload fichiers (non-bloquant):', e.message);
         }
+      } else {
+        console.log('ℹ️ Aucun fichier à uploader');
       }
       
       setSucces(`✅ Demande ${res.data.numero} enregistrée avec succès. Le responsable a été notifié.`);
       setForm({ idActif: '', urgence: 'normale', description: '' });
       setImages([]); setPreviewImages([]);
+      setAudioFiles([]);
+      setRecordedAudios([]);
       setActifSelectionne(null); setActifSearch('');
       const r = await getDemandes();
       setMesDemandes((r.data.results || r.data).slice(0, 10));
     } catch(e) {
+      console.error('❌ Erreur création demande:', e);
       setErreur(e.response?.data?.description?.[0] || e.response?.data?.error || 'Erreur lors de la déclaration.');
     } finally { setLoading(false); }
   };
 
   return (
-    <div className="p-6 text-white max-w-5xl">
+    <div className="p-6 text-white">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold">Déclarer une panne</h1>
-        <p className="text-gray-400 text-sm mt-1">Signalez un dysfonctionnement sur un équipement</p>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Déclarer une panne</h1>
+        <p className="text-gray-400 text-sm mt-2">Signalez un dysfonctionnement sur un équipement et enregistrez des détails audio</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Formulaire */}
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-5">
-          <h2 className="text-sm font-semibold text-purple-400 uppercase tracking-wider mb-5">
-            Nouvelle déclaration de panne
+        <div className="bg-gray-800 rounded-xl border border-gray-700 p-5 shadow-xl">
+          <h2 className="text-sm font-semibold text-purple-400 uppercase tracking-wider mb-5 flex items-center gap-2">
+            <span>✏️</span> Nouvelle déclaration de panne
           </h2>
 
           {erreur && (
-            <div className="bg-red-500/20 border border-red-500/40 text-red-400 rounded-lg p-3 mb-4 text-sm">{erreur}</div>
+            <div className="bg-red-500/20 border border-red-500/40 text-red-300 rounded-lg p-3 mb-4 text-sm flex items-start gap-2">
+              <span>⚠️</span> {erreur}
+            </div>
           )}
           {succes && (
-            <div className="bg-green-500/20 border border-green-500/40 text-green-400 rounded-lg p-3 mb-4 text-sm">{succes}</div>
+            <div className="bg-green-500/20 border border-green-500/40 text-green-300 rounded-lg p-3 mb-4 text-sm flex items-start gap-2">
+              <span>✅</span> {succes}
+            </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -206,14 +473,17 @@ export default function DeclarerPanne() {
             </div>
 
             {/* Upload images */}
-            <div>
-              <label className="block text-xs text-gray-400 mb-2 font-medium">
-                Ajouter des photos (optionnel)
-              </label>
-              <label className="flex flex-col items-center justify-center w-full p-4 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-purple-500 transition bg-gray-700/30">
+            <div className="bg-gradient-to-br from-purple-600/10 to-purple-700/5 rounded-xl border border-purple-500/30 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Image size={18} className="text-purple-400" />
+                <label className="block text-xs text-purple-300 font-semibold uppercase tracking-wider">
+                  Ajouter des photos (optionnel)
+                </label>
+              </div>
+              <label className="flex flex-col items-center justify-center w-full p-4 border-2 border-dashed border-purple-500/40 rounded-lg cursor-pointer hover:border-purple-500/80 transition bg-purple-600/5 hover:bg-purple-600/10">
                 <div className="flex flex-col items-center justify-center py-2">
-                  <Upload size={20} className="text-purple-400 mb-1" />
-                  <p className="text-xs text-gray-400 text-center">Cliquez pour ajouter des images<br/><span className="text-gray-500">JPG, PNG max 5MB</span></p>
+                  <Upload size={24} className="text-purple-400 mb-2" />
+                  <p className="text-xs text-purple-300 font-medium text-center">Cliquez pour ajouter des images<br/><span className="text-purple-400/70">JPG, PNG max 5MB</span></p>
                 </div>
                 <input
                   type="file"
@@ -226,34 +496,121 @@ export default function DeclarerPanne() {
               
               {/* Aperçu des images */}
               {previewImages.length > 0 && (
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  {previewImages.map((preview, i) => (
-                    <div key={i} className="relative group rounded-lg overflow-hidden border border-gray-600">
-                      <img src={preview} alt={`preview-${i}`} className="w-full h-20 object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(i)}
-                        className="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
-                      >
-                        <X size={14} />
-                      </button>
+                <div className="mt-4">
+                  <p className="text-xs text-purple-300 font-semibold uppercase tracking-wider mb-2">📸 Images ({previewImages.length})</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {previewImages.map((preview, i) => (
+                      <div key={i} className="relative group rounded-lg overflow-hidden border border-purple-500/40 bg-gray-700">
+                        <img src={preview} alt={`preview-${i}`} className="w-full h-24 object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(i)}
+                          className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition border border-red-400/50"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Recording audio direct */}
+            <div className="bg-gradient-to-br from-blue-600/10 to-blue-700/5 rounded-xl border border-blue-500/30 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Mic size={18} className="text-blue-400" />
+                <label className="block text-xs text-blue-300 font-semibold uppercase tracking-wider">
+                  Enregistrer un audio (optionnel)
+                </label>
+              </div>
+              
+              {!isRecording ? (
+                <button
+                  type="button"
+                  onClick={startRecording}
+                  className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg text-sm font-semibold transition text-white flex items-center justify-center gap-2 border border-blue-500/50 shadow-lg shadow-blue-500/20"
+                >
+                  <Mic size={18} />
+                  Démarrer l'enregistrement
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="bg-red-500/20 border border-red-500/40 rounded-lg p-4 flex items-center justify-between backdrop-blur-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="animate-pulse">
+                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-red-400">🎙️ En cours d'enregistrement...</p>
+                        <p className="text-xs text-red-300/80 font-mono">{Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, '0')}</p>
+                      </div>
                     </div>
-                  ))}
+                    <button
+                      type="button"
+                      onClick={stopRecording}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-semibold text-white transition border border-red-500/50"
+                    >
+                      Arrêter
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Recorded audios */}
+              {recordedAudios.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-xs text-blue-300 font-semibold uppercase tracking-wider">📦 Audios enregistrés ({recordedAudios.length})</p>
+                  <div className="space-y-2">
+                    {recordedAudios.map((recorded, i) => (
+                      <div key={i} className="bg-blue-600/10 border border-blue-500/40 rounded-lg p-3 flex items-center justify-between hover:bg-blue-600/15 transition group">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => playRecordedAudio(i)}
+                            className="flex-shrink-0 w-9 h-9 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition text-white shadow-md border border-blue-500/50"
+                          >
+                            ▶
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-blue-300 truncate">{recorded.name}</p>
+                            <p className="text-xs text-gray-400 font-mono">⏱️ {Math.floor(recorded.duration / 60)}:{String(recorded.duration % 60).padStart(2, '0')}</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeRecordedAudio(i)}
+                          className="flex-shrink-0 text-gray-400 hover:text-red-400 transition p-2 opacity-0 group-hover:opacity-100"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
             <button type="submit" disabled={loading}
-              className="w-full py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-40 rounded-xl text-sm font-semibold transition text-white">
-              {loading ? 'Envoi en cours...' : '📢 Déclarer la panne'}
+              className="w-full py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-sm font-semibold transition text-white border border-purple-500/50 shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2">
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-purple-300 border-t-transparent rounded-full animate-spin"></div>
+                  Envoi en cours...
+                </>
+              ) : (
+                <>
+                  📢 Déclarer la panne
+                </>
+              )}
             </button>
           </form>
         </div>
 
         {/* Mes déclarations récentes */}
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-5">
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
-            Mes déclarations récentes
+        <div className="bg-gray-800 rounded-xl border border-gray-700 p-5 shadow-xl">
+          <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+            <span>📋</span> Mes déclarations récentes
           </h2>
 
           {mesDemandes.length === 0 ? (
@@ -265,30 +622,30 @@ export default function DeclarerPanne() {
           ) : (
             <div className="space-y-3">
               {mesDemandes.map(d => (
-                <div key={d.id} className="bg-gray-700/40 rounded-xl p-4 border border-gray-700">
+                <div key={d.id} className="bg-gradient-to-r from-gray-700/40 to-gray-600/20 rounded-lg p-4 border border-gray-600/50 hover:border-gray-500 transition">
                   <div className="flex justify-between items-start mb-2">
-                    <span className="font-mono text-sm text-purple-300">{d.numero}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUT[d.statut]?.cls}`}>
+                    <span className="font-mono text-sm font-semibold text-purple-300">{d.numero}</span>
+                    <span className={`text-xs px-2 py-1 rounded-lg font-medium border ${STATUT[d.statut]?.cls}`}>
                       {STATUT[d.statut]?.label}
                     </span>
                   </div>
-                  <p className="text-sm font-medium text-blue-300">{d.actif_detail?.code} — {d.actif_detail?.libelle}</p>
+                  <p className="text-sm font-medium text-blue-300 truncate">{d.actif_detail?.code} — {d.actif_detail?.libelle}</p>
                   <p className="text-xs text-gray-400 mt-1 line-clamp-2">{d.description}</p>
-                  <div className="flex justify-between items-center mt-2">
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${URGENCE_INFO[d.urgence]?.cls}`}>
+                  <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-600/30">
+                    <span className={`text-xs px-2 py-1 rounded-full border font-medium ${URGENCE_INFO[d.urgence]?.cls}`}>
                       {URGENCE_INFO[d.urgence]?.label}
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-gray-500 font-mono">
                       {new Date(d.dateSignalement).toLocaleString('fr-FR')}
                     </span>
                   </div>
                   {d.statut === 'rejetee' && d.motifRejet && (
-                    <div className="mt-2 p-2 bg-red-500/10 rounded-lg">
-                      <p className="text-xs text-red-400">Motif rejet : {d.motifRejet}</p>
+                    <div className="mt-2 p-2 bg-red-500/10 rounded-lg border border-red-500/20">
+                      <p className="text-xs text-red-400">⚠️ Motif rejet : {d.motifRejet}</p>
                     </div>
                   )}
                   {d.statut === 'validee' && (
-                    <div className="mt-2 p-2 bg-green-500/10 rounded-lg">
+                    <div className="mt-2 p-2 bg-green-500/10 rounded-lg border border-green-500/20">
                       <p className="text-xs text-green-400">✅ OT créé — intervention en cours de traitement</p>
                     </div>
                   )}
@@ -299,7 +656,7 @@ export default function DeclarerPanne() {
 
           <div className="mt-4 pt-4 border-t border-gray-700">
             <button onClick={() => navigate('/ordres/demandes')}
-              className="w-full py-2 text-sm text-purple-400 border border-purple-500/30 rounded-lg hover:bg-purple-500/10 transition">
+              className="w-full py-2.5 text-sm font-semibold text-purple-400 border border-purple-500/40 rounded-lg hover:bg-purple-500/10 hover:border-purple-500/60 transition">
               Voir toutes les demandes →
             </button>
           </div>
