@@ -170,6 +170,7 @@ export default function JournalAudit() {
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
+  const [stats, setStats] = useState({});
   const [users, setUsers] = useState([]); // liste { id, nom_utilisateur, prenom, nom }
 
   const [search, setSearch] = useState("");
@@ -208,6 +209,7 @@ export default function JournalAudit() {
       const res = await getJournalAuditv2(params);
       setEntries(res.data?.results ?? []);
       setTotalPages(res.data?.total_pages ?? 1);
+      setStats(res.data?.stats ?? {});
     } catch {
       toast.error("Erreur lors du chargement de l'audit");
     } finally {
@@ -255,10 +257,7 @@ export default function JournalAudit() {
     setPage(1);
   };
 
-  const creates = entries.filter((e) => e.action === "CREATE").length;
-  const updates = entries.filter((e) => e.action === "UPDATE").length;
-  const deletes = entries.filter((e) => e.action === "DELETE").length;
-  const logins = entries.filter((e) => e.action === "LOGIN").length;
+  const totalEntries = Object.values(stats).reduce((a, b) => a + b, 0);
 
   return (
     <div className="page">
@@ -273,36 +272,14 @@ export default function JournalAudit() {
       {/* Stats */}
       <div className="stats-row">
         <div className="stat-chip">
-          <span
-            className="dot"
-            style={{ background: "var(--status-green-dot)" }}
-          />
-          <strong>{creates}</strong> créations
+          <strong>{totalEntries}</strong>&nbsp;total
         </div>
-        <div className="stat-chip">
-          <span
-            className="dot"
-            style={{ background: "var(--status-orange-dot)" }}
-          />
-          <strong>{updates}</strong> modifications
-        </div>
-        <div className="stat-chip">
-          <span
-            className="dot"
-            style={{ background: "var(--status-red-dot)" }}
-          />
-          <strong>{deletes}</strong> suppressions
-        </div>
-        <div className="stat-chip">
-          <span
-            className="dot"
-            style={{ background: "var(--status-blue-dot)" }}
-          />
-          <strong>{logins}</strong> connexions
-        </div>
-        <div className="stat-chip">
-          <strong>{entries.length}</strong>&nbsp;sur cette page
-        </div>
+        {ACTION_OPTIONS.map((opt) => (
+          <div className="stat-chip" key={opt.value}>
+            <span className="dot" style={{ background: opt.dot }} />
+            <strong>{stats[opt.value] ?? 0}</strong>&nbsp;{opt.label}
+          </div>
+        ))}
       </div>
 
       {/* Filtres */}

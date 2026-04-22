@@ -70,7 +70,7 @@ export default function FormulairePiece() {
     }
   };
 
-  const Field = ({ label, name, type = "text", required }) => (
+  const Field = ({ label, name, type = "text", required, disabled }) => (
     <div className="fg">
       <label className="flabel">
         {label}
@@ -82,7 +82,30 @@ export default function FormulairePiece() {
         value={form[name]}
         onChange={handleChange}
         className="finput"
+        disabled={disabled}
+        style={
+          disabled
+            ? {
+                opacity: 0.6,
+                cursor: "not-allowed",
+                background: "var(--bg-muted, #f0f0f0)",
+                border: "1px dashed var(--border-subtle)",
+                color: "var(--text-muted)",
+              }
+            : {}
+        }
       />
+      {disabled && (
+        <span
+          style={{
+            fontSize: 11,
+            color: "var(--text-muted)",
+            marginTop: 4,
+            fontStyle: "italic",
+          }}>
+          Utilisez Entrée / Sortie stock pour modifier la quantité
+        </span>
+      )}
     </div>
   );
 
@@ -153,6 +176,7 @@ export default function FormulairePiece() {
               label="Quantité en stock"
               name="quantiteStock"
               type="number"
+              disabled={isEdit}
             />
             <Field label="Seuil minimum" name="seuilMinimum" type="number" />
             <Field

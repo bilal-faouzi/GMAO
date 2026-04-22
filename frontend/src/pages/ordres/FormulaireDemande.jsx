@@ -1,89 +1,394 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { createDemande } from '../../services/ordreService';
-import { getActifs } from '../../services/actifService';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { createDemande } from "../../services/ordreService";
+import { getActifs, getActif } from "../../services/actifService";
+import { updateUnite } from "../../services/organisationService";
+import { ArrowLeft } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
-export default function FormulaireDemande() {
+export default function FormulaireDemande({ defaultActifId, onClose }) {
   const navigate = useNavigate();
-  const [form, setForm]     = useState({ idActif:'', description:'', urgence:'normale' });
+
+  const [form, setForm] = useState({
+    idActif: defaultActifId ?? "",
+    description: "",
+    urgence: "normale",
+  });
+
   const [actifs, setActifs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [erreur, setErreur]   = useState(null);
+  const [erreur, setErreur] = useState(null);
+  const [actifDetails, setActifDetails] = useState(null);
 
   useEffect(() => {
-    getActifs({ estActif: true }).then(r => setActifs(r.data.results || r.data));
+    getActifs({ estActif: true }).then((r) =>
+      setActifs(r.data.results || r.data),
+    );
   }, []);
+
+  // Charger les détails de l'actif quand defaultActifId change
+  useEffect(() => {
+    if (defaultActifId) {
+      getActif(defaultActifId).then((r) => {
+        setActifDetails(r.data);
+        setForm((f) => ({ ...f, idActif: String(defaultActifId) }));
+      });
+    }
+  }, [defaultActifId]);
+
+  const handleClose = () => {
+    if (onClose) onClose();
+    else navigate("/ordres/demandes");
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); setErreur(null);
+    setLoading(true);
+    setErreur(null);
     try {
+      // Créer la demande
       await createDemande(form);
-      navigate('/ordres/demandes');
-    } catch(e) { setErreur(e.response?.data || 'Erreur'); }
-    finally { setLoading(false); }
+
+      // Si l'urgence est critique, marquer la production de l'unité comme arrêtée
+      if (form.urgence === "critique" && actifDetails?.idUnite) {
+        try {
+          const res = await updateUnite(actifDetails.idUnite, {
+            estProductive: false,
+          });
+          console.log("Unité mise à jour:", res.data);
+        } catch (err) {
+          console.error(
+            "Erreur lors de la mise à jour du statut production:",
+            err,
+          );
+        }
+      }
+
+      handleClose();
+    } catch (e) {
+      setErreur(e.response?.data || "Erreur");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // Mode dialog : contenu sans header
+  if (onClose) {
+    return (
+      <div>
+        {erreur && (
+          <div className="alert-warn" style={{ marginBottom: 16 }}>
+            {typeof erreur === "object" ? JSON.stringify(erreur) : erreur}
+          </div>
+        )}
+
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="fg">
+            <label className="flabel">
+              Urgence <span className="req">*</span>
+            </label>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[
+                {
+                  value: "basse",
+                  label: "Basse",
+                  description: "Pas urgent, peut attendre quelques jours",
+                  color: "var(--status-gray-dot)",
+                },
+                {
+                  value: "normale",
+                  label: "Normale",
+                  description: "À traiter dans les 24-48 heures",
+                  color: "var(--status-blue-dot)",
+                },
+                {
+                  value: "haute",
+                  label: "Haute",
+                  description: "À traiter en priorité, impact modéré",
+                  color: "var(--status-orange-dot)",
+                },
+                {
+                  value: "critique",
+                  label: "Critique",
+                  description: "Urgence absolue, arrêt de production",
+                  color: "var(--status-red-dot)",
+                },
+              ].map((urgence) => (
+                <button
+                  key={urgence.value}
+                  type="button"
+                  onClick={() =>
+                    setForm((f) => ({ ...f, urgence: urgence.value }))
+                  }
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 12,
+                    padding: 12,
+                    borderRadius: "var(--r-sm)",
+                    border:
+                      form.urgence === urgence.value
+                        ? "2px solid " + urgence.color
+                        : "1px solid var(--border-default)",
+                    background:
+                      form.urgence === urgence.value
+                        ? urgence.color + "15"
+                        : "var(--bg-elevated)",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}>
+                  <div
+                    style={{
+                      width: 12,
+                      height: 12,
+                      borderRadius: "50%",
+                      background: urgence.color,
+                      marginTop: 4,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div style={{ textAlign: "left", flex: 1 }}>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "var(--text-primary)",
+                      }}>
+                      {urgence.label}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "var(--text-muted)",
+                        marginTop: 2,
+                      }}>
+                      {urgence.description}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="fg">
+            <Label className="flabel">Description</Label>
+            <textarea
+              name="description"
+              value={form.description}
+              onChange={handleChange}
+              rows="3"
+              className="finput"
+              style={{ resize: "none" }}
+              placeholder="Décrivez le problème rencontré..."
+            />
+          </div>
+
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <Button
+              type="button"
+              onClick={handleClose}
+              className="btn btn-outline">
+              Annuler
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="btn btn-primary"
+              style={{ opacity: loading ? 0.6 : 1 }}>
+              {loading ? "Envoi..." : "Déclarer la panne"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
+  // Mode page complète
   return (
-    <div className="p-6 text-white max-w-xl">
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/ordres/demandes')}
-          className="text-gray-400 hover:text-white text-sm transition">← Retour</button>
-        <h1 className="text-2xl font-semibold">Déclarer une panne</h1>
+    <div className="page" style={{ maxWidth: 720 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <button className="btn btn-ghost" onClick={handleClose}>
+          <ArrowLeft size={14} /> Retour
+        </button>
+        <h1 style={{ fontSize: 22, fontWeight: 600 }}>Déclarer une panne</h1>
       </div>
 
       {erreur && (
-        <div className="bg-red-500/20 border border-red-500/40 text-red-400 rounded-lg p-4 mb-6 text-sm">
-          {typeof erreur==='object' ? JSON.stringify(erreur) : erreur}
+        <div className="alert-warn">
+          {typeof erreur === "object" ? JSON.stringify(erreur) : erreur}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
-          <h2 className="text-xs text-gray-500 uppercase tracking-wider mb-4">Informations</h2>
+      <form
+        onSubmit={handleSubmit}
+        style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div className="tbl-card">
+          <div
+            className="tbl-head"
+            style={{
+              padding: 0,
+              paddingBottom: 14,
+              borderBottom: "1px solid var(--border-subtle)",
+            }}>
+            <span className="tbl-title">Informations</span>
+          </div>
+          <div className="m-body" style={{ padding: "14px 0 0" }}>
+            {!defaultActifId && (
+              <div className="fg">
+                <label className="flabel">
+                  Actif concerné <span className="req">*</span>
+                </label>
+                <Select
+                  value={form.idActif}
+                  onValueChange={(value) =>
+                    setForm((f) => ({ ...f, idActif: value }))
+                  }>
+                  <SelectTrigger className="fsel">
+                    <SelectValue placeholder="— Sélectionner l'équipement en panne —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {actifs.map((a) => (
+                      <SelectItem key={a.id} value={String(a.id)}>
+                        {a.code} — {a.libelle}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Actif concerné *</label>
-              <select name="idActif" value={form.idActif}
-                onChange={e => setForm(f => ({...f, idActif: e.target.value}))}
-                className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-purple-500" required>
-                <option value="">— Sélectionner l'équipement en panne —</option>
-                {actifs.map(a => (
-                  <option key={a.id} value={a.id}>{a.code} — {a.libelle}</option>
+            <div className={!defaultActifId ? "fg" : "span2 fg"}>
+              <label className="flabel">
+                Urgence <span className="req">*</span>
+              </label>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {[
+                  {
+                    value: "basse",
+                    label: "Basse",
+                    description: "Pas urgent, peut attendre quelques jours",
+                    color: "var(--status-gray-dot)",
+                  },
+                  {
+                    value: "normale",
+                    label: "Normale",
+                    description: "À traiter dans les 24-48 heures",
+                    color: "var(--status-blue-dot)",
+                  },
+                  {
+                    value: "haute",
+                    label: "Haute",
+                    description: "À traiter en priorité, impact modéré",
+                    color: "var(--status-orange-dot)",
+                  },
+                  {
+                    value: "critique",
+                    label: "Critique",
+                    description: "Urgence absolue, arrêt de production",
+                    color: "var(--status-red-dot)",
+                  },
+                ].map((urgence) => (
+                  <button
+                    key={urgence.value}
+                    type="button"
+                    onClick={() =>
+                      setForm((f) => ({ ...f, urgence: urgence.value }))
+                    }
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 12,
+                      padding: 12,
+                      borderRadius: "var(--r-sm)",
+                      border:
+                        form.urgence === urgence.value
+                          ? "2px solid " + urgence.color
+                          : "1px solid var(--border-default)",
+                      background:
+                        form.urgence === urgence.value
+                          ? urgence.color + "15"
+                          : "var(--bg-elevated)",
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                    }}>
+                    <div
+                      style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: "50%",
+                        background: urgence.color,
+                        marginTop: 4,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <div style={{ textAlign: "left", flex: 1 }}>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: "var(--text-primary)",
+                        }}>
+                        {urgence.label}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "var(--text-muted)",
+                          marginTop: 2,
+                        }}>
+                        {urgence.description}
+                      </div>
+                    </div>
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Urgence *</label>
-              <select value={form.urgence}
-                onChange={e => setForm(f => ({...f, urgence: e.target.value}))}
-                className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-purple-500">
-                <option value="critique">🔴 Critique — Production arrêtée</option>
-                <option value="haute">🟠 Haute — Impact fort</option>
-                <option value="normale">🔵 Normale — Gêne partielle</option>
-                <option value="basse">⚪ Basse — Non urgent</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Description de la panne *</label>
-              <textarea value={form.description}
-                onChange={e => setForm(f => ({...f, description: e.target.value}))}
-                rows={4} required
-                placeholder="Décrivez le problème observé, les symptômes, ce qui s'est passé..."
-                className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-purple-500 resize-none"/>
+            <div className="span2">
+              <div className="fg">
+                <label className="flabel">Description</label>
+                <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  rows="3"
+                  className="finput"
+                  style={{ resize: "none" }}
+                  placeholder="Décrivez le problème rencontré..."
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="flex gap-3 justify-end">
-          <button type="button" onClick={() => navigate('/ordres/demandes')}
-            className="px-5 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition text-white">Annuler</button>
-          <button type="submit" disabled={loading}
-            className="px-5 py-2 text-sm bg-purple-600 hover:bg-purple-700 rounded-lg transition text-white disabled:opacity-50">
-            {loading ? 'Envoi...' : 'Déclarer la panne'}
+        <div className="m-foot">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="btn btn-outline">
+            Annuler
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn btn-primary"
+            style={{ opacity: loading ? 0.6 : 1 }}>
+            {loading ? "Envoi..." : "Déclarer la panne"}
           </button>
         </div>
       </form>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Plus,
   Search,
@@ -8,40 +9,44 @@ import {
   PowerOff,
   ChevronLeft,
   ChevronRight,
-  X,
 } from "lucide-react";
 
 import {
   createUtilisateur,
-  getRoles,
   getUtilisateurs,
   updateUtilisateur,
   deleteUtilisateur,
-  assignRoleToUser,
-  removeRoleFromUser,
 } from "@/services/securiteService";
 import { Modal } from "@/components/Modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
 import { FieldError, GlobalError } from "@/components/FieldError";
 import { useFormErrors } from "@/hooks/useFormErrors";
+import { RoleManager } from "@/components/RoleManager";
 
 const labelCls = "text-xs text-text-secondary mb-1 block";
 
 export default function Utilisateurs() {
+  const navigate = useNavigate();
+
+  // ── Data state ──
   const [utilisateurs, setUtilisateurs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+
+  // ── Modal state ──
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [openRoles, setOpenRoles] = useState(false);
-  const [selected, setSelected] = useState(null);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [allRoles, setAllRoles] = useState([]);
+
+  // ── Selection ──
+  const [selected, setSelected] = useState(null); // for edit
+  const [roleTarget, setRoleTarget] = useState(null); // for role modal
+
+  // ── Form ──
   const [form, setForm] = useState({
     nom_utilisateur: "",
     email: "",
@@ -52,11 +57,12 @@ export default function Utilisateurs() {
 
   const { errors, setApiErrors, clearErrors, inputCls } = useFormErrors();
 
+  // ─────────────────────────────────────────────────────────────
+  // Fetch
+  // ─────────────────────────────────────────────────────────────
   const fetchUtilisateurs = async (currentPage = page) => {
     try {
-      const res = await getUtilisateurs({
-        page: currentPage,
-      });
+      const res = await getUtilisateurs({ page: currentPage });
       setUtilisateurs(res.data.results || res.data);
       setTotalPages(res.data.total_pages || 1);
       setPage(res.data.page || 1);
@@ -67,15 +73,13 @@ export default function Utilisateurs() {
     }
   };
 
-  const fetchAllRoles = async () => {
-    const res = await getRoles();
-    setAllRoles(Array.isArray(res.data) ? res.data : res.data.results || []);
-  };
-
   useEffect(() => {
     fetchUtilisateurs();
   }, [page]);
 
+  // ─────────────────────────────────────────────────────────────
+  // Handlers
+  // ─────────────────────────────────────────────────────────────
   const handleCreate = async (e) => {
     e.preventDefault();
     clearErrors();
@@ -109,7 +113,7 @@ export default function Utilisateurs() {
     }
   };
 
-  const handleDelete = async (id, est_actif) => {
+  const handleToggleActive = async (id, est_actif) => {
     if (!confirm(`${est_actif ? "Désactiver" : "Activer"} cet utilisateur ?`))
       return;
     await deleteUtilisateur(id);
@@ -130,30 +134,22 @@ export default function Utilisateurs() {
   };
 
   const openRolesModal = (u) => {
-    setSelectedUser(u);
-    fetchAllRoles();
+    setRoleTarget(u);
     setOpenRoles(true);
   };
 
-  const handleAssignRole = async (roleId) => {
-    await assignRoleToUser(selectedUser.id, { id_role: roleId });
-    const role = allRoles.find((r) => r.id === roleId);
-    setSelectedUser((prev) => ({
-      ...prev,
-      roles: [...(prev.roles || []), role],
-    }));
-    fetchUtilisateurs();
+  // After RoleManager updates roles, refresh the row in the table
+  const handleRolesChange = (updatedRoles) => {
+    setUtilisateurs((prev) =>
+      prev.map((u) =>
+        u.id === roleTarget?.id ? { ...u, roles: updatedRoles } : u,
+      ),
+    );
   };
 
-  const handleRemoveRole = async (roleId) => {
-    await removeRoleFromUser(selectedUser.id, { id_role: roleId });
-    setSelectedUser((prev) => ({
-      ...prev,
-      roles: prev.roles.filter((r) => r.id !== roleId),
-    }));
-    fetchUtilisateurs();
-  };
-
+  // ─────────────────────────────────────────────────────────────
+  // Filtered list
+  // ─────────────────────────────────────────────────────────────
   const filtered = utilisateurs.filter(
     (u) =>
       u.nom_utilisateur.toLowerCase().includes(search.toLowerCase()) ||
@@ -161,9 +157,12 @@ export default function Utilisateurs() {
       u.prenom.toLowerCase().includes(search.toLowerCase()),
   );
 
+  // ─────────────────────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────────────────────
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-text">Utilisateurs</h1>
@@ -181,7 +180,7 @@ export default function Utilisateurs() {
         </Button>
       </div>
 
-      {/* Search */}
+      {/* ── Search ── */}
       <div className="relative">
         <Search
           size={15}
@@ -198,7 +197,7 @@ export default function Utilisateurs() {
         />
       </div>
 
-      {/* Table */}
+      {/* ── Table ── */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
@@ -236,7 +235,14 @@ export default function Utilisateurs() {
               filtered.map((u) => (
                 <tr
                   key={u.id}
-                  className={`hover:bg-surface ${u.est_actif ? "" : "bg-elevated border-border-subtle opacity-50 grayscale"} transition-colors`}>
+                  onClick={() => navigate(`/utilisateurs/${u.id}`)}
+                  style={{ cursor: "pointer" }}
+                  className={`hover:bg-surface ${
+                    u.est_actif
+                      ? ""
+                      : "bg-elevated border-border-subtle opacity-50 grayscale"
+                  } transition-colors`}>
+                  {/* Utilisateur */}
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-blue-100 dark:bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0">
@@ -255,9 +261,13 @@ export default function Utilisateurs() {
                       </div>
                     </div>
                   </td>
+
+                  {/* Email */}
                   <td className="px-4 py-3 text-text-secondary text-sm">
                     {u.email}
                   </td>
+
+                  {/* Rôles */}
                   <td className="px-4 py-3">
                     <div className="flex gap-1 flex-wrap">
                       {u.roles?.length > 0 ? (
@@ -275,31 +285,48 @@ export default function Utilisateurs() {
                       )}
                     </div>
                   </td>
+
+                  {/* Statut */}
                   <td className="px-4 py-3">
                     <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${u.est_actif ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400"}`}>
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        u.est_actif
+                          ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                          : "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400"
+                      }`}>
                       {u.est_actif ? "Actif" : "Inactif"}
                     </span>
                   </td>
+
+                  {/* Actions */}
                   <td className="px-4 py-3">
                     <div className="flex justify-center gap-1">
                       <Button
                         variant="ghost"
-                        onClick={() => openRolesModal(u)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openRolesModal(u);
+                        }}
                         title="Gérer les rôles"
                         className="rounded hover:bg-emerald-100 dark:hover:bg-emerald-500/10 text-text-secondary hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors">
                         <Shield size={13} />
                       </Button>
                       <Button
                         variant="ghost"
-                        onClick={() => openEditModal(u)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditModal(u);
+                        }}
                         title="Modifier"
                         className="rounded hover:bg-blue-100 dark:hover:bg-blue-500/10 text-text-secondary hover:text-blue-700 dark:hover:text-blue-400 transition-colors">
                         <Pencil size={13} />
                       </Button>
                       <Button
                         variant="ghost"
-                        onClick={() => handleDelete(u.id, u.est_actif)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleActive(u.id, u.est_actif);
+                        }}
                         title={u.est_actif ? "Désactiver" : "Activer"}
                         className="rounded hover:bg-red-100 dark:hover:bg-red-500/10 text-text-secondary hover:text-danger transition-colors">
                         {u.est_actif ? (
@@ -315,33 +342,22 @@ export default function Utilisateurs() {
             )}
           </tbody>
         </table>
-        {/* Pagination */}
       </div>
+
+      {/* ── Pagination ── */}
       {totalPages > 1 && (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: 8,
-            marginTop: 12,
-          }}>
+        <div className="flex justify-end items-center gap-2">
           <Button
-            className="btn btn-outline btn-icon"
+            variant="outline"
             disabled={page === 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}>
             <ChevronLeft size={16} />
           </Button>
-          <span
-            style={{
-              display: "flex",
-              alignItems: "center",
-              fontSize: 13,
-              color: "var(--text-secondary)",
-            }}>
+          <span className="text-sm text-text-secondary">
             {page} / {totalPages}
           </span>
           <Button
-            className="btn btn-outline btn-icon"
+            variant="outline"
             disabled={page === totalPages}
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
             <ChevronRight size={16} />
@@ -349,7 +365,9 @@ export default function Utilisateurs() {
         </div>
       )}
 
-      {/* ── Modal Création ── */}
+      {/* ══════════════════════════════════════════════
+          Modal — Création
+      ══════════════════════════════════════════════ */}
       {openCreate && (
         <Modal title="Nouvel utilisateur" onClose={() => setOpenCreate(false)}>
           <form onSubmit={handleCreate} className="space-y-4">
@@ -436,7 +454,9 @@ export default function Utilisateurs() {
         </Modal>
       )}
 
-      {/* ── Modal Modification ── */}
+      {/* ══════════════════════════════════════════════
+          Modal — Modification
+      ══════════════════════════════════════════════ */}
       {openEdit && (
         <Modal
           title="Modifier l'utilisateur"
@@ -510,87 +530,17 @@ export default function Utilisateurs() {
         </Modal>
       )}
 
-      {/* ── Modal Gestion Rôles ── */}
-      {openRoles && (
+      {/* ══════════════════════════════════════════════
+          Modal — Gestion des rôles (via RoleManager)
+      ══════════════════════════════════════════════ */}
+      {openRoles && roleTarget && (
         <Modal
-          title={`Rôles — ${selectedUser?.prenom} ${selectedUser?.nom}`}
+          title={`Rôles — ${roleTarget.prenom} ${roleTarget.nom}`}
           onClose={() => setOpenRoles(false)}>
-          <div className="space-y-4">
-            <div>
-              <p className="text-xs text-text-secondary mb-2 uppercase tracking-wider">
-                Rôles assignés
-              </p>
-              <div className="space-y-2">
-                {selectedUser?.roles?.length > 0 ? (
-                  selectedUser.roles.map((r) => (
-                    <div
-                      key={r.id}
-                      className="flex items-center justify-between p-2.5 rounded-lg bg-surface">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">
-                          {r.code}
-                        </span>
-                        <span className="text-xs text-text-muted">
-                          {r.libelle}
-                        </span>
-                      </div>
-                      <Button
-                        onClick={() => handleRemoveRole(r.id)}
-                        className="text-text-muted hover:text-danger transition-colors text-lg leading-none"
-                        variant="ghost">
-                        <X size={13} />
-                      </Button>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-text-muted p-2">
-                    Aucun rôle assigné
-                  </p>
-                )}
-              </div>
-            </div>
-            <div>
-              <p className="text-xs text-text-secondary mb-2 uppercase tracking-wider">
-                Assigner un rôle
-              </p>
-              <div className="space-y-2">
-                {allRoles
-                  .filter(
-                    (r) => !selectedUser?.roles?.find((ur) => ur.id === r.id),
-                  )
-                  .map((r) => (
-                    <div
-                      key={r.id}
-                      className={`flex items-center justify-between p-2.5 rounded-md border border-border ${!r.est_actif ? "backdrop-grayscale" : ""}`}>
-                      <div>
-                        <span
-                          className={`text-sm font-medium text-text ${!r.est_actif ? "line-through text-text-muted" : ""}`}>
-                          {r.code}
-                        </span>
-                        <span
-                          className={`r.est text-xs text-text-muted ml-2 ${!r.est_actif ? "line-through" : ""}`}>
-                          {r.libelle}
-                        </span>
-                      </div>
-                      <Button
-                        onClick={() => handleAssignRole(r.id)}
-                        variant="ghost"
-                        disabled={!r.est_actif}
-                        className={`flex py-2 ${!r.est_actif ? "text-text-muted hover:text-text-muted" : "text-green-600 hover:text-green-700"}  transition-colors text-lg leading-none`}>
-                        <Plus size={13} />
-                      </Button>
-                    </div>
-                  ))}
-                {allRoles.filter(
-                  (r) => !selectedUser?.roles?.find((ur) => ur.id === r.id),
-                ).length === 0 && (
-                  <p className="text-sm text-text-muted p-2">
-                    Tous les rôles sont déjà assignés
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+          <RoleManager
+            userId={roleTarget.id}
+            onRolesChange={handleRolesChange}
+          />
         </Modal>
       )}
     </div>

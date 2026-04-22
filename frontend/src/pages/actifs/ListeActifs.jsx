@@ -4,6 +4,7 @@ import {
   getActifs,
   deleteActif,
   changerStatut,
+  getDashboard,
 } from "../../services/actifService";
 import { getSites } from "../../services/organisationService";
 import { Input } from "@/components/ui/input";
@@ -134,6 +135,7 @@ export default function ListeActifs() {
   const [actionLoading, setActionLoading] = useState(false);
   const [erreur, setErreur] = useState(null);
   const [sites, setSites] = useState([]);
+  const [data, setData] = useState(null);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -183,6 +185,16 @@ export default function ListeActifs() {
   useEffect(() => {
     charger();
   }, [charger]);
+
+  useEffect(() => {
+    getDashboard()
+      .then((res) => {
+        setData(res.data);
+        console.log("Dashboard data:", res.data);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
   // Remettre à la page 1 quand les filtres changent
   const setFiltersAndReset = (updater) => {
@@ -248,10 +260,11 @@ export default function ListeActifs() {
   };
 
   const stats = {
-    total: actifs.length,
-    actif: actifs.filter((a) => a.statut === "actif").length,
-    panne: actifs.filter((a) => a.statut === "en_panne").length,
-    maint: actifs.filter((a) => a.statut === "en_maintenance").length,
+    total: data?.total || 0,
+    actif: data?.par_statut?.find((s) => s.statut === "actif")?.nb || 0,
+    panne: data?.par_statut?.find((s) => s.statut === "en_panne")?.nb || 0,
+    maint:
+      data?.par_statut?.find((s) => s.statut === "en_maintenance")?.nb || 0,
   };
 
   return (
@@ -505,16 +518,18 @@ export default function ListeActifs() {
                           className="act-btn"
                           title="Modifier"
                           disabled={actionLoading}
-                          onClick={() =>
-                            navigate(`/actifs/${actif.id}/modifier`)
-                          }>
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/actifs/${actif.id}/modifier`);
+                          }}>
                           <Pencil size={14} />
                         </button>
                         <button
                           className="act-btn"
                           title="Changer statut"
                           disabled={actionLoading}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setModalStatut(actif);
                             setNouveauStatut(actif.statut);
                             setMotif("");
@@ -525,7 +540,10 @@ export default function ListeActifs() {
                           className="act-btn"
                           title="Supprimer"
                           disabled={actionLoading}
-                          onClick={() => handleDelete(actif.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(actif.id);
+                          }}
                           style={{ color: "var(--status-red-text)" }}>
                           <Trash2 size={14} />
                         </button>

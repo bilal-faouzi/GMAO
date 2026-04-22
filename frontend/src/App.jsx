@@ -3,6 +3,7 @@ import Layout from "@/components/layout/Layout";
 import Login from "@/pages/auth/Login";
 import Dashboard from "@/pages/dashboard/Dashboard";
 import Utilisateurs from "@/pages/securite/Utilisateurs";
+import UserDetail from "@/pages/securite/UserDetail";
 import Roles from "@/pages/securite/Roles";
 import Permissions from "@/pages/securite/Permissions";
 import Sessions from "@/pages/securite/Sessions";
@@ -31,18 +32,19 @@ import ListeSousTraitants from "@/pages/soustraitants/ListeSousTraitants";
 import DetailSousTraitant from "@/pages/soustraitants/DetailSousTraitant";
 import FormulaireSousTraitant from "@/pages/soustraitants/FormulaireSousTraitant";
 import DashboardSousTraitants from "@/pages/soustraitants/DashboardSousTraitants";
-import ListeDemandes      from '@/pages/ordres/ListeDemandes'
-import FormulaireDemande  from '@/pages/ordres/FormulaireDemande'
-import DashboardOTs       from '@/pages/ordres/DashboardOTs'
-import ListeOTs           from '@/pages/ordres/ListeOTs'
-import DetailOT           from '@/pages/ordres/DetailOT'
-import FormulaireOT       from '@/pages/ordres/FormulaireOT'
-import CompteRenduOT      from '@/pages/ordres/CompteRenduOT'
-import InterfaceMagasinier from '@/pages/magasin/InterfaceMagasinier'
-import DeclarerPanne from '@/pages/ordres/DeclarerPanne'
-import GestionOTs from '@/pages/ordres/GestionOTs'
+import ListeDemandes from "@/pages/ordres/ListeDemandes";
+import FormulaireDemande from "@/pages/ordres/FormulaireDemande";
+import DashboardOTs from "@/pages/ordres/DashboardOTs";
+import ListeOTs from "@/pages/ordres/ListeOTs";
+import DetailOT from "@/pages/ordres/DetailOT";
+import FormulaireOT from "@/pages/ordres/FormulaireOT";
+import CompteRenduOT from "@/pages/ordres/CompteRenduOT";
+import InterfaceMagasinier from "@/pages/magasin/InterfaceMagasinier";
+import DeclarerPanne from "@/pages/ordres/DeclarerPanne";
+import GestionOTs from "@/pages/ordres/GestionOTs";
 import { TooltipProvider } from "./components/ui/tooltip";
-import ValidationOperateur from '@/pages/ordres/ValidationOperateur'
+import ValidationOperateur from "@/pages/ordres/ValidationOperateur";
+import ActifUnite from "./pages/actifs/actifunite";
 
 export default function App() {
   return (
@@ -55,6 +57,7 @@ export default function App() {
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="utilisateurs" element={<Utilisateurs />} />
+              <Route path="utilisateurs/:id" element={<UserDetail />} />
               <Route path="roles" element={<Roles />} />
               <Route path="permissions" element={<Permissions />} />
               <Route path="sessions" element={<Sessions />} />
@@ -77,6 +80,7 @@ export default function App() {
                 element={<ArborescenceActifs />}
               />
               <Route path="actifs-racines" element={<ActifsRacines />} />
+              <Route path="actifs/unite" element={<ActifUnite />} />
 
               {/* ── Routes dynamiques APRÈS ── */}
               <Route path="actifs/:id" element={<DetailActif />} />
@@ -116,24 +120,36 @@ export default function App() {
 
               {/* ── Interventions (Ordres) — statiques AVANT :id ── */}
               <Route path="ordres/demandes" element={<ListeDemandes />} />
-              <Route path="ordres/demandes/nouveau" element={<FormulaireDemande />} />
+              <Route
+                path="ordres/demandes/nouveau"
+                element={<FormulaireDemande />}
+              />
               <Route path="ordres/ots/dashboard" element={<DashboardOTs />} />
               <Route path="ordres/ots/nouveau" element={<FormulaireOT />} />
               <Route path="ordres/ots" element={<ListeOTs />} />
               {/* ── Interventions — dynamiques APRÈS ── */}
               <Route path="ordres/ots/:id" element={<DetailOT />} />
-              <Route path="ordres/ots/:id/modifier" element={<FormulaireOT />} />
-              <Route path="ordres/ots/:id/rapport" element={<CompteRenduOT />} />
+              <Route
+                path="ordres/ots/:id/modifier"
+                element={<FormulaireOT />}
+              />
+              <Route
+                path="ordres/ots/:id/rapport"
+                element={<CompteRenduOT />}
+              />
 
               {/* ── Interventions supplémentaires ── */}
               <Route path="ordres/declarer" element={<DeclarerPanne />} />
               <Route path="ordres/gestion" element={<GestionOTs />} />
-              <Route path="ordres/validation" element={<ValidationOperateur />} />
-              
+              <Route
+                path="ordres/validation"
+                element={<ValidationOperateur />}
+              />
+
               {/* ── Magasin supplémentaire ── */}
               <Route path="magasin/sortie" element={<InterfaceMagasinier />} />
             </Route>
-            
+
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </BrowserRouter>

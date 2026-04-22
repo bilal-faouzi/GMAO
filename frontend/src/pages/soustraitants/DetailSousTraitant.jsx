@@ -8,7 +8,25 @@ import {
   retirerSpecialite,
 } from "../../services/soustraitantService";
 import { getSpecialites } from "../../services/organisationService";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Pencil,
+  Trash2,
+  Phone,
+  Mail,
+  UserRound,
+  Wrench,
+  Building2,
+  CreditCard,
+  ShieldCheck,
+  Tags,
+  Plus,
+  X,
+  CalendarDays,
+  FileText,
+  MapPin,
+  Hash,
+} from "lucide-react";
 
 const STATUT_CONFIG = {
   actif: {
@@ -105,31 +123,68 @@ export default function DetailSousTraitant() {
   if (loading)
     return (
       <div className="page">
-        <div className="hdr">
-          <div className="hdr-l">
-            <h1>Chargement…</h1>
-          </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            marginBottom: 8,
+          }}>
+          <div
+            className="skeleton"
+            style={{ width: 32, height: 32, borderRadius: "var(--r-sm)" }}
+          />
+          <div
+            className="skeleton"
+            style={{ width: 200, height: 22, borderRadius: "var(--r-sm)" }}
+          />
+          <div
+            className="skeleton"
+            style={{ width: 64, height: 22, borderRadius: 20 }}
+          />
         </div>
         <div
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          {[0, 1].map((i) => (
+          {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
               style={{
                 background: "var(--bg-surface)",
                 border: "1px solid var(--border-subtle)",
                 borderRadius: "var(--r)",
-                padding: 20,
+                padding: 22,
               }}>
               <div
                 className="skeleton"
-                style={{ width: "40%", height: 14, marginBottom: 16 }}
+                style={{
+                  width: "35%",
+                  height: 12,
+                  marginBottom: 18,
+                  borderRadius: 4,
+                }}
               />
               <div
                 className="skeleton"
-                style={{ width: "100%", height: 12, marginBottom: 8 }}
+                style={{
+                  width: "100%",
+                  height: 11,
+                  marginBottom: 12,
+                  borderRadius: 4,
+                }}
               />
-              <div className="skeleton" style={{ width: "80%", height: 12 }} />
+              <div
+                className="skeleton"
+                style={{
+                  width: "70%",
+                  height: 11,
+                  marginBottom: 12,
+                  borderRadius: 4,
+                }}
+              />
+              <div
+                className="skeleton"
+                style={{ width: "85%", height: 11, borderRadius: 4 }}
+              />
             </div>
           ))}
         </div>
@@ -163,20 +218,52 @@ export default function DetailSousTraitant() {
   return (
     <div className="page">
       {/* Header */}
-      <div className="hdr">
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingBottom: 18,
+          borderBottom: "1px solid var(--border-subtle)",
+          marginBottom: 4,
+        }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <button
-            className="btn btn-ghost"
-            onClick={() => navigate("/soustraitants")}>
-            <ArrowLeft size={14} /> Retour
+            className="btn btn-ghost btn-icon"
+            onClick={() => navigate("/soustraitants")}
+            title="Retour">
+            <ArrowLeft size={16} />
           </button>
-          <h1 style={{ fontSize: 22, fontWeight: 600 }}>{st.raisonSociale}</h1>
-          <span
-            className="badge"
-            style={{ background: cfg.bg, color: cfg.text }}>
-            <span className="bdot" style={{ background: cfg.dot }} />
-            {st.statut}
-          </span>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <h1
+                style={{
+                  fontSize: 21,
+                  fontWeight: 700,
+                  letterSpacing: "-0.3px",
+                  color: "var(--text-primary)",
+                }}>
+                {st.raisonSociale}
+              </h1>
+              <span
+                className="badge"
+                style={{ background: cfg.bg, color: cfg.text }}>
+                <span className="bdot" style={{ background: cfg.dot }} />
+                {st.statut}
+              </span>
+            </div>
+            {st.ICE && (
+              <span
+                style={{
+                  fontSize: 12,
+                  color: "var(--text-muted)",
+                  marginTop: 2,
+                  display: "block",
+                }}>
+                ICE: {st.ICE}
+              </span>
+            )}
+          </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button
@@ -198,42 +285,74 @@ export default function DetailSousTraitant() {
       {/* Infos */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         {/* Col gauche - Identification */}
-        <div className="tbl-card" style={{ padding: "18px 22px" }}>
+        <div className="tbl-card" style={{ padding: "20px 22px" }}>
           <div
-            className="tbl-head"
             style={{
-              padding: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
               paddingBottom: 14,
               borderBottom: "1px solid var(--border-subtle)",
             }}>
-            <span className="tbl-title">Identification</span>
+            <Building2
+              size={15}
+              style={{ color: "var(--color-primary)", marginBottom: 4 }}
+            />
+            <span className="tbl-title" style={{ margin: 0 }}>
+              Identification
+            </span>
           </div>
           <div
-            style={{ display: "flex", flexDirection: "column", marginTop: 12 }}>
+            style={{ display: "flex", flexDirection: "column", marginTop: 6 }}>
             {[
-              ["Raison sociale", st.raisonSociale],
-              ["ICE / RC", st.ICE || "—"],
-              ["Adresse", st.adresse || "—"],
-              ["Numéro de contrat", st.numeroContrat || "—"],
-              [
-                "Date de création",
-                st.dateCreation
+              {
+                icon: Building2,
+                label: "Raison sociale",
+                value: st.raisonSociale,
+              },
+              { icon: Hash, label: "ICE / RC", value: st.ICE || "—" },
+              { icon: MapPin, label: "Adresse", value: st.adresse || "—" },
+              {
+                icon: FileText,
+                label: "N° de contrat",
+                value: st.numeroContrat || "—",
+              },
+              {
+                icon: CalendarDays,
+                label: "Date de création",
+                value: st.dateCreation
                   ? new Date(st.dateCreation).toLocaleDateString("fr-FR")
                   : "—",
-              ],
-            ].map(([l, v]) => (
+              },
+            ].map(({ icon: Icon, label, value }) => (
               <div
-                key={l}
+                key={label}
                 style={{
                   display: "flex",
+                  alignItems: "center",
                   justifyContent: "space-between",
                   fontSize: 13,
-                  padding: "8px 0",
+                  padding: "10px 0",
                   borderBottom: "1px solid var(--border-subtle)",
                 }}>
-                <span style={{ color: "var(--text-muted)" }}>{l}</span>
-                <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>
-                  {v}
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Icon
+                    size={13}
+                    style={{ color: "var(--text-muted)", flexShrink: 0 }}
+                  />
+                  <span style={{ color: "var(--text-muted)" }}>{label}</span>
+                </div>
+                <span
+                  style={{
+                    color:
+                      value === "—"
+                        ? "var(--text-muted)"
+                        : "var(--text-primary)",
+                    fontWeight: 500,
+                    textAlign: "right",
+                    maxWidth: "55%",
+                  }}>
+                  {value}
                 </span>
               </div>
             ))}
@@ -241,163 +360,433 @@ export default function DetailSousTraitant() {
         </div>
 
         {/* Col droite - Contacts */}
-        <div className="tbl-card" style={{ padding: "18px 22px" }}>
+        <div className="tbl-card" style={{ padding: "20px 22px" }}>
           <div
-            className="tbl-head"
             style={{
-              padding: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
               paddingBottom: 14,
               borderBottom: "1px solid var(--border-subtle)",
             }}>
-            <span className="tbl-title">Contacts</span>
+            <Phone
+              size={15}
+              style={{ color: "var(--status-cyan-dot)", marginBottom: 4 }}
+            />
+            <span className="tbl-title" style={{ margin: 0 }}>
+              Contacts
+            </span>
           </div>
           <div
-            style={{ display: "flex", flexDirection: "column", marginTop: 12 }}>
-            {[
-              ["Contact principal — Nom", st.contactPrincipalNom || "—"],
-              ["Contact principal — Tél", st.contactPrincipalTel || "—"],
-              ["Contact principal — Email", st.contactPrincipalEmail || "—"],
-              ["Contact technique — Nom", st.contactTechniqueNom || "—"],
-              ["Contact technique — Tél", st.contactTechniqueTel || "—"],
-              ["Contact technique — Email", st.contactTechniqueEmail || "—"],
-            ].map(([l, v]) => (
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+              marginTop: 14,
+            }}>
+            {/* Contact Principal */}
+            <div
+              style={{
+                borderLeft: "3px solid var(--color-primary)",
+                borderRadius: "var(--r-sm)",
+                background: "var(--bg-elevated)",
+                padding: "14px 16px",
+              }}>
               <div
-                key={l}
                 style={{
                   display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: 13,
-                  padding: "8px 0",
-                  borderBottom: "1px solid var(--border-subtle)",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 12,
                 }}>
-                <span style={{ color: "var(--text-muted)" }}>{l}</span>
-                <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>
-                  {v}
+                <UserRound
+                  size={15}
+                  style={{ color: "var(--color-primary)" }}
+                />
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: ".06em",
+                    color: "var(--color-primary)",
+                  }}>
+                  Contact principal
                 </span>
               </div>
-            ))}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  paddingLeft: 2,
+                }}>
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "var(--text-primary)",
+                  }}>
+                  {st.contactPrincipalNom || "Non renseigné"}
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    fontSize: 13,
+                  }}>
+                  <Phone
+                    size={13}
+                    style={{ color: "var(--text-muted)", flexShrink: 0 }}
+                  />
+                  <span
+                    style={{
+                      color: st.contactPrincipalTel
+                        ? "var(--text-secondary)"
+                        : "var(--text-muted)",
+                    }}>
+                    {st.contactPrincipalTel || "—"}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    fontSize: 13,
+                  }}>
+                  <Mail
+                    size={13}
+                    style={{ color: "var(--text-muted)", flexShrink: 0 }}
+                  />
+                  <span
+                    style={{
+                      color: st.contactPrincipalEmail
+                        ? "var(--text-secondary)"
+                        : "var(--text-muted)",
+                    }}>
+                    {st.contactPrincipalEmail || "—"}
+                  </span>
+                </div>
+              </div>
+            </div>
+            {/* Contact Technique */}
+            <div
+              style={{
+                borderLeft: "3px solid var(--status-orange-dot)",
+                borderRadius: "var(--r-sm)",
+                background: "var(--bg-elevated)",
+                padding: "14px 16px",
+              }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 12,
+                }}>
+                <Wrench
+                  size={14}
+                  style={{ color: "var(--status-orange-dot)" }}
+                />
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: ".06em",
+                    color: "var(--status-orange-dot)",
+                  }}>
+                  Contact technique
+                </span>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  paddingLeft: 2,
+                }}>
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "var(--text-primary)",
+                  }}>
+                  {st.contactTechniqueNom || "Non renseigné"}
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    fontSize: 13,
+                  }}>
+                  <Phone
+                    size={13}
+                    style={{ color: "var(--text-muted)", flexShrink: 0 }}
+                  />
+                  <span
+                    style={{
+                      color: st.contactTechniqueTel
+                        ? "var(--text-secondary)"
+                        : "var(--text-muted)",
+                    }}>
+                    {st.contactTechniqueTel || "—"}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    fontSize: 13,
+                  }}>
+                  <Mail
+                    size={13}
+                    style={{ color: "var(--text-muted)", flexShrink: 0 }}
+                  />
+                  <span
+                    style={{
+                      color: st.contactTechniqueEmail
+                        ? "var(--text-secondary)"
+                        : "var(--text-muted)",
+                    }}>
+                    {st.contactTechniqueEmail || "—"}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Tarifs & Habilitations */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        <div className="tbl-card" style={{ padding: "18px 22px" }}>
+        <div className="tbl-card" style={{ padding: "20px 22px" }}>
           <div
-            className="tbl-head"
             style={{
-              padding: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
               paddingBottom: 14,
               borderBottom: "1px solid var(--border-subtle)",
             }}>
-            <span className="tbl-title">Tarifs</span>
+            <CreditCard
+              size={15}
+              style={{ color: "var(--status-green-dot)", marginBottom: 4 }}
+            />
+            <span className="tbl-title" style={{ margin: 0 }}>
+              Tarifs
+            </span>
           </div>
           <div
-            style={{ display: "flex", flexDirection: "column", marginTop: 12 }}>
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 0,
+              marginTop: 6,
+            }}>
             {[
-              [
-                "Tarif horaire normal",
-                st.tarifHoraireNormal ? `${st.tarifHoraireNormal} MAD/h` : "—",
-              ],
-              [
-                "Tarif semaine/nuit",
-                st.tarifHoraireSemaine
+              {
+                label: "Tarif horaire normal",
+                value: st.tarifHoraireNormal
+                  ? `${st.tarifHoraireNormal} MAD/h`
+                  : "—",
+              },
+              {
+                label: "Tarif semaine/nuit",
+                value: st.tarifHoraireSemaine
                   ? `${st.tarifHoraireSemaine} MAD/h`
                   : "—",
-              ],
-            ].map(([l, v]) => (
+              },
+            ].map(({ label, value }) => (
               <div
-                key={l}
+                key={label}
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
+                  alignItems: "center",
                   fontSize: 13,
-                  padding: "8px 0",
+                  padding: "10px 0",
                   borderBottom: "1px solid var(--border-subtle)",
                 }}>
-                <span style={{ color: "var(--text-muted)" }}>{l}</span>
-                <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>
-                  {v}
+                <span style={{ color: "var(--text-muted)" }}>{label}</span>
+                <span
+                  style={{
+                    color:
+                      value === "—"
+                        ? "var(--text-muted)"
+                        : "var(--status-green-text)",
+                    fontWeight: 600,
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 13,
+                  }}>
+                  {value}
                 </span>
               </div>
             ))}
           </div>
         </div>
-        <div className="tbl-card" style={{ padding: "18px 22px" }}>
+        <div className="tbl-card" style={{ padding: "20px 22px" }}>
           <div
-            className="tbl-head"
             style={{
-              padding: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
               paddingBottom: 14,
               borderBottom: "1px solid var(--border-subtle)",
             }}>
-            <span className="tbl-title">Habilitations</span>
+            <ShieldCheck
+              size={15}
+              style={{ color: "var(--status-blue-dot)", marginBottom: 4 }}
+            />
+            <span className="tbl-title" style={{ margin: 0 }}>
+              Habilitations
+            </span>
           </div>
-          <div style={{ marginTop: 12 }}>
-            <p
-              style={{
-                fontSize: 13,
-                color: st.habilitations
-                  ? "var(--text-primary)"
-                  : "var(--text-muted)",
-                whiteSpace: "pre-wrap",
-              }}>
-              {st.habilitations || "Aucune habilitation renseignée"}
-            </p>
+          <div style={{ marginTop: 14 }}>
+            {st.habilitations ? (
+              <p
+                style={{
+                  fontSize: 13,
+                  color: "var(--text-primary)",
+                  whiteSpace: "pre-wrap",
+                  lineHeight: 1.7,
+                  padding: "10px 14px",
+                  background: "var(--bg-elevated)",
+                  borderRadius: "var(--r-sm)",
+                  borderLeft: "3px solid var(--status-blue-dot)",
+                }}>
+                {st.habilitations}
+              </p>
+            ) : (
+              <p
+                style={{
+                  fontSize: 13,
+                  color: "var(--text-muted)",
+                  fontStyle: "italic",
+                }}>
+                Aucune habilitation renseignée
+              </p>
+            )}
           </div>
         </div>
       </div>
 
       {/* Spécialités assignées */}
-      <div className="tbl-card" style={{ padding: "18px 22px" }}>
+      <div className="tbl-card" style={{ padding: "20px 22px" }}>
         <div
-          className="tbl-head"
           style={{
-            padding: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
             paddingBottom: 14,
             borderBottom: "1px solid var(--border-subtle)",
           }}>
-          <span className="tbl-title">
-            Spécialités assignées ({st.specialites?.length || 0})
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Tags
+              size={15}
+              style={{ color: "var(--status-purple-dot)", marginBottom: 4 }}
+            />
+            <span className="tbl-title" style={{ margin: 0 }}>
+              Spécialités assignées
+            </span>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minWidth: 20,
+                height: 20,
+                padding: "0 6px",
+                borderRadius: 10,
+                background: "var(--status-purple-bg)",
+                color: "var(--status-purple-text)",
+                fontSize: 11,
+                fontWeight: 700,
+                fontFamily: "var(--font-mono)",
+                marginBottom: 2,
+              }}>
+              {st.specialites?.length || 0}
+            </span>
+          </div>
         </div>
         {!st.specialites || st.specialites.length === 0 ? (
-          <p className="empty">Aucune spécialité assignée</p>
+          <div
+            style={{
+              textAlign: "center",
+              padding: "24px 0 12px",
+              color: "var(--text-muted)",
+              fontSize: 13,
+            }}>
+            <Tags
+              size={28}
+              style={{ color: "var(--border-subtle)", marginBottom: 8 }}
+            />
+            <p>Aucune spécialité assignée</p>
+          </div>
         ) : (
           <div
             style={{
               display: "flex",
-              flexDirection: "column",
-              gap: 6,
-              marginTop: 12,
+              flexWrap: "wrap",
+              gap: 8,
+              marginTop: 14,
             }}>
             {st.specialites.map((spec) => (
               <div
                 key={spec.id}
                 style={{
-                  display: "flex",
+                  display: "inline-flex",
                   alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "10px 12px",
-                  borderRadius: "var(--r-sm)",
-                  background: "var(--bg-elevated)",
+                  gap: 8,
+                  padding: "7px 10px 7px 12px",
+                  borderRadius: 20,
+                  background: "var(--status-purple-bg)",
+                  border: "1px solid transparent",
+                  transition: "all .15s",
                 }}>
-                <div>
-                  <span
-                    className="code-mono"
-                    style={{ fontSize: 12, marginRight: 8 }}>
-                    {spec.code}
-                  </span>
-                  <span style={{ fontSize: 13, color: "var(--text-primary)" }}>
-                    {spec.libelle}
-                  </span>
-                </div>
+                <span
+                  className="code-mono"
+                  style={{ fontSize: 11, color: "var(--status-purple-text)" }}>
+                  {spec.code}
+                </span>
+                <span
+                  style={{
+                    fontSize: 12.5,
+                    color: "var(--text-primary)",
+                    fontWeight: 500,
+                  }}>
+                  {spec.libelle}
+                </span>
                 <button
-                  className="btn btn-ghost btn-icon"
                   title="Retirer"
                   onClick={() => handleRetirerSpec(spec.id)}
-                  style={{ color: "var(--status-red-text)" }}>
-                  <Trash2 size={14} />
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 18,
+                    height: 18,
+                    borderRadius: "50%",
+                    border: "none",
+                    background: "transparent",
+                    color: "var(--text-muted)",
+                    cursor: "pointer",
+                    padding: 0,
+                    transition: "all .15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "var(--status-red-bg)";
+                    e.currentTarget.style.color = "var(--status-red-text)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = "var(--text-muted)";
+                  }}>
+                  <X size={12} />
                 </button>
               </div>
             ))}
@@ -408,7 +797,9 @@ export default function DetailSousTraitant() {
           style={{
             display: "flex",
             gap: 8,
-            marginTop: 14,
+            marginTop: 16,
+            paddingTop: 14,
+            borderTop: "1px solid var(--border-subtle)",
             alignItems: "center",
           }}>
           <select
@@ -427,7 +818,7 @@ export default function DetailSousTraitant() {
             className="btn btn-primary"
             disabled={!selectedSpec}
             onClick={handleAssignerSpec}>
-            Assigner
+            <Plus size={14} /> Assigner
           </button>
         </div>
       </div>

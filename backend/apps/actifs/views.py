@@ -31,13 +31,37 @@ class ActifViewSet(viewsets.ModelViewSet):
     ordering_fields = ['code', 'dateAcquisition', 'statut']
 
     def get_queryset(self):
+        # On commence avec le queryset de base (optimisé avec select_related)
         qs = super().get_queryset()
+        
+        # 1. Filtre Parent/Enfant (existant)
         is_parent = self.request.query_params.get('is_parent')
         if is_parent is not None:
             if is_parent.lower() in ('true', '1'):
                 qs = qs.filter(idParent__isnull=True)
             elif is_parent.lower() in ('false', '0'):
                 qs = qs.filter(idParent__isnull=False)
+
+        # 2. Filtre par Unité de l'utilisateur (my_unite)
+        my_unite = self.request.query_params.get('my_unite')
+        if my_unite is not None and my_unite.lower() in ('true', '1'):
+            # On cherche l'unité principale dans la table AppartenanceOrganisationnelle
+            # pour l'utilisateur qui fait la requête (self.request.user)
+            try:
+                appartenance_principale = self.request.user.appartenances.get(
+                    estPrincipale=True
+                )
+                user_unite = appartenance_principale.unite
+                
+                if user_unite:
+                    qs = qs.filter(idUnite=user_unite)
+                else:
+                    # L'utilisateur a une appartenance principale mais pas d'unité rattachée
+                    qs = qs.none()
+            except Exception:
+                # Si l'utilisateur n'a pas d'appartenance principale définie
+                qs = qs.none()
+
         return qs
 
     @action(detail=True, methods=['post'])

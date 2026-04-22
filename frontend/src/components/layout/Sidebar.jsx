@@ -26,11 +26,12 @@ import {
   Store,
   Hammer,
   ClipboardCheck,
-   FileText,
-   ArrowDownToLine,
-   AlertTriangle,
-   Settings2,
-   CheckCircle2,
+  FileText,
+  ArrowDownToLine,
+  AlertTriangle,
+  Settings2,
+  CheckCircle2,
+  FactoryIcon,
 } from "lucide-react";
 import useAuthStore from "@/store/authStore";
 import api from "@/services/api";
@@ -93,6 +94,7 @@ const navSections = [
         end: true,
       },
       { to: "/actifs/arborescence", icon: GitBranch, label: "Arborescence" },
+      { to: "/actifs/unite", icon: FactoryIcon, label: "Unités" },
     ],
   },
   {
@@ -101,31 +103,63 @@ const navSections = [
     items: [
       { to: "/magasin/dashboard", icon: BarChart2, label: "Dashboard Magasin" },
       { to: "/magasin", icon: Package2, label: "Catalogue pièces", end: true },
-      { to: "/magasin/sortie",     icon: ArrowDownToLine,  label: "Sortie pièces",     end: true },
+      {
+        to: "/magasin/sortie",
+        icon: ArrowDownToLine,
+        label: "Sortie pièces",
+        end: true,
+      },
     ],
   },
   {
     label: "Sous-Traitants",
     icon: Hammer,
     items: [
-      { to: "/soustraitants/dashboard", icon: ClipboardCheck, label: "Dashboard Sous-Traitants" },
-      { to: "/soustraitants", icon: Hammer, label: "Liste Sous-Traitants", end: true },
+      {
+        to: "/soustraitants/dashboard",
+        icon: ClipboardCheck,
+        label: "Dashboard Sous-Traitants",
+      },
+      {
+        to: "/soustraitants",
+        icon: Hammer,
+        label: "Liste Sous-Traitants",
+        end: true,
+      },
     ],
   },
-{
-  label: "Interventions",
-  icon: ClipboardCheck,
-  items: [
-    { to: "/ordres/demandes",       icon: FileText,       label: "Demandes (DI)"  },
-    { to: "/ordres/ots",            icon: ClipboardCheck, label: "Ordres (OT)",   end: true },
-    { to: "/ordres/ots/dashboard",  icon: BarChart2,      label: "Dashboard OT"   },
-    { to: '/ordres/declarer', icon: AlertTriangle, label: 'Déclarer une panne', end: true },
-    { to: '/ordres/gestion', icon: Settings2, label: 'Gestion OT (Resp.)', end: true },
-    { to: '/ordres/validation', icon: CheckCircle2, label: 'Valider interventions', end: true },
-  ],
-},
-
-
+  {
+    label: "Interventions",
+    icon: ClipboardCheck,
+    items: [
+      { to: "/ordres/demandes", icon: FileText, label: "Demandes (DI)" },
+      {
+        to: "/ordres/ots",
+        icon: ClipboardCheck,
+        label: "Ordres (OT)",
+        end: true,
+      },
+      { to: "/ordres/ots/dashboard", icon: BarChart2, label: "Dashboard OT" },
+      {
+        to: "/ordres/declarer",
+        icon: AlertTriangle,
+        label: "Déclarer une panne",
+        end: true,
+      },
+      {
+        to: "/ordres/gestion",
+        icon: Settings2,
+        label: "Gestion OT (Resp.)",
+        end: true,
+      },
+      {
+        to: "/ordres/validation",
+        icon: CheckCircle2,
+        label: "Valider interventions",
+        end: true,
+      },
+    ],
+  },
 ];
 
 export default function Sidebar() {
@@ -139,9 +173,7 @@ export default function Sidebar() {
       if (
         s.label &&
         s.items.some((item) =>
-          item.end
-            ? pathname === item.to
-            : pathname.startsWith(item.to),
+          item.end ? pathname === item.to : pathname.startsWith(item.to),
         )
       )
         acc.add(i);

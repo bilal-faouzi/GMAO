@@ -428,7 +428,7 @@ export default function Appartenances() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 flex items-center justify-center gap-2">
                     <Button
                       onClick={() => handleDelete(a.id)}
                       variant="ghost"

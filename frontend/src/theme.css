@@ -81,6 +81,7 @@
   --shadow-soft: 0 18px 40px rgba(25, 40, 80, 0.10);
   --shadow-card: 0 4px 16px rgba(25, 40, 80, 0.07), 0 1px 3px rgba(25, 40, 80, 0.04);
   --shadow-pop:  0 14px 32px rgba(25, 40, 80, 0.14);
+  --pop-shadow: rgba(0, 0, 0, 0.07) 0px 1px 1px, rgba(0, 0, 0, 0.07) 0px 2px 2px, rgba(0, 0, 0, 0.07) 0px 4px 4px, rgba(0, 0, 0, 0.07) 0px 8px 8px, rgba(0, 0, 0, 0.07) 0px 16px 16px;
 
   /* ── Status / badge — couleurs lisibles sur fond clair ── */
   --status-green-bg:   rgba(22, 163, 74, 0.10);
@@ -208,6 +209,7 @@
   --shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.35);
   --shadow-card: 0 10px 24px rgba(0, 0, 0, 0.30);
   --shadow-pop:  0 14px 32px rgba(0, 0, 0, 0.40);
+  --pop-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
 }
 
 /* ──────────────────────────────────────────────
