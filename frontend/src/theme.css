@@ -81,7 +81,6 @@
   --shadow-soft: 0 18px 40px rgba(25, 40, 80, 0.10);
   --shadow-card: 0 4px 16px rgba(25, 40, 80, 0.07), 0 1px 3px rgba(25, 40, 80, 0.04);
   --shadow-pop:  0 14px 32px rgba(25, 40, 80, 0.14);
-  --pop-shadow: rgba(0, 0, 0, 0.07) 0px 1px 1px, rgba(0, 0, 0, 0.07) 0px 2px 2px, rgba(0, 0, 0, 0.07) 0px 4px 4px, rgba(0, 0, 0, 0.07) 0px 8px 8px, rgba(0, 0, 0, 0.07) 0px 16px 16px;
 
   /* ── Status / badge — couleurs lisibles sur fond clair ── */
   --status-green-bg:   rgba(22, 163, 74, 0.10);
@@ -242,7 +241,9 @@ img, picture, video, canvas, svg { display: block; max-width: 100%; }
 button, input, select, textarea { font: inherit; }
 ul { list-style: none; }
 a { color: inherit; text-decoration: none; }
-
+.pop-shadow {
+  box-shadow: var(--pop-shadow);
+}
 /* ──────────────────────────────────────────────
    5. SCROLLBAR
    ────────────────────────────────────────────── */

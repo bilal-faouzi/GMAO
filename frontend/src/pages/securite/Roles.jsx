@@ -460,7 +460,8 @@ export default function Roles() {
                       </div>
                       <Button
                         onClick={() => handleRemovePermission(p.id)}
-                        className="text-text-muted hover:text-danger transition-colors text-lg leading-none">
+                        className="text-text-muted hover:text-danger transition-colors text-lg leading-none"
+                        variant="ghost">
                         ×
                       </Button>
                     </div>

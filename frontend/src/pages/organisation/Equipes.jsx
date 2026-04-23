@@ -8,7 +8,19 @@ import {
   UserMinus,
   Check,
   ChevronsUpDown,
+  AlertTriangle,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import {
   getEquipes,
   createEquipe,
@@ -139,7 +151,6 @@ function MembresPanel({ equipe, onClose }) {
   }
 
   async function handleRemove(membreId) {
-    if (!confirm("Retirer ce membre ?")) return;
     await removeMembre(membreId);
     fetchMembres();
   }
@@ -171,12 +182,36 @@ function MembresPanel({ equipe, onClose }) {
                 <p className="text-sm text-text">{m.utilisateur_nom}</p>
                 <RoleBadge role={m.niveauRole} />
               </div>
-              <Button
-                onClick={() => handleRemove(m.id)}
-                variant="ghost"
-                className=" rounded hover:bg-red-100 dark:hover:bg-red-500/10 text-text-muted hover:text-danger transition-colors">
-                <UserMinus size={14} />
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="rounded hover:bg-red-100 dark:hover:bg-red-500/10 text-text-muted hover:text-danger transition-colors">
+                    <UserMinus size={14} />
+                  </Button>
+                </AlertDialogTrigger>
+
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2">
+                      <AlertTriangle size={16} className="text-red-500" />
+                      Supprimer l’équipe
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Voulez-vous vraiment retirer ce membre de l’équipe ?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => handleRemove(m.id)}
+                      className="bg-red-600 hover:bg-red-700">
+                      Retirer
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           ))
         )}
@@ -462,7 +497,6 @@ export default function Equipes() {
   }
 
   async function handleDelete(equipe) {
-    if (!confirm(`Supprimer l'équipe "${equipe.libelle}" ?`)) return;
     await deleteEquipe(equipe.id);
     fetchAll();
   }
@@ -581,12 +615,41 @@ export default function Equipes() {
                         className="rounded hover:bg-hover text-text-secondary hover:text-text transition-colors">
                         <Pencil size={13} />
                       </Button>
-                      <Button
-                        onClick={() => handleDelete(eq)}
-                        variant="ghost"
-                        className="rounded hover:bg-red-100 dark:hover:bg-red-500/10 text-text-secondary hover:text-danger transition-colors">
-                        <Trash2 size={13} />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="rounded hover:bg-red-100 dark:hover:bg-red-500/10 text-text-secondary hover:text-danger transition-colors">
+                            <Trash2 size={13} />
+                          </Button>
+                        </AlertDialogTrigger>
+
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="flex items-center gap-2">
+                              <AlertTriangle
+                                size={16}
+                                className="text-red-500"
+                              />
+                              Supprimer l’équipe
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Cette action supprimera l’équipe{" "}
+                              <strong>{eq.libelle}</strong>. Cette action est
+                              irréversible.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(eq)}
+                              className="bg-red-600 hover:bg-red-700">
+                              Supprimer
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </td>
                 </tr>

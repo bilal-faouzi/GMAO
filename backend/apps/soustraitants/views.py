@@ -14,7 +14,7 @@ from rest_framework.response import Response
 
 from apps.securite.models import JournalAudit, UtilisateurRole
 from apps.securite.permissions  import IsSessionActive
-from apps.securite.views import get_client_ip
+from apps.securite.audit_utils import log_audit, get_client_ip
 from apps.organisation.models import Specialite
 
 from .models import SousTraitant, SousTraitantSpecialite
@@ -66,19 +66,6 @@ def bad_uuid_response():
     return Response(
         {'succes': False, 'erreur': 'UUID_INVALIDE', 'message': 'Identifiant UUID malformé'},
         status=status.HTTP_400_BAD_REQUEST,
-    )
-
-
-def log_audit(request, action_name, type_entite, id_entite, ancienne_valeur=None, nouvelle_valeur=None):
-    JournalAudit.objects.create(
-        id_utilisateur=request.user,
-        action=action_name,
-        module='SOUS_TRAITANCE',
-        type_entite=type_entite,
-        id_entite=id_entite,
-        ancienne_valeur=ancienne_valeur,
-        nouvelle_valeur=nouvelle_valeur,
-        adresse_ip=get_client_ip(request),
     )
 
 
@@ -242,7 +229,7 @@ class SousTraitantViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_409_CONFLICT,
             )
 
-        log_audit(request, 'SOUS_TRAITANT_CREE', 'SousTraitant', st.id,
+        log_audit(request, 'CREATE', 'SOUS_TRAITANCE', 'SousTraitant', st.id,
                   nouvelle_valeur=sous_traitant_to_dict(st))
 
         return Response(
@@ -376,12 +363,11 @@ class SousTraitantViewSet(viewsets.ModelViewSet):
                     'apres': nouvelle_valeur.get(key),
                 }
 
-        log_audit(request, 'SOUS_TRAITANT_MODIFIE', 'SousTraitant', st.id,
+        log_audit(request, 'UPDATE', 'SOUS_TRAITANCE', 'SousTraitant', st.id,
                   ancienne_valeur=ancienne_valeur,
                   nouvelle_valeur={'champs_modifies': champs_modifies})
 
-        response_data = {
-            'succes': True,
+        response_data = {            'succes': True,
             'data': SousTraitantSerializer(st).data,
             'message': 'Sous-traitant mis à jour avec succès',
         }
@@ -418,8 +404,15 @@ class SousTraitantViewSet(viewsets.ModelViewSet):
         SousTraitantSpecialite.objects.filter(idSousTraitant=st).delete()
         st.delete()
 
-        log_audit(request, 'SOUS_TRAITANT_SUPPRIME', 'SousTraitant', uuid.UUID(ancienne_valeur['id']),
-                  ancienne_valeur=ancienne_valeur)
+        log_audit(
+            request=request,
+            action_name='DELETE',
+            type_entite='SousTraitant',
+
+            module_name='SousTraitant',  # This matches the missing argument in the error
+            id_entite=st.id,
+            ancienne_valeur=ancienne_valeur
+        )
 
         return Response(
             {'succes': True, 'message': 'Sous-traitant supprimé avec succès'},
@@ -502,7 +495,7 @@ class SousTraitantViewSet(viewsets.ModelViewSet):
                         'message': f'Attention : ce sous-traitant est le seul prestataire actif pour la spécialité {spec.libelle}. Aucun sous-traitant de remplacement disponible.',
                     })
 
-        log_audit(request, 'SOUS_TRAITANT_STATUT_CHANGE', 'SousTraitant', st.id,
+        log_audit(request, 'STATUT_CHANGE', 'SousTraitant', st.id,
                   ancienne_valeur={'statut': ancien_statut},
                   nouvelle_valeur={
                       'ancienStatut': ancien_statut,
@@ -594,7 +587,7 @@ class SousTraitantViewSet(viewsets.ModelViewSet):
             idSpecialite_id=id_specialite,
         )
 
-        log_audit(request, 'SOUS_TRAITANT_SPECIALITE_AJOUTEE', 'SousTraitantSpecialite', lien.id,
+        log_audit(request, 'SPECIALITE_AJOUTEE', 'SousTraitantSpecialite', lien.id,
                   nouvelle_valeur={
                       'idSousTraitant': str(st.id),
                       'idSpecialite': str(id_specialite),

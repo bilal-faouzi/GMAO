@@ -1,6 +1,17 @@
 import { useState, useEffect } from "react";
 import { Plus, Trash2, Star, Loader2, ChevronRight } from "lucide-react";
 import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+import {
   getAppartenances,
   createAppartenance,
   deleteAppartenance,
@@ -166,7 +177,6 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
 
   // ── Delete ────────────────────────────────────────────────────
   const handleDelete = async (id) => {
-    if (!confirm("Supprimer cette appartenance ?")) return;
     setPendingDelete(id);
     try {
       await deleteAppartenance(id);
@@ -310,22 +320,50 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
               </div>
 
               {/* Delete */}
-              <Button
-                variant="ghost"
-                disabled={pendingDelete === a.id}
-                onClick={() => handleDelete(a.id)}
-                title="Supprimer cette appartenance"
-                style={{ padding: "4px 8px", height: "auto", flexShrink: 0 }}
-                className="text-text-muted hover:text-danger transition-colors ml-2">
-                {pendingDelete === a.id ? (
-                  <Loader2
-                    size={13}
-                    style={{ animation: "spin 1s linear infinite" }}
-                  />
-                ) : (
-                  <Trash2 size={13} />
-                )}
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    disabled={pendingDelete === a.id}
+                    title="Supprimer cette appartenance"
+                    style={{
+                      padding: "4px 8px",
+                      height: "auto",
+                      flexShrink: 0,
+                    }}
+                    className="text-text-muted hover:text-danger transition-colors ml-2">
+                    {pendingDelete === a.id ? (
+                      <Loader2
+                        size={13}
+                        style={{ animation: "spin 1s linear infinite" }}
+                      />
+                    ) : (
+                      <Trash2 size={13} />
+                    )}
+                  </Button>
+                </AlertDialogTrigger>
+
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Supprimer l’appartenance
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Cette action va retirer l’utilisateur de cette structure
+                      organisationnelle. Voulez-vous continuer ?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => handleDelete(a.id)}
+                      className="bg-red-600 hover:bg-red-700">
+                      Supprimer
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           ))}
         </div>

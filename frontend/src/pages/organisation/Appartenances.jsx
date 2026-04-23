@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link2, Plus, Trash2, Star } from "lucide-react";
+import { Link2, Plus, Trash2, Star, AlertTriangle } from "lucide-react";
 import {
   getAppartenances,
   createAppartenance,
@@ -25,7 +25,17 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useFormErrors } from "@/hooks/useFormErrors"; // ← import du hook
-
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 function FieldError({ name, errors }) {
   if (!errors[name]) return null;
   return (
@@ -334,7 +344,6 @@ export default function Appartenances() {
   }
 
   async function handleDelete(id) {
-    if (!confirm("Supprimer cette appartenance ?")) return;
     await deleteAppartenance(id);
     fetchData();
   }
@@ -429,12 +438,37 @@ export default function Appartenances() {
                     )}
                   </td>
                   <td className="px-4 py-3 flex items-center justify-center gap-2">
-                    <Button
-                      onClick={() => handleDelete(a.id)}
-                      variant="ghost"
-                      className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-500/10 text-text-secondary hover:text-danger transition-colors">
-                      <Trash2 size={13} />
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="rounded hover:bg-red-100 dark:hover:bg-red-500/10 text-text-muted hover:text-danger transition-colors">
+                          <Trash2 size={14} />
+                        </Button>
+                      </AlertDialogTrigger>
+
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="flex items-center gap-2">
+                            <AlertTriangle size={16} className="text-red-500" />
+                            Supprimer l’appartenance
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Voulez-vous vraiment retirer cette utilisateur de
+                            son affectation ?
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Annuler</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDelete(a.id)}
+                            className="bg-red-600 hover:bg-red-700">
+                            Retirer
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </td>
                 </tr>
               ))

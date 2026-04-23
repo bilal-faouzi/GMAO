@@ -9,6 +9,7 @@ from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
+from apps.securite.audit_utils import log_audit
 from .models import Piece, MouvementStock
 from .serializers import PieceSerializer, MouvementStockSerializer
 
@@ -35,6 +36,25 @@ class PieceViewSet(viewsets.ModelViewSet):
         if sous_seuil is not None and sous_seuil.lower() in ('true', '1'):
             qs = qs.filter(quantiteStock__lte=F('seuilMinimum'))
         return qs
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        log_audit(self.request, 'CREATE', 'MAGASIN', 'Piece', instance.id,
+                  nouvelle_valeur={'reference': instance.reference, 'designation': instance.designation, 
+                                   'quantiteStock': str(instance.quantiteStock)})
+
+    def perform_update(self, serializer):
+        old_instance = self.get_object()
+        old_data = {'reference': old_instance.reference, 'quantiteStock': str(old_instance.quantiteStock), 'estActif': old_instance.estActif}
+        instance = serializer.save()
+        new_data = {'reference': instance.reference, 'quantiteStock': str(instance.quantiteStock), 'estActif': instance.estActif}
+        log_audit(self.request, 'UPDATE', 'MAGASIN', 'Piece', instance.id,
+                  ancienne_valeur=old_data, nouvelle_valeur=new_data)
+
+    def perform_destroy(self, instance):
+        log_audit(self.request, 'DELETE', 'MAGASIN', 'Piece', instance.id,
+                  ancienne_valeur={'reference': instance.reference, 'designation': instance.designation})
+        instance.delete()
 
     @action(detail=True, methods=['post'])
     def sortie(self, request, pk=None):
@@ -67,6 +87,11 @@ class PieceViewSet(viewsets.ModelViewSet):
             idUtilisateurMagasinier=getattr(request.user, 'utilisateur', None),
             commentaire=request.data.get('commentaire', '')
         )
+
+        log_audit(self.request, 'STOCK_SORTIE', 'MAGASIN', 'Piece', piece.id,
+                  ancienne_valeur={'quantiteStock': str(stock_avant)},
+                  nouvelle_valeur={'quantiteStock': str(piece.quantiteStock), 'quantite_sortie': str(quantite)})
+
         return Response(PieceSerializer(piece).data)
 
     @action(detail=True, methods=['post'])
@@ -94,6 +119,11 @@ class PieceViewSet(viewsets.ModelViewSet):
             idUtilisateurMagasinier=getattr(request.user, 'utilisateur', None),
             commentaire=request.data.get('commentaire', '')
         )
+
+        log_audit(self.request, 'STOCK_ENTREE', 'MAGASIN', 'Piece', piece.id,
+                  ancienne_valeur={'quantiteStock': str(stock_avant)},
+                  nouvelle_valeur={'quantiteStock': str(piece.quantiteStock), 'quantite_entree': str(quantite)})
+
         return Response(PieceSerializer(piece).data)
 
     @action(detail=False, methods=['get'])

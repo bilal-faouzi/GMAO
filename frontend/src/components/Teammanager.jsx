@@ -8,6 +8,17 @@ import {
   ChevronDown,
 } from "lucide-react";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   getEquipes,
   addMembre,
   removeMembre,
@@ -125,7 +136,6 @@ export function TeamManager({ userId, onTeamChange }) {
 
   // ── Remove ────────────────────────────────────────────────────────────────
   const handleRemove = async (membershipId) => {
-    if (!confirm("Retirer l'utilisateur de cette équipe ?")) return;
     setPendingRemove(membershipId);
     try {
       await removeMembre(membershipId);
@@ -231,22 +241,45 @@ export function TeamManager({ userId, onTeamChange }) {
                   </span>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                disabled={pendingRemove === m.id}
-                onClick={() => handleRemove(m.id)}
-                title="Retirer de cette équipe"
-                style={{ padding: "4px 8px", height: "auto" }}
-                className="text-text-muted hover:text-danger transition-colors">
-                {pendingRemove === m.id ? (
-                  <Loader2
-                    size={13}
-                    style={{ animation: "spin 1s linear infinite" }}
-                  />
-                ) : (
-                  <X size={13} />
-                )}
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    disabled={pendingRemove === m.id}
+                    style={{ padding: "4px 8px", height: "auto" }}
+                    className="text-text-muted hover:text-danger transition-colors">
+                    {pendingRemove === m.id ? (
+                      <Loader2
+                        size={13}
+                        style={{ animation: "spin 1s linear infinite" }}
+                      />
+                    ) : (
+                      <X size={13} />
+                    )}
+                  </Button>
+                </AlertDialogTrigger>
+
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Confirmer la suppression
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Voulez-vous vraiment retirer cet utilisateur de cette
+                      équipe ? Cette action peut être irréversible.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => handleRemove(m.id)}
+                      className="bg-red-600 hover:bg-red-700">
+                      Supprimer
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           ))}
         </div>

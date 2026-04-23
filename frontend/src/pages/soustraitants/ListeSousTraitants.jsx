@@ -1,6 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+import {
   getSousTraitants,
   deleteSousTraitant,
 } from "../../services/soustraitantService";
@@ -50,6 +61,7 @@ export default function ListeSousTraitants() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const totalPages = Math.ceil(total / PAGE_SIZE);
+  const [deletingId, setDeletingId] = useState(null);
 
   const charger = useCallback(async () => {
     setLoading(true);
@@ -84,12 +96,12 @@ export default function ListeSousTraitants() {
     setter();
   };
 
-  const handleDelete = async (e, id) => {
-    e.stopPropagation();
-    if (!confirm("Supprimer ce sous-traitant ?")) return;
+  const handleDelete = async (id) => {
+    setDeletingId(id);
     try {
       await deleteSousTraitant(id);
-      charger();
+
+      await charger();
     } catch (err) {
       console.error(err);
     }
@@ -220,13 +232,46 @@ export default function ListeSousTraitants() {
                           style={{ color: "var(--status-blue-text)" }}>
                           <Pencil size={14} />
                         </button>
-                        <button
-                          className="btn btn-ghost btn-icon"
-                          title="Supprimer"
-                          onClick={(e) => handleDelete(e, st.id)}
-                          style={{ color: "var(--status-red-text)" }}>
-                          <Trash2 size={14} />
-                        </button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <button
+                              className="btn btn-ghost btn-icon"
+                              title="Supprimer"
+                              onClick={(e) => e.stopPropagation()}
+                              style={{ color: "var(--status-red-text)" }}>
+                              <Trash2 size={14} />
+                            </button>
+                          </AlertDialogTrigger>
+
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="flex items-center gap-2">
+                                <span>Supprimer le sous-traitant</span>
+                              </AlertDialogTitle>
+
+                              <AlertDialogDescription>
+                                Voulez-vous vraiment supprimer{" "}
+                                <strong>{st.raisonSociale}</strong> ?
+                                <br />
+                                Cette action est irréversible.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Annuler</AlertDialogCancel>
+
+                              <AlertDialogAction
+                                disabled={deletingId === st.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(st.id);
+                                }}
+                                className="bg-red-600 hover:bg-red-700">
+                                Supprimer
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </td>
                   </tr>

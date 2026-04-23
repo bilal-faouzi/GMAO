@@ -295,7 +295,7 @@ export default function FormulaireSousTraitant() {
         </div>
 
         {/* Contrat & Tarifs */}
-        <div className="tbl-card" style={{ padding: "18px 22px" }}>
+        {/* <div className="tbl-card" style={{ padding: "18px 22px" }}>
           <div
             className="tbl-head"
             style={{
@@ -348,7 +348,7 @@ export default function FormulaireSousTraitant() {
               />
             </div>
           </div>
-        </div>
+        </div> */}
 
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <button

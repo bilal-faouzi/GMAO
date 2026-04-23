@@ -2,7 +2,6 @@
 from rest_framework import serializers
 from .models import JournalAudit, Utilisateur, Role, Permission, UtilisateurRole, RolePermission
 
-
 class PermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Permission
@@ -229,3 +228,29 @@ class JournalAuditSerializer(serializers.ModelSerializer):
             'id': str(obj.id_utilisateur.id),
             'nom_utilisateur': obj.id_utilisateur.nom_utilisateur,
         }
+
+
+
+
+class UtilisateurRoleSerializer(serializers.ModelSerializer):
+    # Clé composite : id_utilisateur + id_role → toujours unique
+    id = serializers.SerializerMethodField()
+
+    def get_id(self, obj):
+        return f"{obj.id_utilisateur_id}__{obj.id_role_id}"
+
+    class Meta:
+        model = UtilisateurRole
+        fields = ['id', 'id_utilisateur', 'id_role', 'date_attribution']
+
+
+class RolePermissionSerializer(serializers.ModelSerializer):
+    # Clé composite : id_role + id_permission → toujours unique
+    id = serializers.SerializerMethodField()
+
+    def get_id(self, obj):
+        return f"{obj.id_role_id}__{obj.id_permission_id}"
+
+    class Meta:
+        model = RolePermission
+        fields = ['id', 'id_role', 'id_permission']

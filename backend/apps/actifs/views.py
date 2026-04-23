@@ -7,6 +7,7 @@ from django.db.models import Count
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
+from apps.securite.audit_utils import log_audit
 from .models import Actif, HistoriqueStatut, Indisponibilite, Remplacement
 from .serializers import (
     ActifSerializer, HistoriqueStatutSerializer,
@@ -64,6 +65,24 @@ class ActifViewSet(viewsets.ModelViewSet):
 
         return qs
 
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        log_audit(self.request, 'CREATE', 'ACTIFS', 'Actif', instance.id,
+                  nouvelle_valeur={'code': instance.code, 'libelle': instance.libelle, 'type': instance.type})
+
+    def perform_update(self, serializer):
+        old_instance = self.get_object()
+        old_data = {'code': old_instance.code, 'libelle': old_instance.libelle, 'statut': old_instance.statut, 'estActif': old_instance.estActif}
+        instance = serializer.save()
+        new_data = {'code': instance.code, 'libelle': instance.libelle, 'statut': instance.statut, 'estActif': instance.estActif}
+        log_audit(self.request, 'UPDATE', 'ACTIFS', 'Actif', instance.id,
+                  ancienne_valeur=old_data, nouvelle_valeur=new_data)
+
+    def perform_destroy(self, instance):
+        log_audit(self.request, 'DELETE', 'ACTIFS', 'Actif', instance.id,
+                  ancienne_valeur={'code': instance.code, 'libelle': instance.libelle})
+        instance.delete()
+
     @action(detail=True, methods=['post'])
     def changer_statut(self, request, pk=None):
         actif = self.get_object()
@@ -94,6 +113,10 @@ class ActifViewSet(viewsets.ModelViewSet):
             motif=motif,
             modifiePar=getattr(request.user, 'utilisateur', None)
         )
+
+        log_audit(self.request, 'CHANGE_STATUS', 'ACTIFS', 'Actif', actif.id,
+                  ancienne_valeur={'statut': ancien_statut}, 
+                  nouvelle_valeur={'statut': nouveau_statut, 'motif': motif})
 
         return Response(ActifSerializer(actif).data)
 
@@ -139,6 +162,24 @@ class IndisponibiliteViewSet(viewsets.ModelViewSet):
     filterset_fields = ['idActif', 'type', 'estTerminee']
     ordering_fields = ['dateDebut']
 
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        log_audit(self.request, 'CREATE', 'ACTIFS', 'Indisponibilite', instance.id,
+                  nouvelle_valeur={'type': instance.type, 'motif': instance.motif})
+
+    def perform_update(self, serializer):
+        old_instance = self.get_object()
+        old_data = {'type': old_instance.type, 'motif': old_instance.motif, 'estTerminee': old_instance.estTerminee}
+        instance = serializer.save()
+        new_data = {'type': instance.type, 'motif': instance.motif, 'estTerminee': instance.estTerminee}
+        log_audit(self.request, 'UPDATE', 'ACTIFS', 'Indisponibilite', instance.id,
+                  ancienne_valeur=old_data, nouvelle_valeur=new_data)
+
+    def perform_destroy(self, instance):
+        log_audit(self.request, 'DELETE', 'ACTIFS', 'Indisponibilite', instance.id,
+                  ancienne_valeur={'type': instance.type, 'motif': instance.motif})
+        instance.delete()
+
 
 class RemplacementViewSet(viewsets.ModelViewSet):
     queryset = Remplacement.objects.select_related(
@@ -149,3 +190,22 @@ class RemplacementViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ['actifOriginal', 'actifRemplacant']
     ordering_fields = ['dateRemplacement']
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        log_audit(self.request, 'CREATE', 'ACTIFS', 'Remplacement', instance.id,
+                  nouvelle_valeur={'actifOriginal_id': str(instance.actifOriginal.id) if instance.actifOriginal else None,
+                                   'actifRemplacant_id': str(instance.actifRemplacant.id) if instance.actifRemplacant else None})
+
+    def perform_update(self, serializer):
+        old_instance = self.get_object()
+        old_data = {'motif': old_instance.motif}
+        instance = serializer.save()
+        new_data = {'motif': instance.motif}
+        log_audit(self.request, 'UPDATE', 'ACTIFS', 'Remplacement', instance.id,
+                  ancienne_valeur=old_data, nouvelle_valeur=new_data)
+
+    def perform_destroy(self, instance):
+        log_audit(self.request, 'DELETE', 'ACTIFS', 'Remplacement', instance.id,
+                  ancienne_valeur={'actifOriginal_id': str(instance.actifOriginal.id) if instance.actifOriginal else None})
+        instance.delete()
