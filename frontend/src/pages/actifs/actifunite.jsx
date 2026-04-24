@@ -10,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
 import {
   Search,
   RotateCcw,
@@ -19,7 +18,6 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  FolderTree,
   TriangleAlert,
 } from "lucide-react";
 import FormulaireDemande from "../ordres/FormulaireDemande";
@@ -142,7 +140,6 @@ export default function ActifUnite() {
     }
   }, [page, search]);
 
-  // ✅ ICI — manquant dans ta version
   useEffect(() => {
     charger();
   }, [charger]);
@@ -312,7 +309,7 @@ export default function ActifUnite() {
                           disabled={actionLoading}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setDialogActif(actif); // ← ouvre le dialog avec l'actif courant
+                            setDialogActif(actif);
                           }}>
                           <TriangleAlert size={14} />
                         </button>
@@ -367,6 +364,7 @@ export default function ActifUnite() {
         </div>
       )}
 
+      {/* Dialog déclaration panne */}
       <Dialog
         open={!!dialogActif}
         onOpenChange={(open) => !open && setDialogActif(null)}>

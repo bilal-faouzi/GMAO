@@ -4,6 +4,16 @@ import { getActifs, deleteActif } from "../../services/actifService";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Search,
   RotateCcw,
   Plus,
@@ -103,6 +113,14 @@ export default function ActifsRacines() {
   const [actionLoading, setActionLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+
+  // ── État du dialogue de confirmation ──────────────────────────────────────
+  const [deleteDialog, setDeleteDialog] = useState({
+    open: false,
+    id: null,
+    label: "",
+  });
+
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const charger = useCallback(async () => {
@@ -130,17 +148,18 @@ export default function ActifsRacines() {
     charger();
   }, [charger]);
 
-  const handleDelete = async (e, id) => {
+  // Ouvre le dialogue avec les infos de l'actif ciblé
+  const handleDeleteClick = (e, actif) => {
     e.stopPropagation();
-    if (
-      !window.confirm(
-        "Supprimer définitivement cet actif et tous ses sous-actifs ?",
-      )
-    )
-      return;
+    setDeleteDialog({ open: true, id: actif.id, label: actif.libelle });
+  };
+
+  // Suppression confirmée
+  const handleDeleteConfirm = async () => {
+    setDeleteDialog((d) => ({ ...d, open: false }));
     setActionLoading(true);
     try {
-      await deleteActif(id);
+      await deleteActif(deleteDialog.id);
       await charger();
     } catch {
       setErreur("Erreur lors de la suppression");
@@ -303,7 +322,7 @@ export default function ActifsRacines() {
                           className="act-btn"
                           title="Supprimer"
                           disabled={actionLoading}
-                          onClick={(e) => handleDelete(e, actif.id)}
+                          onClick={(e) => handleDeleteClick(e, actif)}
                           style={{ color: "var(--status-red-text)" }}>
                           <Trash2 size={14} />
                         </button>
@@ -349,6 +368,37 @@ export default function ActifsRacines() {
           </Button>
         </div>
       )}
+
+      {/* ── Dialogue de confirmation de suppression ───────────────────────── */}
+      <AlertDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog((d) => ({ ...d, open }))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer l'actif ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              L'actif{" "}
+              <strong style={{ color: "var(--text-primary)" }}>
+                {deleteDialog.label}
+              </strong>{" "}
+              et tous ses sous-actifs seront définitivement supprimés. Cette
+              action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              style={{
+                background: "var(--status-red-dot)",
+                color: "#fff",
+              }}>
+              <Trash2 size={13} style={{ marginRight: 6 }} />
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

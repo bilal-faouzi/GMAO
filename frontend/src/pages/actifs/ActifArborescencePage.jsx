@@ -288,12 +288,16 @@ function ActifFormModal({
   onClose,
   onSaved,
   parentId,
+  parentActif, // ← nouveau prop : l'actif parent complet
   editActif,
   sites,
   unites,
-  secteurs, // ← nouveau prop
+  secteurs,
 }) {
   const isEdit = Boolean(editActif);
+  // isAddingChild = true quand on ajoute un enfant (pas en mode édition)
+  const isAddingChild = !isEdit && Boolean(parentId);
+
   const [form, setForm] = useState(initialFormState);
   const [loading, setLoading] = useState(false);
   const [erreur, setErreur] = useState(null);
@@ -321,18 +325,24 @@ function ActifFormModal({
         estActif: editActif.estActif !== undefined ? editActif.estActif : true,
       });
     } else {
-      setForm({ ...initialFormState, idParent: parentId || "" });
+      // Ajout d'un enfant : héritage du site et de l'unité du parent
+      setForm({
+        ...initialFormState,
+        idParent: parentId || "",
+        idSite: parentActif?.idSite || "",
+        idUnite: parentActif?.idUnite || "",
+      });
     }
     setErreur(null);
     setErrors({});
-  }, [open, isEdit, editActif, parentId]);
+  }, [open, isEdit, editActif, parentId, parentActif]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((f) => ({
       ...f,
       [name]: type === "checkbox" ? checked : value,
-      // Réinitialise l'unité quand le site change
+      // Réinitialise l'unité quand le site change (seulement si non verrouillé)
       ...(name === "idSite" ? { idUnite: "" } : {}),
     }));
     if (errors[name]) setErrors((err) => ({ ...err, [name]: undefined }));
@@ -382,7 +392,6 @@ function ActifFormModal({
 
   const uniteOpts = useMemo(() => {
     if (!form.idSite) return [];
-    // IDs des secteurs appartenant au site sélectionné
     const secteurIds = new Set(
       secteurs
         .filter(
@@ -488,46 +497,112 @@ function ActifFormModal({
               />
             </div>
 
-            {/* Site — sélection obligatoire avant l'unité */}
+            {/* Site */}
             <div className="fg">
-              <label className="flabel">Site</label>
-              <select
-                name="idSite"
-                value={form.idSite}
-                onChange={handleChange}
-                className="fsel">
-                <option value="">— Sélectionner —</option>
-                {siteOpts.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+              <label className="flabel">
+                Site
+                {isAddingChild && (
+                  <span
+                    style={{
+                      marginLeft: 6,
+                      fontSize: 10,
+                      color: "var(--text-muted)",
+                      fontWeight: 400,
+                    }}>
+                    (hérité du parent)
+                  </span>
+                )}
+              </label>
+              {isAddingChild ? (
+                <input
+                  value={
+                    parentActif?.site_detail?.libelle
+                      ? `${parentActif.site_detail.code ?? ""} — ${parentActif.site_detail.libelle}`.replace(
+                          /^— /,
+                          "",
+                        )
+                      : siteOpts.find(
+                          (o) => String(o.value) === String(form.idSite),
+                        )?.label ||
+                        form.idSite ||
+                        "—"
+                  }
+                  disabled
+                  className="finput disabled"
+                  style={{ opacity: 0.7 }}
+                />
+              ) : (
+                <select
+                  name="idSite"
+                  value={form.idSite}
+                  onChange={handleChange}
+                  className="fsel">
+                  <option value="">— Sélectionner —</option>
+                  {siteOpts.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
-            {/* Unité — désactivée tant qu'aucun site n'est choisi */}
+            {/* Unité */}
             <div className="fg">
-              <label className="flabel">Unité</label>
-              <select
-                name="idUnite"
-                value={form.idUnite}
-                onChange={handleChange}
-                disabled={!form.idSite}
-                className={`fsel${!form.idSite ? " disabled" : ""}`}
-                title={
-                  !form.idSite ? "Veuillez d'abord sélectionner un site" : ""
-                }>
-                <option value="">
-                  {!form.idSite
-                    ? "— Sélectionner un site d'abord —"
-                    : "— Sélectionner —"}
-                </option>
-                {uniteOpts.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
+              <label className="flabel">
+                Unité
+                {isAddingChild && (
+                  <span
+                    style={{
+                      marginLeft: 6,
+                      fontSize: 10,
+                      color: "var(--text-muted)",
+                      fontWeight: 400,
+                    }}>
+                    (hérité du parent)
+                  </span>
+                )}
+              </label>
+              {isAddingChild ? (
+                <input
+                  value={
+                    parentActif?.unite_detail?.libelle
+                      ? `${parentActif.unite_detail.code ?? ""} — ${parentActif.unite_detail.libelle}`.replace(
+                          /^— /,
+                          "",
+                        )
+                      : uniteOpts.find(
+                          (o) => String(o.value) === String(form.idUnite),
+                        )?.label ||
+                        form.idUnite ||
+                        "—"
+                  }
+                  disabled
+                  className="finput disabled"
+                  style={{ opacity: 0.7 }}
+                />
+              ) : (
+                <select
+                  name="idUnite"
+                  value={form.idUnite}
+                  onChange={handleChange}
+                  disabled={!form.idSite}
+                  className={`fsel${!form.idSite ? " disabled" : ""}`}
+                  title={
+                    !form.idSite ? "Veuillez d'abord sélectionner un site" : ""
+                  }>
+                  <option value="">
+                    {!form.idSite
+                      ? "— Sélectionner un site d'abord —"
+                      : "— Sélectionner —"}
                   </option>
-                ))}
-              </select>
+                  {uniteOpts.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div className="fg span2">
@@ -629,10 +704,11 @@ export default function ActifArborescencePage() {
   const [loading, setLoading] = useState(true);
   const [sites, setSites] = useState([]);
   const [unites, setUnites] = useState([]);
-  const [secteurs, setSecteurs] = useState([]); // ← nouveau state
+  const [secteurs, setSecteurs] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [parentForNew, setParentForNew] = useState(null);
+  const [parentActifForNew, setParentActifForNew] = useState(null); // ← nouveau state
 
   const chargerArbre = useCallback(async () => {
     setLoading(true);
@@ -641,12 +717,12 @@ export default function ActifArborescencePage() {
         getActif(id),
         getSites(),
         getUnites(),
-        getSecteurs(), // ← ajout du fetch secteurs
+        getSecteurs(),
       ]);
       setRootActif(rootRes.data);
       setSites(sitesRes.data.results || sitesRes.data);
       setUnites(unitesRes.data.results || unitesRes.data);
-      setSecteurs(secteursRes.data.results || secteursRes.data); // ← stockage
+      setSecteurs(secteursRes.data.results || secteursRes.data);
       if (!selectedId || selectedId === id) {
         setSelectedActif(rootRes.data);
         setSelectedId(id);
@@ -693,12 +769,14 @@ export default function ActifArborescencePage() {
   const handleAddChild = () => {
     setEditTarget(null);
     setParentForNew(selectedId);
+    setParentActifForNew(selectedActif); // ← on passe l'actif parent complet
     setModalOpen(true);
   };
 
   const handleEdit = () => {
     setEditTarget(selectedActif);
     setParentForNew(null);
+    setParentActifForNew(null);
     setModalOpen(true);
   };
 
@@ -1692,15 +1770,17 @@ export default function ActifArborescencePage() {
         </div>
       </div>
 
-      {/* Modal — secteurs passé en prop */}
+      {/* Modal */}
       <ActifFormModal
         open={modalOpen}
         onClose={() => {
           setModalOpen(false);
           setEditTarget(null);
+          setParentActifForNew(null);
         }}
         onSaved={handleSaved}
         parentId={parentForNew}
+        parentActif={parentActifForNew} // ← nouveau prop passé au modal
         editActif={editTarget}
         sites={sites}
         unites={unites}
