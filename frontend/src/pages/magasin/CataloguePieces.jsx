@@ -1,3 +1,14 @@
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getPieces, deletePiece } from "../../services/magasinService";
@@ -21,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 const PAGE_SIZE = 10;
 
@@ -93,9 +105,12 @@ export default function CataloguePieces() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Supprimer cette pièce ?")) return;
-    await deletePiece(id);
-    charger();
+    try {
+      await deletePiece(id);
+      await charger();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
@@ -149,13 +164,13 @@ export default function CataloguePieces() {
               ))}
             </SelectContent>
           </Select>
-          <button
+          <Button
             onClick={() =>
               resetFiltersAndPage(() => setFiltreAlerte(!filtreAlerte))
             }
-            className={`pill ${filtreAlerte ? "active" : ""}`}>
-            {filtreAlerte ? "🔴 Alertes uniquement" : "🔴 Voir alertes"}
-          </button>
+            className={` pill   ${filtreAlerte ? "active" : ""} `}>
+            {filtreAlerte ? " Alertes uniquement" : " Voir alertes"}
+          </Button>
         </div>
       </div>
 
@@ -180,7 +195,12 @@ export default function CataloguePieces() {
             </thead>
             <tbody>
               {pieces.map((p) => (
-                <tr key={p.id} onClick={() => navigate(`/magasin/${p.id}`)}>
+                <tr
+                  key={p.id}
+                  onClick={(e) => {
+                    if (e.target.closest("button")) return;
+                    navigate(`/magasin/${p.id}`);
+                  }}>
                   <td>
                     <span className="code-mono">{p.reference}</span>
                     {p.est_sous_seuil && (
@@ -259,13 +279,44 @@ export default function CataloguePieces() {
                         style={{ color: "var(--status-blue-text)" }}>
                         <Pencil size={14} />
                       </button>
-                      <button
-                        className="btn btn-ghost btn-icon"
-                        title="Supprimer"
-                        onClick={() => handleDelete(p.id)}
-                        style={{ color: "var(--status-red-text)" }}>
-                        <Trash2 size={14} />
-                      </button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button
+                            className="btn btn-ghost btn-icon"
+                            title="Supprimer"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ color: "var(--status-red-text)" }}>
+                            <Trash2 size={14} />
+                          </button>
+                        </AlertDialogTrigger>
+
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Supprimer la pièce
+                            </AlertDialogTitle>
+
+                            <AlertDialogDescription>
+                              Voulez-vous vraiment supprimer cette pièce ?
+                              <br />
+                              Cette action est irréversible.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+
+                            <AlertDialogAction
+                              onClick={(e) => {
+                                handleDelete(p.id);
+                                e.stopPropagation();
+                              }}
+                              className="bg-red-600 hover:bg-red-700">
+                              Supprimer
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </td>
                 </tr>

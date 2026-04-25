@@ -2,22 +2,40 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from apps.core.models import BaseModel
+from django.db import transaction
+from django.db.models import Max
 
 
 def generer_numero_di():
     annee = timezone.now().year
-    count = DemandeIntervention.objects.filter(
-        dateSignalement__year=annee
-    ).count() + 1
-    return f"DI-{annee}-{count:04d}"
+    with transaction.atomic():
+        dernier = (
+            DemandeIntervention.objects
+            .select_for_update()          # Verrouille les lectures concurrentes
+            .filter(numero__startswith=f"DI-{annee}-")
+            .aggregate(Max('numero'))['numero__max']
+        )
+        if dernier:
+            dernier_num = int(dernier.split('-')[-1])
+        else:
+            dernier_num = 0
+        return f"DI-{annee}-{dernier_num + 1:04d}"
 
 
 def generer_numero_ot():
     annee = timezone.now().year
-    count = OrdreTravail.objects.filter(
-        created_at__year=annee
-    ).count() + 1
-    return f"OT-{annee}-{count:04d}"
+    with transaction.atomic():
+        dernier = (
+            OrdreTravail.objects
+            .select_for_update()
+            .filter(numero__startswith=f"OT-{annee}-")
+            .aggregate(Max('numero'))['numero__max']
+        )
+        if dernier:
+            dernier_num = int(dernier.split('-')[-1])
+        else:
+            dernier_num = 0
+        return f"OT-{annee}-{dernier_num + 1:04d}"
 
 
 class DemandeIntervention(BaseModel):
@@ -38,7 +56,7 @@ class DemandeIntervention(BaseModel):
     idActif                  = models.ForeignKey('actifs.Actif', on_delete=models.CASCADE, related_name='demandes')
     idUtilisateurSignalement = models.ForeignKey('securite.Utilisateur', on_delete=models.SET_NULL, null=True, related_name='demandes_signalee')
     dateSignalement          = models.DateTimeField(auto_now_add=True)
-    description              = models.TextField()
+    description              = models.TextField(blank=True)
     urgence                  = models.CharField(max_length=10, choices=URGENCE_CHOICES, default='normale')
     statut                   = models.CharField(max_length=15, choices=STATUT_CHOICES, default='en_attente')
     idUtilisateurValidation  = models.ForeignKey('securite.Utilisateur', on_delete=models.SET_NULL, null=True, blank=True, related_name='demandes_validees')
@@ -50,9 +68,13 @@ class DemandeIntervention(BaseModel):
         verbose_name = "Demande d'intervention"
         verbose_name_plural = "Demandes d'intervention"
 
+    # ✅ models.py — DemandeIntervention.save()
     def save(self, *args, **kwargs):
         if not self.numero:
-            self.numero = generer_numero_di()
+            with transaction.atomic():
+                self.numero = generer_numero_di()
+                super().save(*args, **kwargs)
+                return   # évite le double save()
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -124,9 +146,13 @@ class OrdreTravail(BaseModel):
         verbose_name = 'Ordre de travail'
         verbose_name_plural = 'Ordres de travail'
 
+    # ✅ models.py — DemandeIntervention.save()
     def save(self, *args, **kwargs):
         if not self.numero:
-            self.numero = generer_numero_ot()
+            with transaction.atomic():
+                self.numero = generer_numero_ot()
+                super().save(*args, **kwargs)
+                return   # évite le double save()
         super().save(*args, **kwargs)
 
     def __str__(self):

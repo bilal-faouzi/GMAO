@@ -1,4 +1,15 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   getActif,
@@ -471,7 +482,7 @@ function ActifFormModal({
                 ))}
               </select>
             </div>
-            <div className="fg">
+            {/* <div className="fg">
               <label className="flabel">Statut</label>
               <select
                 name="statut"
@@ -484,7 +495,7 @@ function ActifFormModal({
                   </option>
                 ))}
               </select>
-            </div>
+            </div> */}
             <div className="fg span2">
               <label className="flabel">Description</label>
               <textarea
@@ -780,31 +791,38 @@ export default function ActifArborescencePage() {
     setModalOpen(true);
   };
 
+  // const handleDelete = async () => {
+  //   if (!selectedActif) return;
+  //   if (selectedActif.id === id) {
+  //     try {
+  //       await deleteActif(selectedActif.id);
+  //       navigate("/actifs-racines");
+  //     } catch {
+  //       alert("Erreur lors de la suppression");
+  //     }
+  //     return;
+  //   }
+  //   try {
+  //     await deleteActif(selectedActif.id);
+  //     setSelectedId(id);
+  //     await chargerArbre();
+  //   } catch {
+  //     alert("Erreur lors de la suppression");
+  //   }
+  // };
+
   const handleDelete = async () => {
     if (!selectedActif) return;
-    if (selectedActif.id === id) {
-      if (
-        !window.confirm("Supprimer l'actif racine et toute son arborescence ?")
-      )
-        return;
-      try {
-        await deleteActif(selectedActif.id);
-        navigate("/actifs-racines");
-      } catch {
-        alert("Erreur lors de la suppression");
-      }
-      return;
-    }
-    if (
-      !window.confirm(
-        `Supprimer "${selectedActif.code}" et tous ses sous-actifs ?`,
-      )
-    )
-      return;
+
     try {
       await deleteActif(selectedActif.id);
-      setSelectedId(id);
-      await chargerArbre();
+
+      if (selectedActif.id === id) {
+        navigate("/actifs-racines");
+      } else {
+        setSelectedId(id);
+        await chargerArbre();
+      }
     } catch {
       alert("Erreur lors de la suppression");
     }
@@ -1136,12 +1154,52 @@ export default function ActifArborescencePage() {
                     title="Modifier">
                     <Pencil size={13} /> Modifier
                   </button>
-                  <button
-                    className="btn btn-danger"
-                    onClick={handleDelete}
-                    title="Supprimer">
-                    <Trash2 size={13} /> Supprimer
-                  </button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button
+                        className="btn btn-danger"
+                        title="Supprimer"
+                        onClick={(e) => e.stopPropagation()}>
+                        <Trash2 size={13} /> Supprimer
+                      </button>
+                    </AlertDialogTrigger>
+
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Supprimer l’actif</AlertDialogTitle>
+
+                        <AlertDialogDescription>
+                          {selectedActif?.id === id ? (
+                            <>
+                              Vous allez supprimer{" "}
+                              <strong>l’actif racine</strong> ainsi que toute
+                              son arborescence.
+                              <br />
+                              Cette action est irréversible.
+                            </>
+                          ) : (
+                            <>
+                              Voulez-vous vraiment supprimer{" "}
+                              <strong>{selectedActif?.code}</strong> et tous ses
+                              sous-actifs ?
+                              <br />
+                              Cette action est irréversible.
+                            </>
+                          )}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+
+                        <AlertDialogAction
+                          onClick={handleDelete}
+                          className="bg-red-600 hover:bg-red-700">
+                          Supprimer
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
 

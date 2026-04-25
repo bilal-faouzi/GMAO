@@ -317,13 +317,13 @@ export default function FormulaireActif() {
               value={form.type}
               onChange={handleChange}
             />
-            <Field
+            {/* <Field
               label="Statut"
               name="statut"
               options={STATUTS}
               value={form.statut}
               onChange={handleChange}
-            />
+            /> */}
             <div className="span2 fg">
               <label htmlFor="description" className="flabel">
                 Description
