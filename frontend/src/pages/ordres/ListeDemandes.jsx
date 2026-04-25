@@ -1,6 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getDemandes, validerDemande, rejeterDemande } from '../../services/ordreService';
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  getDemandes,
+  validerDemande,
+  rejeterDemande,
+} from "../../services/ordreService";
 import {
   Plus,
   Check,
@@ -8,41 +12,69 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 const URGENCE_CONFIG = {
-  critique: { bg: 'var(--status-red-bg)',     text: 'var(--status-red-text)',     dot: 'var(--status-red-dot)' },
-  haute:    { bg: 'var(--status-orange-bg)',  text: 'var(--status-orange-text)',  dot: 'var(--status-orange-dot)' },
-  normale:  { bg: 'var(--status-blue-bg)',    text: 'var(--status-blue-text)',    dot: 'var(--status-blue-dot)' },
-  basse:    { bg: 'var(--bg-elevated)',       text: 'var(--text-muted)',          dot: 'var(--text-muted)' },
+  critique: {
+    bg: "var(--status-red-bg)",
+    text: "var(--status-red-text)",
+    dot: "var(--status-red-dot)",
+  },
+  haute: {
+    bg: "var(--status-orange-bg)",
+    text: "var(--status-orange-text)",
+    dot: "var(--status-orange-dot)",
+  },
+  normale: {
+    bg: "var(--status-blue-bg)",
+    text: "var(--status-blue-text)",
+    dot: "var(--status-blue-dot)",
+  },
+  basse: {
+    bg: "var(--bg-elevated)",
+    text: "var(--text-muted)",
+    dot: "var(--text-muted)",
+  },
 };
 
 const STATUT_CONFIG = {
-  en_attente: { bg: 'var(--status-yellow-bg)', text: 'var(--status-yellow-text)', dot: 'var(--status-yellow-dot)' },
-  validee:    { bg: 'var(--status-green-bg)',  text: 'var(--status-green-text)',  dot: 'var(--status-green-dot)' },
-  rejetee:    { bg: 'var(--status-red-bg)',    text: 'var(--status-red-text)',    dot: 'var(--status-red-dot)' },
+  en_attente: {
+    bg: "var(--status-yellow-bg)",
+    text: "var(--status-yellow-text)",
+    dot: "var(--status-yellow-dot)",
+  },
+  validee: {
+    bg: "var(--status-green-bg)",
+    text: "var(--status-green-text)",
+    dot: "var(--status-green-dot)",
+  },
+  rejetee: {
+    bg: "var(--status-red-bg)",
+    text: "var(--status-red-text)",
+    dot: "var(--status-red-dot)",
+  },
 };
 
 export default function ListeDemandes() {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [filtreStatut, setFiltreStatut] = useState('');
-  const [filtreUrgence, setFiltreUrgence] = useState('');
+  const [search, setSearch] = useState("");
+  const [filtreStatut, setFiltreStatut] = useState("");
+  const [filtreUrgence, setFiltreUrgence] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [modalRejet, setModalRejet] = useState(null);
-  const [motifRejet, setMotifRejet] = useState('');
+  const [motifRejet, setMotifRejet] = useState("");
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const charger = useCallback(async () => {
@@ -52,16 +84,25 @@ export default function ListeDemandes() {
       if (search.trim()) params.search = search.trim();
       if (filtreStatut) params.statut = filtreStatut;
       if (filtreUrgence) params.urgence = filtreUrgence;
+
       const res = await getDemandes(params);
-      if (res.data.data) {
-        setItems(res.data.data);
-        setTotal(res.data.pagination?.total || res.data.data.length);
-      } else if (res.data.results) {
-        setItems(res.data.results);
-        setTotal(res.data.count);
-      } else {
-        setItems(res.data);
-        setTotal(res.data.length);
+      const body = res.data;
+
+      if (body.data) {
+        setItems(body.data);
+        // ✅ Chercher le total dans tous les emplacements possibles
+        setTotal(
+          body.pagination?.total ??
+            body.total ??
+            body.count ??
+            body.data.length, // dernier recours (pagination impossible)
+        );
+      } else if (body.results) {
+        setItems(body.results);
+        setTotal(body.count ?? body.total ?? body.results.length);
+      } else if (Array.isArray(body)) {
+        setItems(body);
+        setTotal(body.length);
       }
     } catch (e) {
       console.error(e);
@@ -90,13 +131,13 @@ export default function ListeDemandes() {
 
   const handleRejeter = async () => {
     if (!motifRejet.trim()) {
-      alert('Motif de rejet requis');
+      alert("Motif de rejet requis");
       return;
     }
     try {
       await rejeterDemande(modalRejet, motifRejet);
       setModalRejet(null);
-      setMotifRejet('');
+      setMotifRejet("");
       charger();
     } catch (err) {
       console.error(err);
@@ -110,12 +151,12 @@ export default function ListeDemandes() {
         <div className="hdr-l">
           <h1>Demandes d'Intervention</h1>
           <p>
-            {total} demande{total > 1 ? 's' : ''}
+            {total} demande{total > 1 ? "s" : ""}
           </p>
         </div>
         <button
           className="btn btn-primary"
-          onClick={() => navigate('/ordres/demandes/nouveau')}>
+          onClick={() => navigate("/ordres/demandes/nouveau")}>
           <Plus size={14} /> Nouvelle demande
         </button>
       </div>
@@ -136,15 +177,15 @@ export default function ListeDemandes() {
             />
           </div>
           <Select
-            value={filtreStatut || '__all__'}
+            value={filtreStatut || "__all__"}
             onValueChange={(v) =>
               resetFiltersAndPage(() =>
-                setFiltreStatut(v === '__all__' ? '' : v),
+                setFiltreStatut(v === "__all__" ? "" : v),
               )
             }>
             <SelectTrigger
               className="finput"
-              style={{ width: 'auto', minWidth: 160 }}>
+              style={{ width: "auto", minWidth: 160 }}>
               <SelectValue placeholder="Tous les statuts" />
             </SelectTrigger>
             <SelectContent className="z-[9999]">
@@ -155,15 +196,15 @@ export default function ListeDemandes() {
             </SelectContent>
           </Select>
           <Select
-            value={filtreUrgence || '__all__'}
+            value={filtreUrgence || "__all__"}
             onValueChange={(v) =>
               resetFiltersAndPage(() =>
-                setFiltreUrgence(v === '__all__' ? '' : v),
+                setFiltreUrgence(v === "__all__" ? "" : v),
               )
             }>
             <SelectTrigger
               className="finput"
-              style={{ width: 'auto', minWidth: 160 }}>
+              style={{ width: "auto", minWidth: 160 }}>
               <SelectValue placeholder="Toutes urgences" />
             </SelectTrigger>
             <SelectContent className="z-[9999]">
@@ -197,53 +238,78 @@ export default function ListeDemandes() {
             </thead>
             <tbody>
               {items.map((d) => {
-                const urgencyCfg = URGENCE_CONFIG[d.urgence] || URGENCE_CONFIG.normale;
-                const statusCfg = STATUT_CONFIG[d.statut] || STATUT_CONFIG.en_attente;
+                const urgencyCfg =
+                  URGENCE_CONFIG[d.urgence] || URGENCE_CONFIG.normale;
+                const statusCfg =
+                  STATUT_CONFIG[d.statut] || STATUT_CONFIG.en_attente;
                 return (
                   <tr key={d.id}>
                     <td style={{ fontWeight: 500 }}>
-                      <span className="badge" style={{ background: urgencyCfg.bg, color: urgencyCfg.text }}>
-                        {d.numero || '—'}
+                      <span
+                        className="badge"
+                        style={{
+                          background: urgencyCfg.bg,
+                          color: urgencyCfg.text,
+                        }}>
+                        {d.numero || "—"}
                       </span>
                     </td>
                     <td>
-                      <div style={{ fontWeight: 500, fontSize: '13px' }}>
-                        {d.actif_detail?.code || '—'}
+                      <div style={{ fontWeight: 500, fontSize: "13px" }}>
+                        {d.actif_detail?.code || "—"}
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: 2 }}>
-                        {d.actif_detail?.libelle || '—'}
+                      <div
+                        style={{
+                          fontSize: "12px",
+                          color: "var(--text-muted)",
+                          marginTop: 2,
+                        }}>
+                        {d.actif_detail?.libelle || "—"}
                       </div>
                     </td>
                     <td>
                       <span
                         className="badge"
-                        style={{ background: urgencyCfg.bg, color: urgencyCfg.text }}>
-                        <span className="bdot" style={{ background: urgencyCfg.dot }} />
+                        style={{
+                          background: urgencyCfg.bg,
+                          color: urgencyCfg.text,
+                        }}>
+                        <span
+                          className="bdot"
+                          style={{ background: urgencyCfg.dot }}
+                        />
                         {d.urgence}
                       </span>
                     </td>
                     <td>
                       <span
                         className="badge"
-                        style={{ background: statusCfg.bg, color: statusCfg.text }}>
-                        <span className="bdot" style={{ background: statusCfg.dot }} />
-                        {d.statut?.replace(/_/g, ' ')}
+                        style={{
+                          background: statusCfg.bg,
+                          color: statusCfg.text,
+                        }}>
+                        <span
+                          className="bdot"
+                          style={{ background: statusCfg.dot }}
+                        />
+                        {d.statut?.replace(/_/g, " ")}
                       </span>
                     </td>
-                    <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                      {new Date(d.dateSignalement).toLocaleString('fr-FR')}
+                    <td
+                      style={{ color: "var(--text-muted)", fontSize: "12px" }}>
+                      {new Date(d.dateSignalement).toLocaleString("fr-FR")}
                     </td>
                     <td>
                       <div
-                        style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}
+                        style={{ display: "flex", gap: 4, flexWrap: "wrap" }}
                         className="justify-center">
-                        {d.statut === 'en_attente' && (
+                        {d.statut === "en_attente" && (
                           <>
                             <button
                               className="btn btn-ghost btn-icon"
                               title="Valider"
                               onClick={() => handleValider(d.id)}
-                              style={{ color: 'var(--status-green-text)' }}>
+                              style={{ color: "var(--status-green-text)" }}>
                               <Check size={14} />
                             </button>
                             <button
@@ -251,22 +317,23 @@ export default function ListeDemandes() {
                               title="Rejeter"
                               onClick={() => {
                                 setModalRejet(d.id);
-                                setMotifRejet('');
+                                setMotifRejet("");
                               }}
-                              style={{ color: 'var(--status-red-text)' }}>
+                              style={{ color: "var(--status-red-text)" }}>
                               <X size={14} />
                             </button>
                           </>
                         )}
-                        {d.statut === 'validee' && d.ordres_travail?.length > 0 && (
-                          <button
-                            className="btn btn-ghost btn-icon"
-                            title="Voir OT"
-                            onClick={() => navigate('/ordres/ots')}
-                            style={{ color: 'var(--status-purple-text)' }}>
-                            📋
-                          </button>
-                        )}
+                        {d.statut === "validee" &&
+                          d.ordres_travail?.length > 0 && (
+                            <button
+                              className="btn btn-ghost btn-icon"
+                              title="Voir OT"
+                              onClick={() => navigate("/ordres/ots")}
+                              style={{ color: "var(--status-purple-text)" }}>
+                              📋
+                            </button>
+                          )}
                       </div>
                     </td>
                   </tr>
@@ -281,29 +348,29 @@ export default function ListeDemandes() {
       {totalPages > 1 && (
         <div
           style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
+            display: "flex",
+            justifyContent: "flex-end",
             gap: 8,
             marginTop: 12,
           }}>
           <button
             className="btn btn-outline btn-icon"
-            disabled={page === 1}
+            disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}>
             <ChevronLeft size={16} />
           </button>
           <span
             style={{
-              display: 'flex',
-              alignItems: 'center',
+              display: "flex",
+              alignItems: "center",
               fontSize: 13,
-              color: 'var(--text-secondary)',
+              color: "var(--text-secondary)",
             }}>
             {page} / {totalPages}
           </span>
           <button
             className="btn btn-outline btn-icon"
-            disabled={page === totalPages}
+            disabled={page >= totalPages}
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
             <ChevronRight size={16} />
           </button>
@@ -312,26 +379,28 @@ export default function ListeDemandes() {
 
       {/* Modal Rejet */}
       {modalRejet && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 10000,
-        }}>
-          <div style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--r)',
-            padding: 24,
-            maxWidth: 400,
-            width: '90%',
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
           }}>
+          <div
+            style={{
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "var(--r)",
+              padding: 24,
+              maxWidth: 400,
+              width: "90%",
+            }}>
             <h2 style={{ marginBottom: 16, fontSize: 18, fontWeight: 600 }}>
               Motif de rejet
             </h2>
@@ -340,20 +409,21 @@ export default function ListeDemandes() {
               value={motifRejet}
               onChange={(e) => setMotifRejet(e.target.value)}
               style={{
-                width: '100%',
+                width: "100%",
                 minHeight: 100,
-                background: 'var(--bg-elevated)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--r-sm)',
-                color: 'var(--text-primary)',
+                background: "var(--bg-elevated)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "var(--r-sm)",
+                color: "var(--text-primary)",
                 padding: 12,
-                fontFamily: 'inherit',
+                fontFamily: "inherit",
                 fontSize: 13,
                 marginBottom: 16,
-                outline: 'none',
+                outline: "none",
               }}
             />
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <div
+              style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button
                 className="btn btn-outline"
                 onClick={() => setModalRejet(null)}>
@@ -361,7 +431,7 @@ export default function ListeDemandes() {
               </button>
               <button
                 className="btn btn-ghost"
-                style={{ color: 'var(--status-red-text)' }}
+                style={{ color: "var(--status-red-text)" }}
                 onClick={handleRejeter}>
                 Rejeter
               </button>

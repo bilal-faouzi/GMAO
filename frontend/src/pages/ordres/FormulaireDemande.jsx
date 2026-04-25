@@ -44,54 +44,32 @@ const URGENCES = [
 
 function UrgenceSelector({ value, onChange }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <div className="flex flex-col gap-2">
       {URGENCES.map((urgence) => (
         <button
           key={urgence.value}
           type="button"
           onClick={() => onChange(urgence.value)}
+          className="flex items-start gap-3 p-3 rounded-[var(--r-sm)] cursor-pointer transition-all duration-150"
           style={{
-            display: "flex",
-            alignItems: "flex-start",
-            gap: 12,
-            padding: 12,
-            borderRadius: "var(--r-sm)",
             border:
               value === urgence.value
-                ? "2px solid " + urgence.color
+                ? `2px solid ${urgence.color}`
                 : "1px solid var(--border-default)",
             background:
               value === urgence.value
-                ? urgence.color + "15"
+                ? `${urgence.color}15`
                 : "var(--bg-elevated)",
-            cursor: "pointer",
-            transition: "all 0.15s",
           }}>
           <div
-            style={{
-              width: 12,
-              height: 12,
-              borderRadius: "50%",
-              background: urgence.color,
-              marginTop: 4,
-              flexShrink: 0,
-            }}
+            className="w-3 h-3 rounded-full mt-1 shrink-0"
+            style={{ background: urgence.color }}
           />
-          <div style={{ textAlign: "left", flex: 1 }}>
-            <div
-              style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: "var(--text-primary)",
-              }}>
+          <div className="text-left flex-1">
+            <div className="text-[13px] font-semibold text-[var(--text-primary)]">
               {urgence.label}
             </div>
-            <div
-              style={{
-                fontSize: 12,
-                color: "var(--text-muted)",
-                marginTop: 2,
-              }}>
+            <div className="text-xs text-[var(--text-muted)] mt-0.5">
               {urgence.description}
             </div>
           </div>
@@ -146,7 +124,6 @@ export default function FormulaireDemande({ defaultActifId, onClose }) {
     }
   }, [defaultActifId]);
 
-  // Recording timer
   useEffect(() => {
     let interval;
     if (isRecording) {
@@ -155,7 +132,6 @@ export default function FormulaireDemande({ defaultActifId, onClose }) {
     return () => clearInterval(interval);
   }, [isRecording]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (
@@ -337,8 +313,9 @@ export default function FormulaireDemande({ defaultActifId, onClose }) {
   // ── Shared form body ─────────────────────────────────────
   const formBody = (
     <form
+      id="demande-form"
       onSubmit={handleSubmit}
-      style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      className="flex flex-col gap-4">
       {erreur && (
         <div className="alert-warn">
           {typeof erreur === "object" ? JSON.stringify(erreur) : erreur}
@@ -389,122 +366,54 @@ export default function FormulaireDemande({ defaultActifId, onClose }) {
           value={form.description}
           onChange={handleChange}
           rows="3"
-          className="finput"
-          style={{ resize: "none" }}
+          className="finput resize-none"
           placeholder="Décrivez le problème rencontré..."
         />
       </div>
 
       {/* Upload images */}
-      <div
-        style={{
-          background: "var(--status-purple-bg, rgba(139,92,246,.08))",
-          border: "1px solid rgba(139,92,246,.25)",
-          borderRadius: "var(--r-sm)",
-          padding: 14,
-        }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            marginBottom: 10,
-          }}>
-          <Image size={15} style={{ color: "var(--status-purple-text)" }} />
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: ".05em",
-              color: "var(--status-purple-text)",
-            }}>
+      <div className="bg-[var(--status-purple-bg,rgba(139,92,246,.08))] border border-[rgba(139,92,246,.25)] rounded-[var(--r-sm)] p-3.5">
+        <div className="flex items-center gap-2 mb-2.5">
+          <Image size={15} className="text-[var(--status-purple-text)]" />
+          <span className="text-[11px] font-semibold uppercase tracking-[.05em] text-[var(--status-purple-text)]">
             Photos (optionnel)
           </span>
         </div>
 
-        <label
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "14px 12px",
-            border: "2px dashed rgba(139,92,246,.35)",
-            borderRadius: "var(--r-sm)",
-            cursor: "pointer",
-            transition: "border-color .15s",
-          }}>
+        <label className="flex flex-col items-center justify-center p-[14px_12px] border-2 border-dashed border-[rgba(139,92,246,.35)] rounded-[var(--r-sm)] cursor-pointer transition-[border-color] duration-150">
           <Upload
             size={20}
-            style={{ color: "var(--status-purple-text)", marginBottom: 6 }}
+            className="text-[var(--status-purple-text)] mb-1.5"
           />
-          <span
-            style={{
-              fontSize: 12,
-              color: "var(--status-purple-text)",
-              textAlign: "center",
-            }}>
+          <span className="text-xs text-[var(--status-purple-text)] text-center">
             Cliquez pour ajouter des images
             <br />
-            <span style={{ opacity: 0.6 }}>JPG, PNG — max 5 MB</span>
+            <span className="opacity-60">JPG, PNG — max 5 MB</span>
           </span>
           <input
             type="file"
             multiple
             accept="image/*"
             onChange={handleImageChange}
-            style={{ display: "none" }}
+            className="hidden"
           />
         </label>
 
         {previewImages.length > 0 && (
-          <div style={{ marginTop: 10 }}>
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: "var(--status-purple-text)",
-                textTransform: "uppercase",
-              }}>
+          <div className="mt-2.5">
+            <span className="text-[11px] font-semibold text-[var(--status-purple-text)] uppercase">
               📸 Images ({previewImages.length})
             </span>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: 8,
-                marginTop: 8,
-              }}>
+            <div className="grid grid-cols-3 gap-2 mt-2">
               {previewImages.map((src, i) => (
                 <div
                   key={i}
-                  style={{
-                    position: "relative",
-                    borderRadius: "var(--r-sm)",
-                    overflow: "hidden",
-                    border: "1px solid rgba(139,92,246,.3)",
-                  }}>
-                  <img
-                    src={src}
-                    alt=""
-                    style={{ width: "100%", height: 80, objectFit: "cover" }}
-                  />
+                  className="relative rounded-[var(--r-sm)] overflow-hidden border border-[rgba(139,92,246,.3)]">
+                  <img src={src} alt="" className="w-full h-20 object-cover" />
                   <button
                     type="button"
                     onClick={() => removeImage(i)}
-                    style={{
-                      position: "absolute",
-                      top: 4,
-                      right: 4,
-                      background: "var(--status-red-bg)",
-                      border: "none",
-                      borderRadius: "50%",
-                      padding: 4,
-                      cursor: "pointer",
-                      color: "var(--status-red-text)",
-                      display: "flex",
-                    }}>
+                    className="absolute top-1 right-1 bg-[var(--status-red-bg)] border-none rounded-full p-1 cursor-pointer text-[var(--status-red-text)] flex">
                     <X size={12} />
                   </button>
                 </div>
@@ -515,29 +424,10 @@ export default function FormulaireDemande({ defaultActifId, onClose }) {
       </div>
 
       {/* Audio recording */}
-      <div
-        style={{
-          background: "var(--status-blue-bg, rgba(59,130,246,.08))",
-          border: "1px solid rgba(59,130,246,.25)",
-          borderRadius: "var(--r-sm)",
-          padding: 14,
-        }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            marginBottom: 10,
-          }}>
-          <Mic size={15} style={{ color: "var(--status-blue-text)" }} />
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: ".05em",
-              color: "var(--status-blue-text)",
-            }}>
+      <div className="bg-[var(--status-blue-bg,rgba(59,130,246,.08))] border border-[rgba(59,130,246,.25)] rounded-[var(--r-sm)] p-3.5">
+        <div className="flex items-center gap-2 mb-2.5">
+          <Mic size={15} className="text-[var(--status-blue-text)]" />
+          <span className="text-[11px] font-semibold uppercase tracking-[.05em] text-[var(--status-blue-text)]">
             Enregistrement audio (optionnel)
           </span>
         </div>
@@ -546,62 +436,18 @@ export default function FormulaireDemande({ defaultActifId, onClose }) {
           <button
             type="button"
             onClick={startRecording}
-            style={{
-              width: "100%",
-              padding: "10px 14px",
-              background: "rgba(59,130,246,.15)",
-              border: "1px solid rgba(59,130,246,.4)",
-              borderRadius: "var(--r-sm)",
-              color: "var(--status-blue-text)",
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              transition: "background .15s",
-            }}>
+            className="w-full py-2.5 px-3.5 bg-[rgba(59,130,246,.15)] border border-[rgba(59,130,246,.4)] rounded-[var(--r-sm)] text-[var(--status-blue-text)] text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-2 transition-[background] duration-150">
             <Mic size={16} /> Démarrer l'enregistrement
           </button>
         ) : (
-          <div
-            style={{
-              background: "var(--status-red-bg)",
-              border: "1px solid rgba(239,68,68,.25)",
-              borderRadius: "var(--r-sm)",
-              padding: "10px 14px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: "50%",
-                  background: "var(--status-red-dot)",
-                  animation: "pulse 1s infinite",
-                  flexShrink: 0,
-                }}
-              />
+          <div className="bg-[var(--status-red-bg)] border border-[rgba(239,68,68,.25)] rounded-[var(--r-sm)] p-[10px_14px] flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[var(--status-red-dot)] animate-pulse shrink-0" />
               <div>
-                <p
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: "var(--status-red-text)",
-                  }}>
+                <p className="text-[13px] font-semibold text-[var(--status-red-text)]">
                   Enregistrement en cours…
                 </p>
-                <p
-                  style={{
-                    fontSize: 12,
-                    fontFamily: "monospace",
-                    color: "var(--status-red-text)",
-                    opacity: 0.8,
-                  }}>
+                <p className="text-xs font-mono text-[var(--status-red-text)] opacity-80">
                   {formatTime(recordingTime)}
                 </p>
               </div>
@@ -609,102 +455,40 @@ export default function FormulaireDemande({ defaultActifId, onClose }) {
             <button
               type="button"
               onClick={stopRecording}
-              style={{
-                padding: "6px 12px",
-                background: "var(--status-red-dot)",
-                border: "none",
-                borderRadius: "var(--r-sm)",
-                color: "#fff",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-              }}>
+              className="py-1.5 px-3 bg-[var(--status-red-dot)] border-none rounded-[var(--r-sm)] text-white text-xs font-semibold cursor-pointer">
               Arrêter
             </button>
           </div>
         )}
 
         {recordedAudios.length > 0 && (
-          <div style={{ marginTop: 10 }}>
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: "var(--status-blue-text)",
-                textTransform: "uppercase",
-              }}>
+          <div className="mt-2.5">
+            <span className="text-[11px] font-semibold text-[var(--status-blue-text)] uppercase">
               📦 Audios ({recordedAudios.length})
             </span>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-                marginTop: 8,
-              }}>
+            <div className="flex flex-col gap-1.5 mt-2">
               {recordedAudios.map((rec, i) => (
                 <div
                   key={i}
-                  style={{
-                    background: "rgba(59,130,246,.1)",
-                    border: "1px solid rgba(59,130,246,.3)",
-                    borderRadius: "var(--r-sm)",
-                    padding: "8px 12px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                  }}>
+                  className="bg-[rgba(59,130,246,.1)] border border-[rgba(59,130,246,.3)] rounded-[var(--r-sm)] p-[8px_12px] flex items-center gap-2.5">
                   <button
                     type="button"
                     onClick={() => playRecordedAudio(i)}
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: "50%",
-                      background: "rgba(59,130,246,.3)",
-                      border: "none",
-                      color: "var(--status-blue-text)",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      fontSize: 13,
-                    }}>
+                    className="w-8 h-8 rounded-full bg-[rgba(59,130,246,.3)] border-none text-[var(--status-blue-text)] cursor-pointer flex items-center justify-center shrink-0 text-[13px]">
                     ▶
                   </button>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 500,
-                        color: "var(--status-blue-text)",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-[var(--status-blue-text)] overflow-hidden text-ellipsis whitespace-nowrap">
                       {rec.name}
                     </p>
-                    <p
-                      style={{
-                        fontSize: 11,
-                        fontFamily: "monospace",
-                        color: "var(--color-text-muted)",
-                      }}>
+                    <p className="text-[11px] font-mono text-[var(--color-text-muted)]">
                       ⏱ {formatTime(rec.duration)}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => removeRecordedAudio(i)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "var(--color-text-muted)",
-                      cursor: "pointer",
-                      display: "flex",
-                      padding: 4,
-                    }}>
+                    className="bg-transparent border-none text-[var(--color-text-muted)] cursor-pointer flex p-1">
                     <X size={14} />
                   </button>
                 </div>
@@ -713,51 +497,54 @@ export default function FormulaireDemande({ defaultActifId, onClose }) {
           </div>
         )}
       </div>
-
-      {/* Actions */}
-      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-        <Button type="button" onClick={handleClose} className="btn btn-outline">
-          Annuler
-        </Button>
-        <Button
-          type="submit"
-          disabled={loading}
-          className="btn btn-primary"
-          style={{ opacity: loading ? 0.6 : 1 }}>
-          {loading ? "Envoi…" : "Déclarer la panne"}
-        </Button>
-      </div>
     </form>
+  );
+
+  const formActions = (
+    <div className="flex gap-2 justify-end shrink-0 pt-3 border-t border-[var(--border-subtle)]">
+      <Button type="button" onClick={handleClose} className="btn btn-outline">
+        Annuler
+      </Button>
+      <Button
+        type="submit"
+        form="demande-form"
+        disabled={loading}
+        className="btn btn-primary"
+        style={{ opacity: loading ? 0.6 : 1 }}>
+        {loading ? "Envoi…" : "Déclarer la panne"}
+      </Button>
+    </div>
   );
 
   // ── Dialog mode ──────────────────────────────────────────
   if (onClose) {
-    return <div>{formBody}</div>;
+    return (
+      <div className="flex flex-col max-h-[80vh]">
+        <div className="overflow-y-auto flex-1 min-h-0">{formBody}</div>
+        {formActions}
+      </div>
+    );
   }
 
   // ── Page mode ────────────────────────────────────────────
   return (
-    <div className="page" style={{ maxWidth: 720 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+    <div className="page max-w-[720px] mx-auto">
+      <div className="flex items-center gap-3">
         <button className="btn btn-ghost" onClick={handleClose}>
           <ArrowLeft size={14} /> Retour
         </button>
-        <h1 style={{ fontSize: 22, fontWeight: 600 }}>Déclarer une panne</h1>
+        <h1 className="text-[22px] font-semibold">Déclarer une panne</h1>
       </div>
 
-      <div className="tbl-card" style={{ marginTop: 20 }}>
-        <div
-          className="tbl-head"
-          style={{
-            padding: 0,
-            paddingBottom: 14,
-            borderBottom: "1px solid var(--border-subtle)",
-          }}>
+      {/* Card : hauteur max 80vh, body scrollable */}
+      <div className="tbl-card mt-5 flex flex-col max-h-[80vh]">
+        <div className="tbl-head p-0 pb-3.5 border-b border-[var(--border-subtle)] shrink-0">
           <span className="tbl-title">Informations</span>
         </div>
-        <div className="m-body" style={{ padding: "14px 0 0" }}>
+        <div className="m-body overflow-y-auto flex-1 pt-3.5 min-h-0">
           {formBody}
         </div>
+        <div className="px-0 pb-0 shrink-0">{formActions}</div>
       </div>
     </div>
   );
