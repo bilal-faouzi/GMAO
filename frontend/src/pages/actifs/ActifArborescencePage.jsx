@@ -294,7 +294,7 @@ const initialFormState = {
   estActif: true,
 };
 
-function ActifFormModal({
+export function ActifFormModal({
   open,
   onClose,
   onSaved,
@@ -304,6 +304,8 @@ function ActifFormModal({
   sites,
   unites,
   secteurs,
+  defaultSiteId,
+  defaultUniteId,
 }) {
   const isEdit = Boolean(editActif);
   // isAddingChild = true quand on ajoute un enfant (pas en mode édition)
@@ -340,8 +342,8 @@ function ActifFormModal({
       setForm({
         ...initialFormState,
         idParent: parentId || "",
-        idSite: parentActif?.idSite || "",
-        idUnite: parentActif?.idUnite || "",
+        idSite: parentActif?.idSite || "" || defaultSiteId,
+        idUnite: parentActif?.idUnite || "" || defaultUniteId,
       });
     }
     setErreur(null);

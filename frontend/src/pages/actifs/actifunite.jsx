@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getActifs, deleteActif } from "../../services/actifService";
+import {
+  getSites,
+  getUnites,
+  getSecteurs,
+} from "../../services/organisationService";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +26,11 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import FormulaireDemande from "../ordres/FormulaireDemande";
+// ⚠️ Assurez-vous d'exporter ActifFormModal depuis son fichier :
+//    export function ActifFormModal({ ... }) { ... }
+import { ActifFormModal } from "../actifs/ActifArborescencePage";
+
+// ─── Config ───────────────────────────────────────────────────────────────────
 
 const STATUTS = {
   actif: {
@@ -74,6 +84,8 @@ const TYPES = {
 
 const PAGE_SIZE = 10;
 
+// ─── Badges ───────────────────────────────────────────────────────────────────
+
 function StatutBadge({ statut }) {
   const cfg = STATUTS[statut] || {
     label: statut,
@@ -102,8 +114,12 @@ function TypeBadge({ type }) {
   );
 }
 
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 export default function ActifUnite() {
   const navigate = useNavigate();
+
+  // ── Données liste ──────────────────────────────────────────────────────────
   const [actifs, setActifs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -112,8 +128,35 @@ export default function ActifUnite() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const totalPages = Math.ceil(total / PAGE_SIZE);
-  const [dialogActif, setDialogActif] = useState(null);
 
+  // ── Données pour le modal de création ─────────────────────────────────────
+  const [sites, setSites] = useState([]);
+  const [unites, setUnites] = useState([]);
+  const [secteurs, setSecteurs] = useState([]);
+  const [orgLoading, setOrgLoading] = useState(false);
+
+  // ── États des dialogs ──────────────────────────────────────────────────────
+  const [dialogActif, setDialogActif] = useState(null); // dialog panne
+  const [createOpen, setCreateOpen] = useState(false); // dialog nouvel actif
+  const [userSite, setUserSite] = useState(null); // { id, code, libelle }
+  const [userUnite, setUserUnite] = useState(null);
+
+  // ── Chargement des référentiels org au montage ─────────────────────────────
+  useEffect(() => {
+    setOrgLoading(true);
+    Promise.all([getSites(), getUnites(), getSecteurs()])
+      .then(([s, u, sec]) => {
+        setSites(s.data.results ?? s.data);
+        setUnites(u.data.results ?? u.data);
+        setSecteurs(sec.data.results ?? sec.data);
+      })
+      .catch(() => {
+        /* non bloquant */
+      })
+      .finally(() => setOrgLoading(false));
+  }, []);
+
+  // ── Chargement de la liste ─────────────────────────────────────────────────
   const charger = useCallback(async () => {
     setLoading(true);
     setErreur(null);
@@ -126,24 +169,32 @@ export default function ActifUnite() {
       };
       if (search.trim()) params.search = search.trim();
       const res = await getActifs(params);
-      if (res.data.results !== undefined) {
-        setActifs(res.data.results);
-        setTotal(res.data.count);
-      } else {
-        setActifs(res.data);
-        setTotal(res.data.length);
+
+      const results = res.data.results ?? res.data;
+      const count =
+        res.data.results !== undefined ? res.data.count : res.data.length;
+
+      setActifs(results);
+      setTotal(count);
+
+      // ↓ On extrait le site et l'unité du premier actif retourné
+      if (results.length > 0 && !userSite) {
+        const premier = results[0];
+        if (premier.site_detail) setUserSite(premier.site_detail);
+        if (premier.unite_detail) setUserUnite(premier.unite_detail);
       }
     } catch {
       setErreur("Erreur lors du chargement des actifs");
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, userSite]);
 
   useEffect(() => {
     charger();
   }, [charger]);
 
+  // ── Suppression ────────────────────────────────────────────────────────────
   const handleDelete = async (e, id) => {
     e.stopPropagation();
     if (
@@ -163,6 +214,13 @@ export default function ActifUnite() {
     }
   };
 
+  // ── Callback après création réussie ───────────────────────────────────────
+  const handleCreated = () => {
+    setCreateOpen(false);
+    charger();
+  };
+
+  // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="page">
       {/* Header */}
@@ -173,11 +231,14 @@ export default function ActifUnite() {
         </div>
         <button
           className="btn btn-primary"
-          onClick={() => navigate("/actifs/nouveau")}>
-          <Plus size={14} /> Nouvel actif
+          onClick={() => setCreateOpen(true)}
+          disabled={orgLoading}>
+          <Plus size={14} />
+          {orgLoading ? "Chargement…" : "Nouvel actif"}
         </button>
       </div>
 
+      {/* Erreur */}
       {erreur && (
         <div
           style={{
@@ -187,17 +248,20 @@ export default function ActifUnite() {
             borderRadius: "var(--r-sm)",
             padding: "10px 14px",
             fontSize: 13,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
           }}>
           {erreur}
           <button
             onClick={() => setErreur(null)}
-            style={{ marginLeft: 12, cursor: "pointer", opacity: 0.7 }}>
+            style={{ cursor: "pointer", opacity: 0.7, display: "flex" }}>
             <X size={14} />
           </button>
         </div>
       )}
 
-      {/* Search */}
+      {/* Recherche */}
       <div className="filter-card">
         <div className="filter-row">
           <div className="search-wrap" style={{ flex: 1 }}>
@@ -222,7 +286,7 @@ export default function ActifUnite() {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Tableau */}
       <div className="tbl-card">
         <div className="tbl-head">
           <span className="tbl-title">Actifs racines</span>
@@ -303,6 +367,7 @@ export default function ActifUnite() {
                           gap: 4,
                           justifyContent: "center",
                         }}>
+                        {/* Bouton déclarer panne */}
                         <button
                           className="act-btn"
                           title="Déclarer une panne"
@@ -313,6 +378,7 @@ export default function ActifUnite() {
                           }}>
                           <TriangleAlert size={14} />
                         </button>
+                        {/* Bouton supprimer */}
                         <button
                           className="act-btn"
                           title="Supprimer"
@@ -364,7 +430,7 @@ export default function ActifUnite() {
         </div>
       )}
 
-      {/* Dialog déclaration panne */}
+      {/* ── Dialog : déclarer une panne ─────────────────────────────────────── */}
       <Dialog
         open={!!dialogActif}
         onOpenChange={(open) => !open && setDialogActif(null)}>
@@ -380,7 +446,6 @@ export default function ActifUnite() {
               Remplissez le formulaire pour signaler une panne sur cet actif.
             </DialogDescription>
           </DialogHeader>
-
           {dialogActif && (
             <FormulaireDemande
               defaultActifId={dialogActif.id}
@@ -389,6 +454,24 @@ export default function ActifUnite() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* ── Dialog : créer un nouvel actif racine ───────────────────────────── */}
+      {createOpen && (
+        <ActifFormModal
+          open={true}
+          onClose={() => setCreateOpen(false)}
+          onSaved={handleCreated}
+          parentId={null} // actif racine : pas de parent
+          parentActif={null}
+          editActif={null}
+          sites={sites}
+          unites={unites}
+          secteurs={secteurs}
+          embeddedMode={true} // prop optionnel si vous adaptez le modal
+          defaultSiteId={userSite?.id ?? ""}
+          defaultUniteId={userUnite?.id ?? ""}
+        />
+      )}
     </div>
   );
 }

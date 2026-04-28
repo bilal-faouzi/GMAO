@@ -376,10 +376,7 @@ class Command(BaseCommand):
         CommentaireOT.objects.create(idOrdreTravail=ot1, idUtilisateur=u_resp, commentaire='Prevoir moteur de rechange en stock. Delai fournisseur 5 jours.', estInterne=True)
         CauseRacine.objects.create(idOrdreTravail=ot1, categorie='electrique', description='Surcharge repetee moteur due a un mauvais reglage de la protection thermique.', dateIdentification=timezone.now().date()-timedelta(days=1), idUtilisateur=u_resp)
         for anc, nouv, motif in [
-            ('',             'OUVERT',        'Cree depuis DI - pont roulant en panne'),
-            ('OUVERT',       'EN_COURS',      'Equipe mecanique siege affectee'),
-            ('EN_COURS',     'EN_VALIDATION', 'Intervention terminee, test en cours'),
-            ('EN_VALIDATION','CLOTURE',       'Machine testee et validee operationnelle'),
+            ('EN_COURS',     'CLOTURE', 'Intervention terminee, test en cours'),
         ]:
             HistoriqueStatutOT.objects.create(idOrdreTravail=ot1, ancienStatut=anc, nouveauStatut=nouv, idUtilisateur=u_resp, motif=motif)
 
@@ -402,19 +399,18 @@ class Command(BaseCommand):
         PieceUtiliseeOT.objects.create(idOrdreTravail=ot2, idPiece=pc5,  quantite=Decimal('20'), prixUnitaireCapture=Decimal('18.00'))
         CommentaireOT.objects.create(idOrdreTravail=ot2, idUtilisateur=u_resp, commentaire='Joint spi use cote tige verin. Remplacement en cours.', estInterne=False)
         for anc, nouv, motif in [
-            ('',       'OUVERT',   'Cree depuis DI centrale beton'),
-            ('OUVERT', 'EN_COURS', 'Equipe hydraulique siege affectee'),
+            ('EN_COURS', 'CLOTURE', 'Equipe hydraulique siege affectee'),
         ]:
             HistoriqueStatutOT.objects.create(idOrdreTravail=ot2, ancienStatut=anc, nouveauStatut=nouv, idUtilisateur=u_resp, motif=motif)
 
-        # OT3 - OUVERT preventif (ligne precontrainte)
+        # OT3 - EN_COURS preventif (ligne precontrainte)
         ot3 = OrdreTravail.objects.create(
-            idActif=a13, type='preventif', priorite='normale', statut='OUVERT',
+            idActif=a13, type='preventif', priorite='normale', statut='en_cours',
             description='Maintenance preventive trimestrielle - ligne de precontrainte 12m',
             dureeEstimeeMin=240,
             echeanceSLA=timezone.now()+timedelta(days=3)
         )
-        HistoriqueStatutOT.objects.create(idOrdreTravail=ot3, ancienStatut='', nouveauStatut='OUVERT', idUtilisateur=u_resp, motif='Maintenance preventive planifiee Q2 2026')
+        HistoriqueStatutOT.objects.create(idOrdreTravail=ot3, ancienStatut='', nouveauStatut='EN_COURS', idUtilisateur=u_resp, motif='Maintenance preventive planifiee Q2 2026')
 
         # OT4 - EN_ATTENTE_CORRECTION sous-traite (tapis doseur)
         ot4 = OrdreTravail.objects.create(
@@ -435,8 +431,6 @@ class Command(BaseCommand):
         )
         PieceUtiliseeOT.objects.create(idOrdreTravail=ot4, idPiece=pc7, quantite=Decimal('2'), prixUnitaireCapture=Decimal('155.00'))
         for anc, nouv, motif in [
-            ('',        'OUVERT',               'Cree depuis DI tapis doseur'),
-            ('OUVERT',  'EN_COURS',              'Sous-traitant MaintIndustriel affecte'),
             ('EN_COURS','DEPANNE',               'Depannage temporaire realise'),
             ('DEPANNE', 'EN_ATTENTE_CORRECTION', 'Correction definitive a planifier'),
         ]:
@@ -461,19 +455,18 @@ class Command(BaseCommand):
         PieceUtiliseeOT.objects.create(idOrdreTravail=ot5, idPiece=pc17, quantite=Decimal('2'), prixUnitaireCapture=Decimal('620.00'))
         CommentaireOT.objects.create(idOrdreTravail=ot5, idUtilisateur=u_resp2, commentaire='Grilles maille 40mm remplacees. Grilles maille 20mm en attente.', estInterne=False)
         for anc, nouv, motif in [
-            ('',       'OUVERT',   'Cree depuis DI crible vibrant'),
-            ('OUVERT', 'EN_COURS', 'Equipe mecanique Tamansourt affectee'),
+            ('EN_COURS', 'DEPANNE', 'Equipe mecanique Tamansourt affectee'),
         ]:
             HistoriqueStatutOT.objects.create(idOrdreTravail=ot5, ancienStatut=anc, nouveauStatut=nouv, idUtilisateur=u_resp2, motif=motif)
 
-        # OT6 - OUVERT preventif (concasseur Ait Ourir)
+        # OT6 - EN_COURS preventif (concasseur Ait Ourir)
         ot6 = OrdreTravail.objects.create(
-            idActif=a20, type='preventif', priorite='normale', statut='OUVERT',
+            idActif=a20, type='preventif', priorite='normale', statut='EN_COURS',
             description='Maintenance preventive mensuelle - concasseur secondaire Ait Ourir',
             dureeEstimeeMin=180,
             echeanceSLA=timezone.now()+timedelta(days=5)
         )
-        HistoriqueStatutOT.objects.create(idOrdreTravail=ot6, ancienStatut='', nouveauStatut='OUVERT', idUtilisateur=u_resp2, motif='Maintenance preventive mensuelle planifiee')
+        HistoriqueStatutOT.objects.create(idOrdreTravail=ot6, ancienStatut='', nouveauStatut='EN_COURS', idUtilisateur=u_resp2, motif='Maintenance preventive mensuelle planifiee')
 
         # OT7 - CLOTURE (filtre hydraulique SOSAMAC)
         ot7 = OrdreTravail.objects.create(
@@ -497,10 +490,9 @@ class Command(BaseCommand):
         CommentaireOT.objects.create(idOrdreTravail=ot7, idUtilisateur=u_resp2, commentaire='Filtre colmate. Remplacement effectue. Pression hydraulique revenue a la normale.', estInterne=False)
         CauseRacine.objects.create(idOrdreTravail=ot7, categorie='mecanique', description='Filtre non remplace a la frequence preconisee. Plan de maintenance a revoir.', dateIdentification=timezone.now().date()-timedelta(days=4), idUtilisateur=u_resp2)
         for anc, nouv, motif in [
-            ('',             'OUVERT',        'Cree suite constat terrain SOSAMAC'),
-            ('OUVERT',       'EN_COURS',      'Equipe SOSAMAC affectee'),
-            ('EN_COURS',     'EN_VALIDATION', 'Remplacement effectue, test en cours'),
-            ('EN_VALIDATION','CLOTURE',       'Pression hydraulique OK, machine validee'),
+            ('',             'EN_COURS',        'Cree suite constat terrain SOSAMAC'),
+            ('EN_COURS',       'CLOTURE',      'Equipe SOSAMAC affectee'),
+            ('CLOTURE','DEPANNE',          'Pression hydraulique OK, machine validee'),
         ]:
             HistoriqueStatutOT.objects.create(idOrdreTravail=ot7, ancienStatut=anc, nouveauStatut=nouv, idUtilisateur=u_resp2, motif=motif)
 

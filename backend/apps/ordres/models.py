@@ -62,7 +62,7 @@ class DemandeIntervention(BaseModel):
     idUtilisateurValidation  = models.ForeignKey('securite.Utilisateur', on_delete=models.SET_NULL, null=True, blank=True, related_name='demandes_validees')
     dateValidation           = models.DateTimeField(null=True, blank=True)
     motifRejet               = models.TextField(blank=True)
-
+    isencours                 = models.BooleanField(default=True)
     class Meta:
         ordering = ['-dateSignalement']
         verbose_name = "Demande d'intervention"
@@ -110,11 +110,9 @@ class OrdreTravail(BaseModel):
         ('basse',    'Basse'),
     ]
     STATUT_CHOICES = [
-        ('OUVERT',                'Ouvert'),
+        ('REJETE',               'Rejeté'),
         ('EN_COURS',              'En cours'),
         ('DEPANNE',               'Dépanné'),
-        ('EN_ATTENTE_CORRECTION', 'En attente correction'),
-        ('EN_VALIDATION',         'En validation'),
         ('CLOTURE',               'Clôturé'),
     ]
     CLOTURE_CHOICES = [
@@ -129,7 +127,7 @@ class OrdreTravail(BaseModel):
     idDemandeIntervention = models.ForeignKey(DemandeIntervention, on_delete=models.SET_NULL, null=True, blank=True, related_name='ordres_travail')
     type                  = models.CharField(max_length=15, choices=TYPE_CHOICES, default='correctif')
     priorite              = models.CharField(max_length=10, choices=PRIORITE_CHOICES, default='normale')
-    statut                = models.CharField(max_length=25, choices=STATUT_CHOICES, default='OUVERT')
+    statut                = models.CharField(max_length=25, choices=STATUT_CHOICES, default='EN_COURS')
     estSousTraite         = models.BooleanField(default=False)
     estBloquant           = models.BooleanField(default=False)
     echeanceSLA           = models.DateTimeField(null=True, blank=True)
@@ -140,6 +138,7 @@ class OrdreTravail(BaseModel):
     dateCloture           = models.DateTimeField(null=True, blank=True)
     typeCloture           = models.CharField(max_length=10, choices=CLOTURE_CHOICES, blank=True)
     description           = models.TextField(blank=True)
+    isvalidee             = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['-created_at']

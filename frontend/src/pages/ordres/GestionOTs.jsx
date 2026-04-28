@@ -32,36 +32,22 @@ const PRIORITE_CLS = {
   basse: "bg-gray-500/20 text-gray-400 border-gray-500/40",
 };
 const STATUT_CLS = {
-  OUVERT: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   EN_COURS: "bg-amber-500/20 text-amber-400 border-amber-500/30",
   DEPANNE: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-  EN_ATTENTE_CORRECTION:
-    "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  EN_VALIDATION: "bg-purple-500/20 text-purple-400 border-purple-500/30",
   CLOTURE: "bg-green-500/20 text-green-400 border-green-500/30",
 };
 const STATUT_BORDER = {
-  OUVERT: "border-l-blue-500",
   EN_COURS: "border-l-amber-500",
   DEPANNE: "border-l-orange-500",
-  EN_ATTENTE_CORRECTION: "border-l-yellow-500",
-  EN_VALIDATION: "border-l-purple-500",
   CLOTURE: "border-l-green-500",
 };
 const STATUT_LABEL = {
-  OUVERT: "Ouvert",
   EN_COURS: "En cours",
   DEPANNE: "Dépanné",
-  EN_ATTENTE_CORRECTION: "En attente",
-  EN_VALIDATION: "En validation",
   CLOTURE: "Clôturé",
 };
 const TRANSITIONS = {
-  OUVERT: ["EN_COURS"],
-  EN_COURS: ["DEPANNE", "EN_VALIDATION"],
-  DEPANNE: ["EN_ATTENTE_CORRECTION", "EN_COURS"],
-  EN_ATTENTE_CORRECTION: ["EN_COURS"],
-  EN_VALIDATION: ["CLOTURE", "EN_COURS"],
+  EN_COURS: ["DEPANNE", "CLOTURE"],
 };
 
 // ── Composant Affectation ───────────────────────────
@@ -239,6 +225,8 @@ export default function GestionOTs() {
         getOTs(params),
         getDemandes({ statut: "en_attente" }),
       ]);
+      console.log("📊 Ots loaded from API:", o);
+      console.log("📊 Demandes loaded from API:", d);
       const otsData = o.data.results || o.data;
       const demandesData = d.data.results || d.data;
       console.log("📊 Demandes loaded from API:");
@@ -276,17 +264,6 @@ export default function GestionOTs() {
       setModalStatut(false);
       setNvStatut("");
       setMotifStatut("");
-      charger();
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleCloturer = async () => {
-    if (!confirm("Clôturer définitivement cet OT ?")) return;
-    setSubmitting(true);
-    try {
-      await cloturerOT(otSelectionne.id, "corrige", "");
       charger();
     } finally {
       setSubmitting(false);
@@ -783,18 +760,8 @@ export default function GestionOTs() {
                     </div>
                   )}
 
-                  {/* Clôturer */}
-                  {otSelectionne.statut === "EN_VALIDATION" && (
-                    <Button
-                      onClick={handleCloturer}
-                      disabled={submitting}
-                      className="w-full py-3 bg-green-600 hover:bg-green-700 rounded-xl text-sm font-semibold transition disabled:opacity-50">
-                      ✅ Clôturer l'OT définitivement
-                    </Button>
-                  )}
-
                   {/* Affecter équipe */}
-                  {["OUVERT", "EN_COURS"].includes(otSelectionne.statut) && (
+                  {["EN_COURS"].includes(otSelectionne.statut) && (
                     <div className="bg-surface rounded-xl p-4 border border-gray-700">
                       <p className="text-xs text-gray-400 mb-3 font-semibold">
                         Affecter une équipe / sous-traitant

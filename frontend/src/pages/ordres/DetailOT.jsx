@@ -10,10 +10,6 @@ import {
 } from "../../services/ordreService";
 
 const STATUT = {
-  OUVERT: {
-    label: "Ouvert",
-    cls: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  },
   EN_COURS: {
     label: "En cours",
     cls: "bg-amber-500/20 text-amber-400 border-amber-500/30",
@@ -21,14 +17,6 @@ const STATUT = {
   DEPANNE: {
     label: "Dépanné",
     cls: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-  },
-  EN_ATTENTE_CORRECTION: {
-    label: "En attente",
-    cls: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  },
-  EN_VALIDATION: {
-    label: "En validation",
-    cls: "bg-purple-500/20 text-purple-400 border-purple-500/30",
   },
   CLOTURE: {
     label: "Clôturé",
@@ -81,7 +69,7 @@ export default function DetailOT() {
 
   const handleCloturer = async () => {
     if (!confirm("Clôturer définitivement cet OT ?")) return;
-    await cloturerOT(id, "corrige", "");
+    await cloturerOT(id);
     charger();
   };
 
