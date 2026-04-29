@@ -169,6 +169,7 @@ export default function ActifUnite() {
       };
       if (search.trim()) params.search = search.trim();
       const res = await getActifs(params);
+      console.log("Actifs chargés :", res.data);
 
       const results = res.data.results ?? res.data;
       const count =

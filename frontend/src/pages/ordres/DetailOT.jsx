@@ -22,6 +22,10 @@ const STATUT = {
     label: "Clôturé",
     cls: "bg-green-500/20 text-green-400 border-green-500/30",
   },
+  REJETE: {
+    label: "Rejeté",
+    cls: "bg-red-500/20 text-red-400 border-red-500/30",
+  },
 };
 
 export default function DetailOT() {
@@ -37,6 +41,7 @@ export default function DetailOT() {
   const [motif, setMotif] = useState("");
   const [newComment, setNewComment] = useState("");
   const [estInterne, setEstInterne] = useState(false);
+  const estVerrouille = ["DEPANNE", "CLOTURE"].includes(ot?.statut);
 
   const charger = async () => {
     try {
@@ -45,6 +50,7 @@ export default function DetailOT() {
         getCommentaires(id),
         getHistoriqueOT(id),
       ]);
+      console.log("Historique:", h.data);
       setOT(o.data);
       setCommentaires(c.data.results || c.data);
       setHistorique(h.data.results || h.data);
@@ -109,7 +115,7 @@ export default function DetailOT() {
           )}
         </div>
         <div className="flex gap-2">
-          {ot.statut !== "CLOTURE" && (
+          {!estVerrouille && (
             <>
               <button
                 onClick={() => {
@@ -365,11 +371,13 @@ export default function DetailOT() {
               value={nvStatut}
               onChange={(e) => setNvStatut(e.target.value)}
               className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none mb-3">
-              {Object.entries(STATUT).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v.label}
-                </option>
-              ))}
+              {Object.entries(STATUT)
+                .filter(([k]) => k !== "REJETE")
+                .map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v.label}
+                  </option>
+                ))}
             </select>
             <textarea
               value={motif}

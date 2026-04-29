@@ -14,13 +14,13 @@ export default function ValidationOperateur() {
   const charger = async () => {
     setLoading(true);
     try {
-      const res = await getOTs({ isvalidee: "false" });
+      const res = await getOTs({ isvalide: "false" });
       const data = res.data.results || res.data || [];
       const liste = Array.isArray(data) ? data : [];
       // Ne garder que les OT clôturés ou dépannés en attente de validation
       const filtres = liste.filter(
         (ot) =>
-          ot.isvalidee === false &&
+          ot.isvalide === false &&
           (ot.statut === "CLOTURE" || ot.statut === "DEPANNE"),
       );
       setOTs(filtres);
@@ -40,20 +40,21 @@ export default function ValidationOperateur() {
     setErreur("");
     try {
       if (modal.type === "ok") {
-        await validerOT(
+        const res = await validerOT(
           modal.ot.id,
           true,
           motif || "Intervention validée par opérateur, équipement fonctionnel",
-          typeCloture || modal.ot.typeCloture || "corrige",
         );
+        console.log(res);
         setMessage("✅ Intervention validée. Merci pour votre confirmation.");
       } else {
-        await validerOT(
+        const res = await validerOT(
           modal.ot.id,
           false,
           motif ||
             "Problème persistant signalé par opérateur, intervention à reprendre",
         );
+        console.log(res);
         setMessage("🔄 Signalement enregistré. Le responsable a été notifié.");
       }
       setModal(null);
@@ -271,20 +272,7 @@ export default function ValidationOperateur() {
                 ? `L'OT ${modal.ot.numero} sera validé définitivement.`
                 : `L'OT ${modal.ot.numero} sera renvoyé en intervention.`}
             </p>
-            {modal.type === "ok" && (
-              <div className="mb-4">
-                <label className="text-xs text-gray-400 mb-1 block">
-                  Type de clôture
-                </label>
-                <select
-                  value={typeCloture}
-                  onChange={(e) => setTypeCloture(e.target.value)}
-                  className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none">
-                  <option value="corrige">Corrigé définitivement</option>
-                  <option value="depanne">Dépanné temporairement</option>
-                </select>
-              </div>
-            )}
+
             <textarea
               value={motif}
               onChange={(e) => setMotif(e.target.value)}

@@ -1,3 +1,5 @@
+from urllib import request
+
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -99,28 +101,30 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
         di.dateValidation = timezone.now()
         di.save()
 
+        
+
         ot = OrdreTravail.objects.create(
             idActif=di.idActif,
             idDemandeIntervention=di,
             type='correctif',
             priorite=di.urgence,
             statut='EN_COURS',
-            isvalidee=True,
+            isvalide=True,
             description=di.description,
         )
 
         ancien_statut_actif = di.idActif.statut
-        if ancien_statut_actif != 'en_panne':
-            di.idActif.statut = 'en_maintenance'
-            di.idActif.save()
+    
+        di.idActif.statut = 'en_maintenance'
+        di.idActif.save()
 
-            from apps.actifs.models import HistoriqueStatut
-            HistoriqueStatut.objects.create(
-                idActif=di.idActif,
-                ancienStatut=ancien_statut_actif,
-                nouveauStatut='en_maintenance',
-                motif=f'OT #{ot.numero} créé - Demande Intervention #{di.numero}',
-                modifiePar=getattr(request.user, 'utilisateur', None)
+        from apps.actifs.models import HistoriqueStatut
+        HistoriqueStatut.objects.create(
+            idActif=di.idActif,
+            ancienStatut=ancien_statut_actif,
+            nouveauStatut='en_maintenance',
+            motif=f'OT #{ot.numero} créé - Demande Intervention #{di.numero}',
+            modifiePar=getattr(request.user, 'utilisateur', None)
             )
 
         config = ConfigurationSLA.objects.filter(
@@ -342,17 +346,17 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     pagination_class = DemandeInterventionPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['statut', 'type', 'priorite', 'idActif', 'estSousTraite', 'isvalidee']
+    filterset_fields = ['statut', 'type', 'priorite', 'idActif', 'estSousTraite', 'isvalide']
     search_fields = ['numero', 'idActif__code', 'description']
     ordering_fields = ['created_at', 'priorite', 'echeanceSLA']
 
     def perform_create(self, serializer):
         ot = serializer.save()
-        ot.isvalidee = True
-        ot.save(update_fields=['isvalidee'])
+        ot.isvalide = True
+        ot.save(update_fields=['isvalide'])
 
         log_audit(self.request, 'CREATE', 'ORDRES', 'OrdreTravail', ot.id,
-                  nouvelle_valeur={'numero': ot.numero, 'type': ot.type, 'statut': ot.statut, 'isvalidee': True})
+                  nouvelle_valeur={'numero': ot.numero, 'type': ot.type, 'statut': ot.statut, 'isvalide': True})
 
         ancien_statut_actif = ot.idActif.statut
         if ancien_statut_actif != 'en_maintenance':
@@ -404,23 +408,45 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                 delta = timezone.now() - debut.dateChangement
                 ot.dureeReelleMin = int(delta.total_seconds() / 60)
         if nouveau in ('CLOTURE', 'DEPANNE'):
-            ot.isvalidee = False
+            ot.isvalide = False
+            actif = ot.idActif
+            if actif.statut != 'actif':
+                ancien_statut_actif = actif.statut
+                actif.statut = 'actif'
+                actif.save()
+                from apps.actifs.models import HistoriqueStatut
+                HistoriqueStatut.objects.create(
+                    idActif=actif,
+                    ancienStatut=ancien_statut_actif,
+                    nouveauStatut='actif',
+                    motif=f'OT #{ot.numero} {nouveau.lower()} - Actif rétabli',
+                    modifiePar=getattr(request.user, 'utilisateur', None)
+                )
+                unite = actif.idUnite
+                if unite and not unite.estProductive:
+                    autres_actifs_unite_bloques = (
+                        actif.__class__.objects
+                        .filter(
+                            idUnite=unite,
+                            statut__in=['en_panne', 'en_maintenance']
+                        )
+                        .exclude(id=actif.id)
+                        .exists()
+                    )
+                    if not autres_actifs_unite_bloques:
+                        unite.estProductive = True
+                        unite.save()
+                        log_audit(request, 'UPDATE', 'ORGANISATION', 'Unite', unite.id,
+                                  ancienne_valeur={'estProductive': False},
+                                  nouvelle_valeur={'estProductive': True})
+                        
             if nouveau == 'DEPANNE':
                 ot.typeCloture = request.data.get('typeCloture', 'depanne')
+
+
         ot.save()
 
-        # Si l'OT passe en DEPANNE, remettre la DI liée en attente
-        if nouveau == 'DEPANNE' and ot.idDemandeIntervention:
-            di = ot.idDemandeIntervention
-            if di.statut != 'en_attente':
-                ancien_statut_di = di.statut
-                di.statut = 'en_attente'
-                di.save()
-
-                log_audit(self.request, 'UPDATE', 'ORDRES', 'DemandeIntervention', di.id,
-                        ancienne_valeur={'statut': ancien_statut_di},
-                        nouvelle_valeur={'statut': 'en_attente', 'motif': f'OT #{ot.numero} dépanné temporairement'})
-
+        
         STATUT_MAP = {
             'EN_COURS': 'en_cours',
             'DEPANNE':  'en_attente',
@@ -525,7 +551,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
         ancien = ot.statut
         ot.statut      = 'CLOTURE'
         ot.dateCloture = timezone.now()
-        ot.isvalidee   = False
+        ot.isvalide   = False
         debut = HistoriqueStatutOT.objects.filter(
             idOrdreTravail=ot, nouveauStatut='EN_COURS'
         ).order_by('dateChangement').first()
@@ -616,52 +642,38 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
 
         est_approuve = request.data.get('isValide')
         motif        = request.data.get('motif', '')
-        type_cloture = request.data.get('typeCloture')
+        type_cloture = ot.statut  # par défaut, on garde le type de clôture existant (corrigé ou dépanné)
         ancien_statut = ot.statut
+        print(f"[DEBUG] isValide reçu = {repr(est_approuve)} | type = {type(est_approuve)}")
+        print(f"[DEBUG] request.data complet = {request.data}")
 
         if est_approuve:
-            ot.isvalidee  = True
+            ot.isvalide = True
+            ot.statut    = 'CLOTURE'
             ot.typeCloture = type_cloture
+            print('test validation', ot.typeCloture)
+            ot.dateCloture = timezone.now()
+
             ot.save()
 
             di = ot.idDemandeIntervention
-            if di:
-                di.isencours = False
-                di.save(update_fields=['isencours'])                             
+            di.isencours = False
+            di.save()
+                         
 
             actif = ot.idActif
+            
 
-        autres_ots_ouverts = OrdreTravail.objects.filter(
-            idActif=actif,
-            statut__in=['EN_COURS']
-        ).exclude(id=ot.id).exists()
+            autres_ots_ouverts = OrdreTravail.objects.filter(
+                idActif=actif,
+                statut__in=['EN_COURS']
+            ).exclude(id=ot.id).exists()
 
-        autres_di_critiques = DemandeIntervention.objects.filter(
-            idActif=actif,
-            urgence='critique',
-            statut='en_attente'
-        ).exists()
-
-        if not autres_ots_ouverts and not autres_di_critiques:
-            ancien_statut_actif = actif.statut
-            actif.statut = 'actif'
-            actif.save()
-
-            unite = actif.idUnite
-            if unite and not unite.estProductive:
-                autres_actifs_unite_bloques = (
-                    actif.__class__.objects
-                    .filter(
-                        idUnite=unite,
-                        statut__in=['en_panne', 'en_maintenance']
-                    )
-                    .exclude(id=actif.id)
-                    .exists()
-                )
-
-                if not autres_actifs_unite_bloques:
-                    unite.estProductive = True
-                    unite.save()        
+            autres_di_critiques = DemandeIntervention.objects.filter(
+                idActif=actif,
+                urgence='critique',
+                statut='en_attente'
+            ).exists()
 
             HistoriqueStatutOT.objects.create(
                 idOrdreTravail=ot,
@@ -669,39 +681,63 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                 nouveauStatut=ot.statut,
                 idUtilisateur=getattr(request.user, 'utilisateur', None),
                 motif=motif or 'Validation opérateur approuvée'
-            )
+                )
+            if not autres_ots_ouverts and not autres_di_critiques:
+                ancien_statut_actif = actif.statut
+                actif.statut = 'actif'
+                actif.save()
 
-            log_audit(request, 'VALIDER', 'ORDRES', 'OrdreTravail', ot.id,
-                    ancienne_valeur={'statut': ancien_statut, 'isvalidee': False, 'typeCloture': ot.typeCloture},
-                    nouvelle_valeur={'statut': ot.statut,    'isvalidee': True, 'typeCloture': type_cloture})
+                unite = actif.idUnite
+                if unite and not unite.estProductive:
+                    autres_actifs_unite_bloques = (
+                        actif.__class__.objects
+                        .filter(
+                            idUnite=unite,
+                            statut__in=['en_panne', 'en_maintenance']
+                        )
+                        .exclude(id=actif.id)
+                        .exists()
+                    )
+
+                    if not autres_actifs_unite_bloques:
+                        unite.estProductive = True
+                        unite.save()        
+
+
+                log_audit(request, 'VALIDER', 'ORDRES', 'OrdreTravail', ot.id,
+                            ancienne_valeur={'statut': ancien_statut, 'isvalide': False, 'typeCloture': ot.typeCloture},
+                            nouvelle_valeur={'statut': ot.statut,    'isvalide': True, 'typeCloture': type_cloture})
 
         else:
-            ot.isvalidee = True
-            ot.statut    = 'REJETE'
+            ot.isvalide   =  True
+            ot.statut     = 'REJETE'
+            print('test validation',ot.isvalide)
             ot.save()
-
+            
             di = ot.idDemandeIntervention
-            di.statut = 'en_attente'
+            di.isencours = True
+            di.statut    = 'en_attente'
+            print('test validation di',di.isencours, di.statut)
             di.save()
 
             actif = ot.idActif
-            if actif.statut != 'en_maintenance':
+            if actif.statut != 'en_panne':
                 ancien_statut_actif = actif.statut
-                actif.statut = 'en_maintenance'
+                actif.statut = 'en_panne'
                 actif.save()
 
                 from apps.actifs.models import HistoriqueStatut
                 HistoriqueStatut.objects.create(
                     idActif=actif,
                     ancienStatut=ancien_statut_actif,
-                    nouveauStatut='en_maintenance',
+                    nouveauStatut='en_panne',
                     motif=f'Validation OT #{ot.numero} rejetée',
                     modifiePar=getattr(request.user, 'utilisateur', None)
                 )
 
                 log_audit(request, 'UPDATE', 'ACTIFS', 'Actif', actif.id,
                         ancienne_valeur={'statut': ancien_statut_actif},
-                        nouvelle_valeur={'statut': 'en_maintenance'})
+                        nouvelle_valeur={'statut': 'en_panne'})
 
             HistoriqueStatutOT.objects.create(
                 idOrdreTravail=ot,
@@ -711,12 +747,11 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                 motif=motif or 'Validation opérateur rejetée — intervention à reprendre'
             )
 
+            AffectationEquipe.objects.filter(idOrdreTravail=ot).update(statut='rejeter')
+
             if ot.idDemandeIntervention:
                 di = ot.idDemandeIntervention
                 ancien_statut_di = di.statut
-                di.statut = 'en_attente'
-                di.motifRejet = f'Validation OT #{ot.numero} rejetée : {motif}'
-                di.save()
 
                 log_audit(request, 'UPDATE', 'ORDRES', 'DemandeIntervention', di.id,
                         ancienne_valeur={'statut': ancien_statut_di},
@@ -727,7 +762,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                     actif = ot.idActif
                     ancien_statut_actif = actif.statut
                     actif.statut   = 'en_panne'
-                    actif.estActif = False
+                    
                     actif.save()
 
                     from apps.actifs.models import HistoriqueStatut
@@ -753,8 +788,8 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                                 nouvelle_valeur={'estProductive': False})
 
             log_audit(request, 'REJETER_VALIDATION', 'ORDRES', 'OrdreTravail', ot.id,
-                    ancienne_valeur={'statut': ancien_statut, 'isvalidee': False},
-                    nouvelle_valeur={'statut': 'EN_COURS',    'isvalidee': False, 'motif': motif})
+                    ancienne_valeur={'statut': ancien_statut, 'isvalide': False},
+                    nouvelle_valeur={'statut': 'EN_COURS',    'isvalide': False, 'motif': motif})
 
         return Response(OrdreTravailSerializer(ot).data)
 

@@ -57,7 +57,7 @@ class DemandeIntervention(BaseModel):
     idUtilisateurSignalement = models.ForeignKey('securite.Utilisateur', on_delete=models.SET_NULL, null=True, related_name='demandes_signalee')
     dateSignalement          = models.DateTimeField(auto_now_add=True)
     description              = models.TextField(blank=True)
-    urgence                  = models.CharField(max_length=10, choices=URGENCE_CHOICES, default='normale')
+    urgence                  = models.CharField(max_length=10, choices=URGENCE_CHOICES)
     statut                   = models.CharField(max_length=15, choices=STATUT_CHOICES, default='en_attente')
     idUtilisateurValidation  = models.ForeignKey('securite.Utilisateur', on_delete=models.SET_NULL, null=True, blank=True, related_name='demandes_validees')
     dateValidation           = models.DateTimeField(null=True, blank=True)
@@ -126,7 +126,7 @@ class OrdreTravail(BaseModel):
     idActif               = models.ForeignKey('actifs.Actif', on_delete=models.CASCADE, related_name='ordres_travail')
     idDemandeIntervention = models.ForeignKey(DemandeIntervention, on_delete=models.SET_NULL, null=True, blank=True, related_name='ordres_travail')
     type                  = models.CharField(max_length=15, choices=TYPE_CHOICES, default='correctif')
-    priorite              = models.CharField(max_length=10, choices=PRIORITE_CHOICES, default='normale')
+    priorite              = models.CharField(max_length=10, choices=PRIORITE_CHOICES)
     statut                = models.CharField(max_length=25, choices=STATUT_CHOICES, default='EN_COURS')
     estSousTraite         = models.BooleanField(default=False)
     estBloquant           = models.BooleanField(default=False)
@@ -138,7 +138,7 @@ class OrdreTravail(BaseModel):
     dateCloture           = models.DateTimeField(null=True, blank=True)
     typeCloture           = models.CharField(max_length=10, choices=CLOTURE_CHOICES, blank=True)
     description           = models.TextField(blank=True)
-    isvalidee             = models.BooleanField(default=False)
+    isvalide              = models.BooleanField(default=True)
 
     class Meta:
         ordering = ['-created_at']
@@ -176,6 +176,7 @@ class AffectationEquipe(models.Model):
         ('en_attente', 'En attente'),
         ('en_cours',   'En cours'),
         ('termine',    'Terminé'),
+        ('rejeter',    'Rejeté'),
     ]
 
     id                     = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

@@ -51,8 +51,8 @@ export const ajouterCommentaire = (id, commentaire, estInterne = false) =>
 
 export const cloturerOT = (id) => api.post(`/v1/ordres/ots/${id}/cloturer/`);
 
-export const validerOT = (id, isValide, motif, typeCloture = "") =>
-  api.post(`/v1/ordres/ots/${id}/valider/`, { isValide, motif, typeCloture });
+export const validerOT = (id, isValide, motif) =>
+  api.post(`/v1/ordres/ots/${id}/valider/`, { isValide, motif });
 
 export const getDashboardOT = () => api.get("/v1/ordres/ots/dashboard/");
 

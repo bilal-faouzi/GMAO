@@ -1246,6 +1246,10 @@ export default function UserDetail() {
               <tbody>
                 {affectations.map((aff) => {
                   const statutCfg = {
+                    rejeter: {
+                      bg: "var(--status-red-bg)",
+                      text: "var(--status-red-text)",
+                    },
                     en_attente: {
                       bg: "var(--status-yellow-bg)",
                       text: "var(--status-yellow-text)",
@@ -1282,7 +1286,10 @@ export default function UserDetail() {
                             background: statutCfg.bg,
                             color: statutCfg.text,
                           }}>
-                          {aff.statut?.replace(/_/g, " ")}
+                          {(() => {
+                            console.log(aff);
+                            return aff.statut?.replace(/_/g, " ");
+                          })()}
                         </span>
                       </td>
                       <td className="text-[10px] text-text-muted">
