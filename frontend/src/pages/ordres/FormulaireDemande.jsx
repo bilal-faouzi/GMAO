@@ -79,7 +79,11 @@ function UrgenceSelector({ value, onChange }) {
   );
 }
 
-export default function FormulaireDemande({ defaultActifId, onClose }) {
+export default function FormulaireDemande({
+  defaultActifId,
+  onClose,
+  onSuccess,
+}) {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -301,8 +305,8 @@ export default function FormulaireDemande({ defaultActifId, onClose }) {
           console.warn("Erreur upload fichiers (non-bloquant):", err.message);
         }
       }
-
-      handleClose();
+      if (onSuccess) onSuccess();
+      else handleClose();
     } catch (e) {
       setErreur(e.response?.data || "Erreur lors de l'envoi.");
     } finally {

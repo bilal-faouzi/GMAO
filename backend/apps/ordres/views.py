@@ -449,7 +449,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
         
         STATUT_MAP = {
             'EN_COURS': 'en_cours',
-            'DEPANNE':  'en_attente',
+            'DEPANNE':  'termine',
             'CLOTURE':  'termine',
         }
         nouveau_statut_aff = STATUT_MAP.get(nouveau)
@@ -542,93 +542,93 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
 
         return Response(CommentaireOTSerializer(commentaire).data, status=status.HTTP_201_CREATED)
 
-    @action(detail=True, methods=['post'])
-    def cloturer(self, request, pk=None):
-        ot = self.get_object()
-        if ot.statut == 'CLOTURE':
-            return Response({'error': 'OT déjà clôturé.'}, status=status.HTTP_400_BAD_REQUEST)
+    # @action(detail=True, methods=['post'])
+    # def cloturer(self, request, pk=None):
+    #     ot = self.get_object()
+    #     if ot.statut == 'CLOTURE':
+    #         return Response({'error': 'OT déjà clôturé.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        ancien = ot.statut
-        ot.statut      = 'CLOTURE'
-        ot.dateCloture = timezone.now()
-        ot.isvalide   = False
-        debut = HistoriqueStatutOT.objects.filter(
-            idOrdreTravail=ot, nouveauStatut='EN_COURS'
-        ).order_by('dateChangement').first()
-        if debut:
-            delta = timezone.now() - debut.dateChangement
-            ot.dureeReelleMin = int(delta.total_seconds() / 60)
-        ot.save()
+    #     ancien = ot.statut
+    #     ot.statut      = 'CLOTURE'
+    #     ot.dateCloture = timezone.now()
+    #     ot.isvalide   = False
+    #     debut = HistoriqueStatutOT.objects.filter(
+    #         idOrdreTravail=ot, nouveauStatut='EN_COURS'
+    #     ).order_by('dateChangement').first()
+    #     if debut:
+    #         delta = timezone.now() - debut.dateChangement
+    #         ot.dureeReelleMin = int(delta.total_seconds() / 60)
+    #     ot.save()
 
-        AffectationEquipe.objects.filter(idOrdreTravail=ot).update(statut='termine')
+    #     AffectationEquipe.objects.filter(idOrdreTravail=ot).update(statut='termine')
 
-        HistoriqueStatutOT.objects.create(
-            idOrdreTravail=ot,
-            ancienStatut=ancien,
-            nouveauStatut='CLOTURE',
-            idUtilisateur=getattr(request.user, 'utilisateur', None),
-            motif=request.data.get('motif', '')
-        )
+    #     HistoriqueStatutOT.objects.create(
+    #         idOrdreTravail=ot,
+    #         ancienStatut=ancien,
+    #         nouveauStatut='CLOTURE',
+    #         idUtilisateur=getattr(request.user, 'utilisateur', None),
+    #         motif=request.data.get('motif', '')
+    #     )
 
-        # Vérifier si l'actif peut redevenir actif
-        actif = ot.idActif
+    #     # Vérifier si l'actif peut redevenir actif
+    #     actif = ot.idActif
 
-        autres_ots_ouverts = OrdreTravail.objects.filter(
-            idActif=actif,
-            statut__in=['EN_COURS']
-        ).exclude(id=ot.id).exists()
+    #     autres_ots_ouverts = OrdreTravail.objects.filter(
+    #         idActif=actif,
+    #         statut__in=['EN_COURS']
+    #     ).exclude(id=ot.id).exists()
 
-        autres_di_critiques = DemandeIntervention.objects.filter(
-            idActif=actif,
-            urgence='critique',
-            statut='en_attente'
-        ).exists()
+    #     autres_di_critiques = DemandeIntervention.objects.filter(
+    #         idActif=actif,
+    #         urgence='critique',
+    #         statut='en_attente'
+    #     ).exists()
 
-        if not autres_ots_ouverts and not autres_di_critiques:
-            ancien_statut_actif = actif.statut
-            actif.statut = 'actif'
-            actif.save()
+    #     if not autres_ots_ouverts and not autres_di_critiques:
+    #         ancien_statut_actif = actif.statut
+    #         actif.statut = 'actif'
+    #         actif.save()
 
-            from apps.actifs.models import HistoriqueStatut
-            HistoriqueStatut.objects.create(
-                idActif=actif,
-                ancienStatut=ancien_statut_actif,
-                nouveauStatut='actif',
-                motif=f'OT #{ot.numero} clôturé — aucune intervention en cours',
-                modifiePar=getattr(request.user, 'utilisateur', None)
-            )
+    #         from apps.actifs.models import HistoriqueStatut
+    #         HistoriqueStatut.objects.create(
+    #             idActif=actif,
+    #             ancienStatut=ancien_statut_actif,
+    #             nouveauStatut='actif',
+    #             motif=f'OT #{ot.numero} clôturé — aucune intervention en cours',
+    #             modifiePar=getattr(request.user, 'utilisateur', None)
+    #         )
 
-            log_audit(request, 'UPDATE', 'ACTIFS', 'Actif', actif.id,
-                    ancienne_valeur={'statut': ancien_statut_actif},
-                    nouvelle_valeur={'statut': 'actif'})
+    #         log_audit(request, 'UPDATE', 'ACTIFS', 'Actif', actif.id,
+    #                 ancienne_valeur={'statut': ancien_statut_actif},
+    #                 nouvelle_valeur={'statut': 'actif'})
 
-            # Remettre l'unité en productive si elle existe
-            unite = actif.idUnite
-            if unite and not unite.estProductive:
-                # Edge case : vérifier les autres actifs de la même unité
-                autres_actifs_unite_bloques = (
-                    actif.__class__.objects
-                    .filter(
-                        idUnite=unite,
-                        statut__in=['en_panne', 'en_maintenance']
-                    )
-                    .exclude(id=actif.id)
-                    .exists()
-                )
+    #         # Remettre l'unité en productive si elle existe
+    #         unite = actif.idUnite
+    #         if unite and not unite.estProductive:
+    #             # Edge case : vérifier les autres actifs de la même unité
+    #             autres_actifs_unite_bloques = (
+    #                 actif.__class__.objects
+    #                 .filter(
+    #                     idUnite=unite,
+    #                     statut__in=['en_panne', 'en_maintenance']
+    #                 )
+    #                 .exclude(id=actif.id)
+    #                 .exists()
+    #             )
 
-                if not autres_actifs_unite_bloques:
-                    unite.estProductive = True
-                    unite.save()
+    #             if not autres_actifs_unite_bloques:
+    #                 unite.estProductive = True
+    #                 unite.save()
 
-                    log_audit(request, 'UPDATE', 'ORGANISATION', 'Unite', unite.id,
-                            ancienne_valeur={'estProductive': False},
-                            nouvelle_valeur={'estProductive': True})
+    #                 log_audit(request, 'UPDATE', 'ORGANISATION', 'Unite', unite.id,
+    #                         ancienne_valeur={'estProductive': False},
+    #                         nouvelle_valeur={'estProductive': True})
 
-        log_audit(self.request, 'CLOTURER', 'ORDRES', 'OrdreTravail', ot.id,
-                ancienne_valeur={'statut': ancien},
-                nouvelle_valeur={'statut': 'CLOTURE', 'duree': ot.dureeReelleMin, 'type_cloture': ot.typeCloture})
+    #     log_audit(self.request, 'CLOTURER', 'ORDRES', 'OrdreTravail', ot.id,
+    #             ancienne_valeur={'statut': ancien},
+    #             nouvelle_valeur={'statut': 'CLOTURE', 'duree': ot.dureeReelleMin, 'type_cloture': ot.typeCloture})
 
-        return Response(OrdreTravailSerializer(ot).data)
+    #     return Response(OrdreTravailSerializer(ot).data)
 
     @action(detail=True, methods=['post'])
     def valider(self, request, pk=None):

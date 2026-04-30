@@ -3,12 +3,21 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   getOT,
   changerStatutOT,
-  cloturerOT,
   ajouterCommentaire,
   getCommentaires,
   getHistoriqueOT,
 } from "../../services/ordreService";
 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+
+// ─── Statuts ──────────────────────────────────────────────────────────────────
 const STATUT = {
   EN_COURS: {
     label: "En cours",
@@ -28,21 +37,35 @@ const STATUT = {
   },
 };
 
+// ─── Composant ────────────────────────────────────────────────────────────────
 export default function DetailOT() {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [ot, setOT] = useState(null);
   const [commentaires, setCommentaires] = useState([]);
   const [historique, setHistorique] = useState([]);
   const [onglet, setOnglet] = useState("info");
   const [loading, setLoading] = useState(true);
-  const [modalStatut, setModalStatut] = useState(false);
-  const [nvStatut, setNvStatut] = useState("");
-  const [motif, setMotif] = useState("");
+
+  // Dialog Dépanné
+  const [modalDepanne, setModalDepanne] = useState(false);
+  const [motifDepanne, setMotifDepanne] = useState("");
+  const [loadingDepanne, setLoadingDepanne] = useState(false);
+
+  // Dialog Clôturer
+  const [modalCloture, setModalCloture] = useState(false);
+  const [motifCloture, setMotifCloture] = useState("");
+  const [typeCloture, setTypeCloture] = useState("corrige");
+  const [loadingCloture, setLoadingCloture] = useState(false);
+
+  // Commentaire
   const [newComment, setNewComment] = useState("");
   const [estInterne, setEstInterne] = useState(false);
-  const estVerrouille = ["DEPANNE", "CLOTURE"].includes(ot?.statut);
 
+  const estVerrouille = ["DEPANNE", "CLOTURE", "REJETE"].includes(ot?.statut);
+
+  // ─── Chargement ─────────────────────────────────────────────────────────────
   const charger = async () => {
     try {
       const [o, c, h] = await Promise.all([
@@ -50,10 +73,9 @@ export default function DetailOT() {
         getCommentaires(id),
         getHistoriqueOT(id),
       ]);
-      console.log("Historique:", h.data);
       setOT(o.data);
-      setCommentaires(c.data.results || c.data);
-      setHistorique(h.data.results || h.data);
+      setCommentaires(c.data.results ?? c.data);
+      setHistorique(h.data.results ?? h.data);
     } catch (e) {
       console.error(e);
     } finally {
@@ -65,20 +87,38 @@ export default function DetailOT() {
     charger();
   }, [id]);
 
-  const handleChangerStatut = async () => {
-    await changerStatutOT(id, nvStatut, motif);
-    setModalStatut(false);
-    setNvStatut("");
-    setMotif("");
-    charger();
+  // ─── Action : Dépanner ──────────────────────────────────────────────────────
+  const handleDepanner = async () => {
+    setLoadingDepanne(true);
+    try {
+      await changerStatutOT(id, "DEPANNE", motifDepanne, "depanne");
+      setModalDepanne(false);
+      setMotifDepanne("");
+      charger();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingDepanne(false);
+    }
   };
 
+  // ─── Action : Clôturer ──────────────────────────────────────────────────────
   const handleCloturer = async () => {
-    if (!confirm("Clôturer définitivement cet OT ?")) return;
-    await cloturerOT(id);
-    charger();
+    setLoadingCloture(true);
+    try {
+      await changerStatutOT(id, "CLOTURE", motifCloture, typeCloture);
+      setModalCloture(false);
+      setMotifCloture("");
+      setTypeCloture("corrige");
+      charger();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingCloture(false);
+    }
   };
 
+  // ─── Action : Commentaire ───────────────────────────────────────────────────
   const handleCommentaire = async (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
@@ -88,16 +128,17 @@ export default function DetailOT() {
     charger();
   };
 
-  if (loading) return <div className="p-6 text-gray-400">Chargement...</div>;
+  // ─── Render ─────────────────────────────────────────────────────────────────
+  if (loading) return <div className="p-6 text-gray-400">Chargement…</div>;
   if (!ot) return <div className="p-6 text-red-400">OT introuvable.</div>;
 
   const s = STATUT[ot.statut];
 
   return (
     <div className="p-6 text-white">
-      {/* Header */}
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={() => navigate("/ordres/ots")}
             className="text-gray-400 hover:text-white text-sm transition">
@@ -114,29 +155,30 @@ export default function DetailOT() {
             </span>
           )}
         </div>
-        <div className="flex gap-2">
-          {!estVerrouille && (
-            <>
-              <button
-                onClick={() => {
-                  setModalStatut(true);
-                  setNvStatut(ot.statut);
-                }}
-                className="bg-amber-600 hover:bg-amber-700 px-4 py-2 rounded-lg text-sm transition">
-                Changer statut
-              </button>
-              <button
-                onClick={handleCloturer}
-                className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm transition">
-                Clôturer
-              </button>
-            </>
-          )}
-        </div>
+
+        {/* Boutons d'action — cachés si l'OT est verrouillé */}
+        {!estVerrouille && (
+          <div className="flex gap-2">
+            {/* Bouton Dépanné */}
+            <button
+              onClick={() => setModalDepanne(true)}
+              className="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg text-sm font-medium transition">
+              🔧 Dépanné
+            </button>
+
+            {/* Bouton Clôturer */}
+            <button
+              onClick={() => setModalCloture(true)}
+              className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-medium transition">
+              ✓ Clôturer
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Infos */}
+      {/* ── Infos & Délais ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        {/* Informations générales */}
         <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
           <h2 className="text-xs text-gray-500 uppercase tracking-wider mb-3">
             Informations
@@ -158,9 +200,11 @@ export default function DetailOT() {
             </div>
           ))}
         </div>
+
+        {/* Délais & Coûts */}
         <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
           <h2 className="text-xs text-gray-500 uppercase tracking-wider mb-3">
-            Délais & Coûts
+            Délais &amp; Coûts
           </h2>
           {[
             [
@@ -194,7 +238,7 @@ export default function DetailOT() {
         </div>
       </div>
 
-      {/* Onglets */}
+      {/* ── Onglets ────────────────────────────────────────────────────────── */}
       <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
         <div className="flex border-b border-gray-700">
           {[
@@ -231,8 +275,8 @@ export default function DetailOT() {
                     className="bg-gray-700/40 rounded-lg p-3 flex justify-between items-center">
                     <div>
                       <p className="text-sm font-medium">
-                        {a.equipe_detail?.libelle ||
-                          a.soustraitant_detail?.raisonSociale ||
+                        {a.equipe_detail?.libelle ??
+                          a.soustraitant_detail?.raisonSociale ??
                           "—"}
                       </p>
                       <p className="text-xs text-gray-400">
@@ -254,7 +298,7 @@ export default function DetailOT() {
               </div>
             ))}
 
-          {/* Pièces utilisées */}
+          {/* Pièces */}
           {onglet === "pieces" && (
             <p className="text-gray-500 text-sm text-center py-8">
               {ot.nb_pieces_utilisees === 0
@@ -275,7 +319,11 @@ export default function DetailOT() {
                   commentaires.map((c) => (
                     <div
                       key={c.id}
-                      className={`rounded-lg p-3 ${c.estInterne ? "bg-amber-500/10 border border-amber-500/20" : "bg-gray-700/40"}`}>
+                      className={`rounded-lg p-3 ${
+                        c.estInterne
+                          ? "bg-amber-500/10 border border-amber-500/20"
+                          : "bg-gray-700/40"
+                      }`}>
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-xs font-medium text-gray-300">
                           {c.utilisateur_detail?.prenom}{" "}
@@ -299,7 +347,7 @@ export default function DetailOT() {
                 <input
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Ajouter un commentaire..."
+                  placeholder="Ajouter un commentaire…"
                   className="flex-1 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-purple-500"
                 />
                 <label className="flex items-center gap-1 text-xs text-gray-400 cursor-pointer">
@@ -334,13 +382,13 @@ export default function DetailOT() {
                     className="flex items-center gap-3 p-3 bg-gray-700/40 rounded-lg">
                     <div className="flex items-center gap-2">
                       {h.ancienStatut && (
-                        <span
-                          className={`px-2 py-0.5 rounded text-xs border ${STATUT[h.ancienStatut]?.cls}`}>
-                          {STATUT[h.ancienStatut]?.label}
-                        </span>
-                      )}
-                      {h.ancienStatut && (
-                        <span className="text-gray-500 text-xs">→</span>
+                        <>
+                          <span
+                            className={`px-2 py-0.5 rounded text-xs border ${STATUT[h.ancienStatut]?.cls}`}>
+                            {STATUT[h.ancienStatut]?.label}
+                          </span>
+                          <span className="text-gray-500 text-xs">→</span>
+                        </>
                       )}
                       <span
                         className={`px-2 py-0.5 rounded text-xs border ${STATUT[h.nouveauStatut]?.cls}`}>
@@ -362,44 +410,133 @@ export default function DetailOT() {
         </div>
       </div>
 
-      {/* Modal changer statut */}
-      {modalStatut && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-2xl border border-gray-700 p-6 w-full max-w-sm">
-            <h2 className="text-lg font-semibold mb-4">Changer le statut</h2>
-            <select
-              value={nvStatut}
-              onChange={(e) => setNvStatut(e.target.value)}
-              className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none mb-3">
-              {Object.entries(STATUT)
-                .filter(([k]) => k !== "REJETE")
-                .map(([k, v]) => (
-                  <option key={k} value={k}>
-                    {v.label}
-                  </option>
-                ))}
-            </select>
-            <textarea
-              value={motif}
-              onChange={(e) => setMotif(e.target.value)}
-              placeholder="Motif (optionnel)"
-              className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none mb-4 resize-none h-16"
-            />
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setModalStatut(false)}
-                className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition text-white">
-                Annuler
-              </button>
-              <button
-                onClick={handleChangerStatut}
-                className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 rounded-lg transition text-white">
-                Confirmer
-              </button>
+      {/* ════════════════════════════════════════════════════════════════════════
+          Dialog — Dépanné
+      ════════════════════════════════════════════════════════════════════════ */}
+      <Dialog open={modalDepanne} onOpenChange={setModalDepanne}>
+        <DialogContent className="bg-gray-900 border border-gray-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-400">
+              🔧 Marquer comme Dépanné
+            </DialogTitle>
+            <DialogDescription className="text-gray-400 text-sm">
+              L'OT <span className="font-mono text-white">{ot.numero}</span>{" "}
+              sera marqué comme dépanné temporairement. L'actif sera rétabli.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-xs text-gray-400 mb-1.5 block">
+                Motif / Commentaire{" "}
+                <span className="text-gray-600">(optionnel)</span>
+              </label>
+              <textarea
+                value={motifDepanne}
+                onChange={(e) => setMotifDepanne(e.target.value)}
+                placeholder="Décrivez l'action de dépannage effectuée…"
+                rows={4}
+                className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-orange-500 resize-none transition"
+              />
             </div>
           </div>
-        </div>
-      )}
+
+          <DialogFooter className="gap-2 mt-2">
+            <button
+              onClick={() => {
+                setModalDepanne(false);
+                setMotifDepanne("");
+              }}
+              className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition text-white">
+              Annuler
+            </button>
+            <button
+              onClick={handleDepanner}
+              disabled={loadingDepanne}
+              className="px-4 py-2 text-sm bg-orange-600 hover:bg-orange-700 disabled:opacity-50 rounded-lg transition text-white font-medium">
+              {loadingDepanne ? "Enregistrement…" : "Confirmer le dépannage"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ════════════════════════════════════════════════════════════════════════
+          Dialog — Clôturer
+      ════════════════════════════════════════════════════════════════════════ */}
+      <Dialog open={modalCloture} onOpenChange={setModalCloture}>
+        <DialogContent className="bg-gray-900 border border-gray-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-green-400">
+              ✓ Clôturer l'ordre de travail
+            </DialogTitle>
+            <DialogDescription className="text-gray-400 text-sm">
+              L'OT <span className="font-mono text-white">{ot.numero}</span>{" "}
+              sera clôturé définitivement. Cette action est irréversible.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {/* Type de clôture */}
+            <div>
+              <label className="text-xs text-gray-400 mb-1.5 block">
+                Type de clôture
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: "corrige", label: "Corrigé", icon: "✅" },
+                  { value: "depanne", label: "Dépanné", icon: "🔧" },
+                  { value: "annule", label: "Annulé", icon: "❌" },
+                ].map(({ value, label, icon }) => (
+                  <button
+                    key={value}
+                    onClick={() => setTypeCloture(value)}
+                    className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg border text-xs font-medium transition ${
+                      typeCloture === value
+                        ? "border-green-500 bg-green-500/15 text-green-400"
+                        : "border-gray-600 bg-gray-800 text-gray-400 hover:border-gray-500"
+                    }`}>
+                    <span className="text-base">{icon}</span>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Motif */}
+            <div>
+              <label className="text-xs text-gray-400 mb-1.5 block">
+                Motif / Rapport de clôture{" "}
+                <span className="text-gray-600">(optionnel)</span>
+              </label>
+              <textarea
+                value={motifCloture}
+                onChange={(e) => setMotifCloture(e.target.value)}
+                placeholder="Décrivez les travaux effectués et le résultat final…"
+                rows={4}
+                className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-green-500 resize-none transition"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 mt-2">
+            <button
+              onClick={() => {
+                setModalCloture(false);
+                setMotifCloture("");
+                setTypeCloture("corrige");
+              }}
+              className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition text-white">
+              Annuler
+            </button>
+            <button
+              onClick={handleCloturer}
+              disabled={loadingCloture}
+              className="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition text-white font-medium">
+              {loadingCloture ? "Clôture en cours…" : "Clôturer définitivement"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

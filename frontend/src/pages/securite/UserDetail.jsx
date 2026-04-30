@@ -38,13 +38,7 @@ import {
 import { RoleManager } from "@/components/RoleManager";
 import { TeamManager } from "@/components/TeamManager";
 import { AppartenanceManager } from "@/components/AppartenanceManager";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import DIDetailDialog from "@/components/DIDetailDialog";
 import { hover } from "framer-motion";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -1310,152 +1304,11 @@ export default function UserDetail() {
         </SectionCard>
       </div>
 
-      {/* ═══════════════════ DIALOG DÉTAIL DI ═══════════════════
-          BUG 1 CORRIGÉ — DialogTitle + DialogDescription importés et utilisés
-          BUG 3 CORRIGÉ — Lecture audio via composant AudioPlayer dédié
-          BUG 4 CORRIGÉ — URLs préfixées via getFileUrl()
-      */}
-      <Dialog open={showDIDialog} onOpenChange={setShowDIDialog}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          {selectedDI && (
-            <>
-              <DialogHeader>
-                {/* BUG 1 — DialogTitle maintenant correctement importé */}
-                <DialogTitle className="flex items-center gap-2">
-                  <FileText size={16} />
-                  {selectedDI.numero}
-                </DialogTitle>
-                {/* BUG 1 — DialogDescription maintenant correctement importé */}
-                <DialogDescription>
-                  {selectedDI.description || "Aucune description"}
-                </DialogDescription>
-              </DialogHeader>
-
-              {/* Infos DI */}
-              <div className="grid grid-cols-2 gap-3 text-xs mt-3">
-                <div>
-                  <span className="text-text-muted">Urgence :</span>{" "}
-                  <span className="font-medium capitalize">
-                    {selectedDI.urgence}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-text-muted">Statut :</span>{" "}
-                  <span className="font-medium">{selectedDI.statut}</span>
-                </div>
-                <div>
-                  <span className="text-text-muted">Date :</span>{" "}
-                  {formatDate(selectedDI.dateSignalement)}
-                </div>
-                <div>
-                  <span className="text-text-muted">Actif :</span>{" "}
-                  {selectedDI.actif_detail?.libelle || "—"}
-                </div>
-              </div>
-
-              {/* Pièces jointes */}
-              {selectedDI.pieces_jointes?.length > 0 && (
-                <div className="mt-4">
-                  <div className="text-xs font-semibold mb-3 flex items-center gap-1.5">
-                    <FileText size={13} />
-                    Pièces jointes ({selectedDI.pieces_jointes.length})
-                  </div>
-
-                  {/* ── AUDIO — BUG 3 CORRIGÉ ─────────────────── */}
-                  {selectedDI.pieces_jointes.some((f) =>
-                    f.typeFichier?.startsWith("audio"),
-                  ) && (
-                    <div className="mb-4">
-                      <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <span className="w-1 h-3 rounded-sm bg-primary" />
-                        Enregistrements audio
-                      </p>
-                      <div className="flex flex-col gap-2">
-                        {selectedDI.pieces_jointes
-                          .filter((f) => f.typeFichier?.startsWith("audio"))
-                          .map((file) => (
-                            <AudioPlayer key={file.id} file={file} />
-                          ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ── IMAGES — BUG 4 CORRIGÉ ────────────────── */}
-                  {selectedDI.pieces_jointes.some((f) =>
-                    f.typeFichier?.startsWith("image"),
-                  ) && (
-                    <div className="mb-4">
-                      <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <span className="w-1 h-3 rounded-sm bg-primary" />
-                        Images
-                      </p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {selectedDI.pieces_jointes
-                          .filter((f) => f.typeFichier?.startsWith("image"))
-                          .map((file) => (
-                            <ImageViewer key={file.id} file={file} />
-                          ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ── AUTRES FICHIERS ───────────────────────── */}
-                  {selectedDI.pieces_jointes.filter(
-                    (f) =>
-                      !f.typeFichier?.startsWith("audio") &&
-                      !f.typeFichier?.startsWith("image"),
-                  ).length > 0 && (
-                    <div>
-                      <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <span className="w-1 h-3 rounded-sm bg-primary" />
-                        Autres fichiers
-                      </p>
-                      <div className="flex flex-col gap-1.5">
-                        {selectedDI.pieces_jointes
-                          .filter(
-                            (f) =>
-                              !f.typeFichier?.startsWith("audio") &&
-                              !f.typeFichier?.startsWith("image"),
-                          )
-                          .map((file) => (
-                            <div
-                              key={file.id}
-                              className="flex items-center gap-3 p-2.5 border border-border-subtle rounded-sm bg-[var(--bg-elevated)]">
-                              <FileText
-                                size={14}
-                                className="shrink-0 text-text-muted"
-                              />
-                              <span className="text-xs text-text-primary flex-1 truncate">
-                                {file.nomFichier}
-                              </span>
-                              <a
-                                href={getFileUrl(file.url)}
-                                download
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary text-xs flex items-center gap-1 shrink-0 hover:underline">
-                                <Download size={12} />
-                                Télécharger
-                              </a>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Aucune pièce jointe */}
-              {(!selectedDI.pieces_jointes ||
-                selectedDI.pieces_jointes.length === 0) && (
-                <div className="mt-4 p-4 text-center text-text-muted text-xs border border-border-subtle rounded-sm">
-                  Aucune pièce jointe pour cette demande
-                </div>
-              )}
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      <DIDetailDialog
+        di={selectedDI}
+        Open={showDIDialog}
+        onOpenChange={setShowDIDialog}
+      />
     </div>
   );
 }

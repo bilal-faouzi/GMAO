@@ -19,6 +19,11 @@ const STATUT_CONFIG = {
     text: "var(--status-green-text)",
     label: "Clôturé",
   },
+  REJETE: {
+    bg: "var(--status-red-bg)",
+    text: "var(--status-red-text)",
+    label: "Rejeté",
+  },
 };
 
 export default function DashboardOTs() {

@@ -1,3 +1,4 @@
+import DIDetailDialog from "@/components/DIDetailDialog";
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -75,6 +76,8 @@ export default function ListeDemandes() {
   const [total, setTotal] = useState(0);
   const [modalRejet, setModalRejet] = useState(null);
   const [motifRejet, setMotifRejet] = useState("");
+  const [selectedDI, setSelectedDI] = useState(null);
+  const [showDIDialog, setShowDIDialog] = useState(false);
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const charger = useCallback(async () => {
@@ -243,7 +246,13 @@ export default function ListeDemandes() {
                 const statusCfg =
                   STATUT_CONFIG[d.statut] || STATUT_CONFIG.en_attente;
                 return (
-                  <tr key={d.id}>
+                  <tr
+                    key={d.id}
+                    onClick={() => {
+                      setSelectedDI(d);
+                      setShowDIDialog(true);
+                    }}
+                    style={{ cursor: "pointer" }}>
                     <td style={{ fontWeight: 500 }}>
                       <span
                         className="badge"
@@ -439,6 +448,11 @@ export default function ListeDemandes() {
           </div>
         </div>
       )}
+      <DIDetailDialog
+        di={selectedDI}
+        open={showDIDialog}
+        onOpenChange={setShowDIDialog}
+      />
     </div>
   );
 }

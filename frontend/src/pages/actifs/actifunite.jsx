@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getActifs, deleteActif } from "../../services/actifService";
 import {
@@ -122,6 +122,7 @@ export default function ActifUnite() {
   // ── Données liste ──────────────────────────────────────────────────────────
   const [actifs, setActifs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [erreur, setErreur] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -141,6 +142,9 @@ export default function ActifUnite() {
   const [userSite, setUserSite] = useState(null); // { id, code, libelle }
   const [userUnite, setUserUnite] = useState(null);
 
+  // Ajouter en haut du composant (après les useState)
+  const hasDataRef = useRef(false);
+
   // ── Chargement des référentiels org au montage ─────────────────────────────
   useEffect(() => {
     setOrgLoading(true);
@@ -158,7 +162,8 @@ export default function ActifUnite() {
 
   // ── Chargement de la liste ─────────────────────────────────────────────────
   const charger = useCallback(async () => {
-    setLoading(true);
+    if (hasDataRef.current) setRefreshing(true);
+    else setLoading(true);
     setErreur(null);
     try {
       const params = {
@@ -169,6 +174,7 @@ export default function ActifUnite() {
       };
       if (search.trim()) params.search = search.trim();
       const res = await getActifs(params);
+
       console.log("Actifs chargés :", res.data);
 
       const results = res.data.results ?? res.data;
@@ -176,6 +182,7 @@ export default function ActifUnite() {
         res.data.results !== undefined ? res.data.count : res.data.length;
 
       setActifs(results);
+      hasDataRef.current = true;
       setTotal(count);
 
       // ↓ On extrait le site et l'unité du premier actif retourné
@@ -188,6 +195,7 @@ export default function ActifUnite() {
       setErreur("Erreur lors du chargement des actifs");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [page, search, userSite]);
 
@@ -289,6 +297,17 @@ export default function ActifUnite() {
 
       {/* Tableau */}
       <div className="tbl-card">
+        {refreshing && (
+          <div
+            style={{
+              height: 2,
+              background: "var(--color-primary, #6366f1)",
+              borderRadius: 2,
+              animation: "pulse 1s ease-in-out infinite",
+              opacity: 0.7,
+            }}
+          />
+        )}
         <div className="tbl-head">
           <span className="tbl-title">Actifs racines</span>
           <span className="tbl-count">{total}</span>
@@ -307,7 +326,7 @@ export default function ActifUnite() {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
+              {loading && actifs.length === 0 ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i}>
                     {Array.from({ length: 7 }).map((_, j) => (
@@ -451,6 +470,10 @@ export default function ActifUnite() {
             <FormulaireDemande
               defaultActifId={dialogActif.id}
               onClose={() => setDialogActif(null)}
+              onSuccess={() => {
+                setDialogActif(null);
+                charger();
+              }}
             />
           )}
         </DialogContent>
