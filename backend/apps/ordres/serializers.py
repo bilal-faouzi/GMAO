@@ -19,6 +19,7 @@ class DemandeInterventionSerializer(serializers.ModelSerializer):
     validation_detail   = serializers.SerializerMethodField()
     nb_pieces_jointes   = serializers.SerializerMethodField()
     pieces_jointes      = serializers.SerializerMethodField()
+    idUtilisateurSignalement = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model  = DemandeIntervention

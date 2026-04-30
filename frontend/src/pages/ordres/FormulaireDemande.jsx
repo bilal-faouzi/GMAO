@@ -14,6 +14,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import api from "../../services/api";
+import { Input } from "@/components/ui/input";
 
 const URGENCES = [
   {
@@ -88,6 +89,7 @@ export default function FormulaireDemande({
 
   const [form, setForm] = useState({
     idActif: defaultActifId ?? "",
+    titre: "",
     description: "",
     urgence: "normale",
   });
@@ -362,6 +364,16 @@ export default function FormulaireDemande({
         />
       </div>
 
+      {/* titre */}
+      <div className="fg">
+        <Label className="flabel">titre</Label>
+        <Input
+          name="titre"
+          value={form.titre}
+          onChange={handleChange}
+          placeholder="Titre Sinificative..."
+        />
+      </div>
       {/* Description */}
       <div className="fg">
         <Label className="flabel">Description</Label>

@@ -1,5 +1,6 @@
 from urllib import request
 
+from apps.securite.models import Utilisateur
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -54,8 +55,16 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         actif = serializer.validated_data.get('idActif')
+        
+        
+        idUtilisateurSignalement=getattr(self.request.user, 'id', None)
+        
+        
+        user_instance = Utilisateur.objects.get(id=idUtilisateurSignalement)
+        
+        instance = serializer.save(idUtilisateurSignalement=user_instance) 
 
-        instance = serializer.save()
+        
 
         if instance.urgence == 'critique':
             ancien_statut = actif.statut

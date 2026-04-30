@@ -248,7 +248,8 @@ export default function ListeDemandes() {
                 return (
                   <tr
                     key={d.id}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setSelectedDI(d);
                       setShowDIDialog(true);
                     }}
@@ -317,16 +318,20 @@ export default function ListeDemandes() {
                             <button
                               className="btn btn-ghost btn-icon"
                               title="Valider"
-                              onClick={() => handleValider(d.id)}
+                              onClick={(e) => {
+                                handleValider(d.id);
+                                e.stopPropagation();
+                              }}
                               style={{ color: "var(--status-green-text)" }}>
                               <Check size={14} />
                             </button>
                             <button
                               className="btn btn-ghost btn-icon"
                               title="Rejeter"
-                              onClick={() => {
+                              onClick={(e) => {
                                 setModalRejet(d.id);
                                 setMotifRejet("");
+                                e.stopPropagation();
                               }}
                               style={{ color: "var(--status-red-text)" }}>
                               <X size={14} />
