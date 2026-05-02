@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { FileText, Download, AlertTriangle, Play, Pause } from "lucide-react";
+import { FileText, Download, AlertTriangle, Play, Pause, Image, Music, Video, ChevronRight, FolderTree } from "lucide-react";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 function formatDate(iso) {
@@ -183,11 +183,14 @@ function AudioPlayer({ file }) {
           download
           target="_blank"
           rel="noopener noreferrer"
+          title="Télécharger"
           style={{
             color: "var(--text-muted)",
             flexShrink: 0,
             display: "flex",
             alignItems: "center",
+            padding: 4,
+            borderRadius: 4,
           }}
           onMouseEnter={(e) =>
             (e.currentTarget.style.color = "var(--color-primary)")
@@ -207,6 +210,78 @@ function AudioPlayer({ file }) {
 function ImageViewer({ file }) {
   const url = getFileUrl(file.url);
   const [error, setError] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <>
+      <div className="border border-border-subtle rounded-sm overflow-hidden">
+        {error ? (
+          <div className="p-4 text-center bg-[var(--bg-elevated)]">
+            <AlertTriangle
+              size={20}
+              className="mx-auto mb-1 text-[var(--status-red-text)]"
+            />
+            <p className="text-[10px] text-text-muted">Image non disponible</p>
+          </div>
+        ) : (
+          <div className="relative group cursor-pointer" onClick={() => setExpanded(true)}>
+            <img
+              src={url}
+              alt={file.nomFichier}
+              onError={() => setError(true)}
+              className="w-full max-h-56 object-contain bg-[var(--bg-elevated)]"
+            />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition opacity-0 group-hover:opacity-100">
+              <span className="bg-black/70 text-white text-[10px] px-2 py-1 rounded flex items-center gap-1">
+                <Image size={10} /> Agrandir
+              </span>
+            </div>
+          </div>
+        )}
+        <div className="px-2 py-1.5 flex items-center justify-between border-t border-border-subtle bg-[var(--bg-elevated)]">
+          <p className="text-[10px] text-text-muted truncate flex-1">
+            {file.nomFichier}
+          </p>
+          <a
+            href={url}
+            download
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-text-muted hover:text-primary ml-2 shrink-0"
+            title="Télécharger"
+            onClick={(e) => e.stopPropagation()}>
+            <Download size={12} />
+          </a>
+        </div>
+      </div>
+
+      {/* Modal plein écran */}
+      {expanded && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setExpanded(false)}>
+          <img 
+            src={url} 
+            alt={file.nomFichier} 
+            className="max-w-full max-h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button 
+            className="absolute top-4 right-4 text-white/70 hover:text-white text-sm"
+            onClick={() => setExpanded(false)}>
+            ✕ Fermer
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─── VideoViewer ──────────────────────────────────────────────────────────────
+
+function VideoViewer({ file }) {
+  const url = getFileUrl(file.url);
+  const [error, setError] = useState(false);
 
   return (
     <div className="border border-border-subtle rounded-sm overflow-hidden">
@@ -216,32 +291,16 @@ function ImageViewer({ file }) {
             size={20}
             className="mx-auto mb-1 text-[var(--status-red-text)]"
           />
-          <p className="text-[10px] text-text-muted">Image non disponible</p>
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[10px] text-primary underline mt-1 block">
-            Ouvrir le lien
-          </a>
+          <p className="text-[10px] text-text-muted">Vidéo non disponible</p>
         </div>
       ) : (
-        <div className="relative group">
-          <img
+        <div className="relative">
+          <video
             src={url}
-            alt={file.nomFichier}
+            controls
+            className="w-full max-h-64 object-contain bg-[var(--bg-elevated)]"
             onError={() => setError(true)}
-            className="w-full max-h-56 object-contain bg-[var(--bg-elevated)]"
           />
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition opacity-0 group-hover:opacity-100">
-            <span className="bg-black/70 text-white text-[10px] px-2 py-1 rounded">
-              Ouvrir en plein écran
-            </span>
-          </a>
         </div>
       )}
       <div className="px-2 py-1.5 flex items-center justify-between border-t border-border-subtle bg-[var(--bg-elevated)]">
@@ -262,6 +321,76 @@ function ImageViewer({ file }) {
   );
 }
 
+// ─── HierarchyPath ────────────────────────────────────────────────────────────
+
+function HierarchyPath({ actifDetail }) {
+  if (!actifDetail) return null;
+  
+  const chemin = actifDetail.chemin_hierarchique || [];
+  const hasParent = chemin.length > 0;
+  const hasChildren = actifDetail.fils && actifDetail.fils.length > 0;
+  
+  return (
+    <div className="mt-3 p-3 border border-border-subtle rounded-sm bg-[var(--bg-elevated)]">
+      <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        <FolderTree size={12} /> Hiérarchie de l'actif
+      </p>
+      
+      {/* Chemin complet */}
+      <div className="flex items-center flex-wrap gap-1 text-xs">
+        {hasParent ? (
+          <>
+            {chemin.map((h, i) => (
+              <span key={h.id} className="flex items-center">
+                <span className="px-2 py-0.5 rounded bg-primary-soft text-primary font-medium">
+                  {h.code}
+                </span>
+                {i < chemin.length && <ChevronRight size={12} className="text-text-muted mx-0.5" />}
+              </span>
+            ))}
+            <span className="px-2 py-0.5 rounded bg-[var(--color-primary)] text-white font-medium">
+              {actifDetail.code}
+            </span>
+          </>
+        ) : (
+          <span className="px-2 py-0.5 rounded bg-[var(--color-primary)] text-white font-medium">
+            {actifDetail.code}
+          </span>
+        )}
+        <span className="text-text-muted ml-1">— {actifDetail.libelle}</span>
+      </div>
+      
+      {/* Statut */}
+      <div className="mt-2 text-[11px] text-text-muted">
+        Statut actuel: <span className="font-medium capitalize">{actifDetail.statut?.replace(/_/g, " ")}</span>
+      </div>
+      
+      {/* Fils directs */}
+      {hasChildren && (
+        <div className="mt-2">
+          <p className="text-[10px] text-text-muted mb-1">
+            Fils directs ({actifDetail.fils.length}):
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {actifDetail.fils.map(f => (
+              <span key={f.id} className="px-2 py-0.5 rounded border border-border-subtle text-[11px] text-text-secondary bg-[var(--bg-surface)]">
+                {f.code} — {f.libelle}
+                <span className={`ml-1 text-[9px] px-1 rounded ${
+                  f.statut === 'en_panne' ? 'bg-red-100 text-red-600' :
+                  f.statut === 'en_maintenance' ? 'bg-amber-100 text-amber-600' :
+                  'bg-green-100 text-green-600'
+                }`}>
+                  {f.statut?.replace(/_/g, " ")}
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── DIDetailDialog ───────────────────────────────────────────────────────────
 
 export default function DIDetailDialog({ di, open, onOpenChange }) {
@@ -273,13 +402,14 @@ export default function DIDetailDialog({ di, open, onOpenChange }) {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FileText size={16} />
-                {di.numero} ---- DE{" "}
-                {di.signalement_detail
-                  ? `${di.signalement_detail.nom} ${di.signalement_detail.prenom}`
-                  : "Anonyme"}
+                {di.numero} — {di.titre || "Sans titre"}
               </DialogTitle>
               <DialogDescription>
-                {di.titre || "Aucune titre"}
+                Déclaré par{" "}
+                {di.signalement_detail
+                  ? `${di.signalement_detail.nom} ${di.signalement_detail.prenom}`
+                  : "Anonyme"}{" "}
+                le {formatDate(di.dateSignalement)}
               </DialogDescription>
             </DialogHeader>
 
@@ -304,8 +434,12 @@ export default function DIDetailDialog({ di, open, onOpenChange }) {
                 {di.actif_detail?.libelle || "—"}
               </div>
             </div>
+            
+            {/* Hiérarchie */}
+            <HierarchyPath actifDetail={di.actif_detail} />
+            
             {di.motifRejet && (
-              <div className="bg-surface  shadow shadow-indigo-600/50 rounded-md m-2 p-2 gap-1">
+              <div className="bg-surface shadow shadow-indigo-600/50 rounded-md m-2 p-2 gap-1">
                 {di.motifRejet}
               </div>
             )}
@@ -324,7 +458,7 @@ export default function DIDetailDialog({ di, open, onOpenChange }) {
                 ) && (
                   <div className="mb-4">
                     <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <span className="w-1 h-3 rounded-sm bg-primary" />{" "}
+                      <Music size={12} />{" "}
                       Enregistrements audio
                     </p>
                     <div className="flex flex-col gap-2">
@@ -343,7 +477,7 @@ export default function DIDetailDialog({ di, open, onOpenChange }) {
                 ) && (
                   <div className="mb-4">
                     <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <span className="w-1 h-3 rounded-sm bg-primary" /> Images
+                      <Image size={12} /> Images
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                       {di.pieces_jointes
@@ -355,23 +489,42 @@ export default function DIDetailDialog({ di, open, onOpenChange }) {
                   </div>
                 )}
 
+                {/* Vidéos */}
+                {di.pieces_jointes.some((f) =>
+                  f.typeFichier?.startsWith("video"),
+                ) && (
+                  <div className="mb-4">
+                    <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <Video size={12} /> Vidéos
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {di.pieces_jointes
+                        .filter((f) => f.typeFichier?.startsWith("video"))
+                        .map((f) => (
+                          <VideoViewer key={f.id} file={f} />
+                        ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Autres fichiers */}
                 {di.pieces_jointes.filter(
                   (f) =>
                     !f.typeFichier?.startsWith("audio") &&
-                    !f.typeFichier?.startsWith("image"),
+                    !f.typeFichier?.startsWith("image") &&
+                    !f.typeFichier?.startsWith("video"),
                 ).length > 0 && (
                   <div>
                     <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <span className="w-1 h-3 rounded-sm bg-primary" /> Autres
-                      fichiers
+                      <FileText size={12} /> Autres fichiers
                     </p>
                     <div className="flex flex-col gap-1.5">
                       {di.pieces_jointes
                         .filter(
                           (f) =>
                             !f.typeFichier?.startsWith("audio") &&
-                            !f.typeFichier?.startsWith("image"),
+                            !f.typeFichier?.startsWith("image") &&
+                            !f.typeFichier?.startsWith("video"),
                         )
                         .map((f) => (
                           <div

@@ -27,7 +27,7 @@ class ActifViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     pagination_class = ActifPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['idSite', 'idUnite', 'type', 'statut', 'estActif']
+    filterset_fields = ['idSite', 'idUnite', 'idParent', 'type', 'statut', 'estActif']
     search_fields = ['code', 'libelle', 'numSerie', 'fabricant']
     ordering_fields = ['code', 'dateAcquisition', 'statut']
 

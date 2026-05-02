@@ -1306,7 +1306,7 @@ export default function UserDetail() {
 
       <DIDetailDialog
         di={selectedDI}
-        Open={showDIDialog}
+        open={showDIDialog}
         onOpenChange={setShowDIDialog}
       />
     </div>

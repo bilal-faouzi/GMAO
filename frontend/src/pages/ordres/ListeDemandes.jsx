@@ -233,6 +233,7 @@ export default function ListeDemandes() {
               <tr>
                 <th>Numéro</th>
                 <th>Actif</th>
+                <th>Hiérarchie</th>
                 <th>Urgence</th>
                 <th>Statut</th>
                 <th>Date</th>
@@ -276,6 +277,48 @@ export default function ListeDemandes() {
                         }}>
                         {d.actif_detail?.libelle || "—"}
                       </div>
+                    </td>
+                    <td>
+                      {d.actif_detail?.chemin_hierarchique?.length > 0 ? (
+                        <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                          {d.actif_detail.chemin_hierarchique.map((h, i) => (
+                            <span key={h.id}>
+                              <span style={{ fontWeight: 500, color: "var(--text-secondary)" }}>{h.code}</span>
+                              {i < d.actif_detail.chemin_hierarchique.length - 1 && (
+                                <span style={{ margin: "0 3px", color: "var(--text-muted)" }}>›</span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: "11px", color: "var(--text-muted)", fontStyle: "italic" }}>
+                          Actif racine
+                        </span>
+                      )}
+                      {d.actif_detail?.fils?.length > 0 && (
+                        <div style={{ marginTop: 4 }}>
+                          <span style={{ fontSize: "10px", color: "var(--color-primary)" }}>
+                            {d.actif_detail.fils.length} fil(s):
+                          </span>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginTop: 2 }}>
+                            {d.actif_detail.fils.slice(0, 3).map(f => (
+                              <span key={f.id} className="badge" style={{
+                                fontSize: "10px",
+                                background: "var(--primary-soft)",
+                                color: "var(--color-primary)",
+                                padding: "1px 6px",
+                              }}>
+                                {f.code}
+                              </span>
+                            ))}
+                            {d.actif_detail.fils.length > 3 && (
+                              <span style={{ fontSize: "10px", color: "var(--text-muted)" }}>
+                                +{d.actif_detail.fils.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </td>
                     <td>
                       <span

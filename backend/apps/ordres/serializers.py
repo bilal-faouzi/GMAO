@@ -26,7 +26,37 @@ class DemandeInterventionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_actif_detail(self, obj):
-        return {'id': str(obj.idActif.id), 'code': obj.idActif.code, 'libelle': obj.idActif.libelle}
+        actif = obj.idActif
+        # Chemin hiérarchique (racine → parent direct)
+        chemin = []
+        current = actif.idParent
+        while current is not None:
+            chemin.insert(0, {
+                'id': str(current.id),
+                'code': current.code,
+                'libelle': current.libelle,
+            })
+            current = current.idParent
+        
+        # Fils directs (enfants)
+        fils = [
+            {'id': str(e.id), 'code': e.code, 'libelle': e.libelle, 'statut': e.statut}
+            for e in actif.sous_actifs.filter(estActif=True)
+        ]
+        
+        return {
+            'id': str(actif.id),
+            'code': actif.code,
+            'libelle': actif.libelle,
+            'statut': actif.statut,
+            'chemin_hierarchique': chemin,
+            'parent_detail': {
+                'id': str(actif.idParent.id),
+                'code': actif.idParent.code,
+                'libelle': actif.idParent.libelle,
+            } if actif.idParent else None,
+            'fils': fils,
+        }
 
     def get_signalement_detail(self, obj):
         print(f'📝 get_signalement_detail called for {obj.numero}')

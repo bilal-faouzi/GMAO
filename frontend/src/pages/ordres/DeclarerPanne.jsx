@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createDemande, getDemandes } from '../../services/ordreService';
 import { getActifs } from '../../services/actifService';
-import { Upload, X, Image, Mic } from 'lucide-react';
+import { Upload, X, Image, Mic, Video, AlertTriangle } from 'lucide-react';
 import api from '../../services/api';
 
 const URGENCE_INFO = {
@@ -13,21 +13,26 @@ const URGENCE_INFO = {
 };
 
 const STATUT = {
-  en_attente: { label: 'En attente', cls: 'bg-amber-500/20 text-amber-400' },
+  en_attente: { label: 'Nouvelle déclaration de panne', cls: 'bg-amber-500/20 text-amber-400' },
   validee:    { label: 'Validée → OT créé', cls: 'bg-green-500/20 text-green-400' },
   rejetee:    { label: 'Rejetée', cls: 'bg-red-500/20 text-red-400' },
 };
 
 export default function DeclarerPanne() {
   const navigate = useNavigate();
-  const [actifs, setActifs]     = useState([]);
   const [mesDemandes, setMesDemandes] = useState([]);
   const [loading, setLoading]   = useState(false);
-  const [actifSearch, setActifSearch] = useState('');
-  const [actifSelectionne, setActifSelectionne] = useState(null);
-  const [form, setForm] = useState({ idActif: '', urgence: 'normale', description: '' });
+  
+  // Sélection cascade hiérarchique
+  const [selectionPath, setSelectionPath] = useState([]); // Chemin d'actifs sélectionnés [niveau0, niveau1, ...]
+  const [optionsAtLevel, setOptionsAtLevel] = useState([]); // Options par niveau [[racines], [enfants niv1], ...]
+  const [loadingActifs, setLoadingActifs] = useState(false);
+  
+  const [form, setForm] = useState({ idActif: '', titre: '', urgence: 'normale', description: '' });
   const [images, setImages] = useState([]);
   const [previewImages, setPreviewImages] = useState([]);
+  const [videos, setVideos] = useState([]);
+  const [previewVideos, setPreviewVideos] = useState([]);
   const [audioFiles, setAudioFiles] = useState([]);
   
   // Audio recording states & refs
@@ -47,7 +52,16 @@ export default function DeclarerPanne() {
   const [succes, setSucces]     = useState('');
 
   useEffect(() => {
-    getActifs({ estActif: true }).then(r => setActifs(r.data.results || r.data));
+    // Charger les actifs racines (parents) pour le premier niveau
+    setLoadingActifs(true);
+    getActifs({ estActif: true, is_parent: true })
+      .then(r => {
+        const roots = r.data.results || r.data;
+        setOptionsAtLevel([roots]);
+      })
+      .catch(err => console.error('Erreur chargement actifs racines:', err))
+      .finally(() => setLoadingActifs(false));
+    
     getDemandes().then(r => setMesDemandes((r.data.results || r.data).slice(0, 10)));
   }, []);
 
@@ -84,10 +98,56 @@ export default function DeclarerPanne() {
     };
   }, []);
 
-  const actifsFiltres = actifs.filter(a =>
-    a.code?.toLowerCase().includes(actifSearch.toLowerCase()) ||
-    a.libelle?.toLowerCase().includes(actifSearch.toLowerCase())
-  );
+  // Actif parent = le premier élément du chemin de sélection (racine)
+  const actifParent = selectionPath.length > 0 ? selectionPath[0] : null;
+  // Actif sélectionné = le dernier élément du chemin (l'enfant concerné)
+  const actifSelectionne = selectionPath.length > 0 ? selectionPath[selectionPath.length - 1] : null;
+
+  const handleSelectAtLevel = async (levelIndex, assetId) => {
+    if (!assetId) {
+      // Réinitialiser à ce niveau et tout ce qui est en dessous
+      setSelectionPath(prev => prev.slice(0, levelIndex));
+      setOptionsAtLevel(prev => prev.slice(0, levelIndex + 1));
+      setForm(f => ({ ...f, idActif: '' }));
+      return;
+    }
+
+    const selectedAsset = optionsAtLevel[levelIndex].find(a => a.id === assetId);
+    if (!selectedAsset) return;
+
+    // Mettre à jour le chemin jusqu'à ce niveau
+    const newPath = selectionPath.slice(0, levelIndex);
+    newPath[levelIndex] = selectedAsset;
+    setSelectionPath(newPath);
+    setForm(f => ({ ...f, idActif: selectedAsset.id }));
+
+    // Nettoyer les niveaux inférieurs
+    setOptionsAtLevel(prev => prev.slice(0, levelIndex + 1));
+
+    // Charger les enfants de l'actif sélectionné
+    setLoadingActifs(true);
+    try {
+      const r = await getActifs({ estActif: true, idParent: selectedAsset.id });
+      const children = r.data.results || r.data;
+      if (children.length > 0) {
+        setOptionsAtLevel(prev => {
+          const updated = [...prev.slice(0, levelIndex + 1)];
+          updated[levelIndex + 1] = children;
+          return updated;
+        });
+      }
+    } catch (err) {
+      console.error('Erreur chargement enfants:', err);
+    } finally {
+      setLoadingActifs(false);
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectionPath([]);
+    setOptionsAtLevel(prev => prev.slice(0, 1));
+    setForm(f => ({ ...f, idActif: '' }));
+  };
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files || []);
@@ -104,6 +164,23 @@ export default function DeclarerPanne() {
     URL.revokeObjectURL(previewImages[index]);
     setImages(newImages);
     setPreviewImages(newPreviews);
+  };
+
+  const handleVideoChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    const newVideos = [...videos, ...files];
+    const newPreviews = newVideos.map(f => URL.createObjectURL(f));
+    setVideos(newVideos);
+    setPreviewVideos(newPreviews);
+    e.target.value = '';
+  };
+
+  const removeVideo = (index) => {
+    const newVideos = videos.filter((_, i) => i !== index);
+    const newPreviews = previewVideos.filter((_, i) => i !== index);
+    URL.revokeObjectURL(previewVideos[index]);
+    setVideos(newVideos);
+    setPreviewVideos(newPreviews);
   };
 
   const startRecording = async () => {
@@ -304,6 +381,7 @@ export default function DeclarerPanne() {
     e.preventDefault();
     setErreur(''); setSucces('');
     if (!form.idActif)      return setErreur('Sélectionnez l\'équipement en panne.');
+    if (!form.titre.trim()) return setErreur('Saisissez un titre pour la demande d\'intervention.');
     if (!form.description.trim()) return setErreur('Décrivez le problème observé.');
     setLoading(true);
     try {
@@ -312,8 +390,8 @@ export default function DeclarerPanne() {
       const demandeId = res.data.id;
       console.log('✅ Demande créée:', demandeId);
       
-      // Téléverser les fichiers (images ET audio) si présents
-      const tousLesFichiers = [...images, ...audioFiles];
+      // Téléverser les fichiers (images, vidéos ET audio) si présents
+      const tousLesFichiers = [...images, ...videos, ...audioFiles];
       console.log('📦 Fichiers à uploader:', tousLesFichiers.length, tousLesFichiers.map(f => ({ name: f.name, size: f.size })));
       
       if (tousLesFichiers.length > 0) {
@@ -346,11 +424,13 @@ export default function DeclarerPanne() {
       }
       
       setSucces(`✅ Demande ${res.data.numero} enregistrée avec succès. Le responsable a été notifié.`);
-      setForm({ idActif: '', urgence: 'normale', description: '' });
+      setForm({ idActif: '', titre: '', urgence: 'normale', description: '' });
       setImages([]); setPreviewImages([]);
+      setVideos([]); setPreviewVideos([]);
       setAudioFiles([]);
       setRecordedAudios([]);
-      setActifSelectionne(null); setActifSearch('');
+      setSelectionPath([]);
+      setOptionsAtLevel(prev => prev.slice(0, 1));
       const r = await getDemandes();
       setMesDemandes((r.data.results || r.data).slice(0, 10));
     } catch(e) {
@@ -363,7 +443,7 @@ export default function DeclarerPanne() {
     <div className="p-6 text-white">
       <div className="mb-6">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Déclarer une panne</h1>
-        <p className="text-gray-400 text-sm mt-2">Signalez un dysfonctionnement sur un équipement et enregistrez des détails audio</p>
+        <p className="text-gray-400 text-sm mt-2">Signalez un dysfonctionnement sur un équipement. L'actif parent sera automatiquement mis en panne.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -385,50 +465,106 @@ export default function DeclarerPanne() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Équipement */}
+            {/* Équipement en panne — Sélection cascade hiérarchique */}
             <div>
               <label className="block text-xs text-gray-400 mb-1 font-medium">
                 Équipement en panne *
               </label>
+              
+              {loadingActifs && optionsAtLevel.length === 0 && (
+                <div className="text-xs text-gray-500 py-2">Chargement des équipements...</div>
+              )}
+
+              {/* Selects en cascade dynamiques */}
+              <div className="space-y-2">
+                {optionsAtLevel.map((options, levelIndex) => (
+                  <div key={levelIndex}>
+                    <label className="block text-[10px] text-gray-500 mb-0.5 uppercase tracking-wider">
+                      {levelIndex === 0 ? 'Actif parent' : `Sous-actif niveau ${levelIndex}`}
+                    </label>
+                    <select
+                      value={selectionPath[levelIndex]?.id || ''}
+                      onChange={e => handleSelectAtLevel(levelIndex, e.target.value)}
+                      className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-purple-500 appearance-none cursor-pointer"
+                      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1rem' }}
+                    >
+                      <option value="">-- Sélectionner --</option>
+                      {options.map(a => (
+                        <option key={a.id} value={a.id}>
+                          {a.code} — {a.libelle} {a.statut === 'en_panne' ? '(EN PANNE)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+
+              {/* Affichage de la sélection finale + actif parent */}
+              {actifSelectionne && (
+                <div className="mt-3 space-y-2">
+                  {/* Chemin de sélection */}
+                  <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <p className="text-[10px] text-blue-400 uppercase tracking-wider mb-1">Actif sélectionné</p>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {selectionPath.map((a, i) => (
+                        <span key={a.id} className="text-sm">
+                          <span className="font-mono text-blue-300">{a.code}</span>
+                          <span className="text-gray-300"> — {a.libelle}</span>
+                          {i < selectionPath.length - 1 && (
+                            <span className="text-gray-500 mx-1">›</span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={clearSelection}
+                      className="mt-2 text-xs text-red-400 hover:text-red-300 underline"
+                    >
+                      Réinitialiser la sélection
+                    </button>
+                  </div>
+
+                  {/* Alerte actif parent */}
+                  {actifParent && actifParent.id !== actifSelectionne.id && (
+                    <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-start gap-2">
+                      <AlertTriangle size={16} className="text-amber-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-amber-300 font-medium">Actif parent concerné</p>
+                        <p className="text-xs text-gray-400">
+                          Le statut de <span className="font-mono text-amber-300">{actifParent.code}</span> — {actifParent.libelle} sera mis en panne
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {actifParent && actifParent.id === actifSelectionne.id && (
+                    <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-start gap-2">
+                      <AlertTriangle size={16} className="text-amber-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-amber-300 font-medium">Cet actif est l'actif parent racine</p>
+                        <p className="text-xs text-gray-400">Son statut sera mis en panne directement</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Titre de la demande */}
+            <div>
+              <label className="block text-xs text-gray-400 mb-1 font-medium">
+                Titre de la demande d'intervention *
+              </label>
               <input
                 type="text"
-                placeholder="Rechercher par code ou nom d'équipement..."
-                value={actifSearch}
-                onChange={e => { setActifSearch(e.target.value); setActifSelectionne(null); setForm(f => ({...f, idActif: ''})); }}
-                className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-purple-500 mb-1"
+                value={form.titre}
+                onChange={e => setForm(f => ({...f, titre: e.target.value}))}
+                placeholder="Ex: Arrêt moteur principal, Fuite hydraulique..."
+                className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-purple-500"
               />
-              {actifSearch && !actifSelectionne && (
-                <div className="bg-gray-700 border border-gray-600 rounded-lg max-h-40 overflow-y-auto">
-                  {actifsFiltres.length === 0 ? (
-                    <p className="text-gray-500 text-xs p-3 text-center">Aucun équipement trouvé</p>
-                  ) : actifsFiltres.map(a => (
-                    <div key={a.id}
-                      onClick={() => { setActifSelectionne(a); setActifSearch(a.code); setForm(f => ({...f, idActif: a.id})); }}
-                      className="flex items-center justify-between px-3 py-2 hover:bg-gray-600 cursor-pointer border-b border-gray-600/50 last:border-0">
-                      <div>
-                        <span className="font-mono text-sm text-blue-300">{a.code}</span>
-                        <span className="text-xs text-gray-400 ml-2">{a.libelle}</span>
-                      </div>
-                      <span className={`text-xs px-1.5 py-0.5 rounded ${
-                        a.statut === 'en_panne' ? 'bg-red-500/20 text-red-400' :
-                        a.statut === 'en_service' ? 'bg-green-500/20 text-green-400' :
-                        'bg-gray-500/20 text-gray-400'}`}>
-                        {a.statut?.replace('_', ' ')}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {actifSelectionne && (
-                <div className="mt-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg flex justify-between items-center">
-                  <div>
-                    <span className="font-mono text-sm text-blue-300">{actifSelectionne.code}</span>
-                    <span className="text-sm text-gray-300 ml-2">{actifSelectionne.libelle}</span>
-                  </div>
-                  <button type="button" onClick={() => { setActifSelectionne(null); setActifSearch(''); setForm(f => ({...f, idActif:''})); }}
-                    className="text-xs text-gray-500 hover:text-gray-300">✕</button>
-                </div>
-              )}
+              <p className="text-xs text-gray-500 mt-1">
+                Un titre clair permet au responsable de comprendre rapidement la panne
+              </p>
             </div>
 
             {/* Niveau d'urgence */}
@@ -505,6 +641,50 @@ export default function DeclarerPanne() {
                         <button
                           type="button"
                           onClick={() => removeImage(i)}
+                          className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition border border-red-400/50"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Upload vidéos */}
+            <div className="bg-gradient-to-br from-pink-600/10 to-pink-700/5 rounded-xl border border-pink-500/30 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Video size={18} className="text-pink-400" />
+                <label className="block text-xs text-pink-300 font-semibold uppercase tracking-wider">
+                  Ajouter des vidéos (optionnel)
+                </label>
+              </div>
+              <label className="flex flex-col items-center justify-center w-full p-4 border-2 border-dashed border-pink-500/40 rounded-lg cursor-pointer hover:border-pink-500/80 transition bg-pink-600/5 hover:bg-pink-600/10">
+                <div className="flex flex-col items-center justify-center py-2">
+                  <Upload size={24} className="text-pink-400 mb-2" />
+                  <p className="text-xs text-pink-300 font-medium text-center">Cliquez pour ajouter des vidéos<br/><span className="text-pink-400/70">MP4, MOV, AVI max 20MB</span></p>
+                </div>
+                <input
+                  type="file"
+                  multiple
+                  accept="video/*"
+                  onChange={handleVideoChange}
+                  className="hidden"
+                />
+              </label>
+              
+              {/* Aperçu des vidéos */}
+              {previewVideos.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-xs text-pink-300 font-semibold uppercase tracking-wider mb-2">🎥 Vidéos ({previewVideos.length})</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {previewVideos.map((preview, i) => (
+                      <div key={i} className="relative group rounded-lg overflow-hidden border border-pink-500/40 bg-gray-700">
+                        <video src={preview} className="w-full h-32 object-cover" controls />
+                        <button
+                          type="button"
+                          onClick={() => removeVideo(i)}
                           className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition border border-red-400/50"
                         >
                           <X size={16} />
@@ -629,6 +809,7 @@ export default function DeclarerPanne() {
                       {STATUT[d.statut]?.label}
                     </span>
                   </div>
+                  <p className="text-sm font-bold text-white truncate">{d.titre || '(Sans titre)'}</p>
                   <p className="text-sm font-medium text-blue-300 truncate">{d.actif_detail?.code} — {d.actif_detail?.libelle}</p>
                   <p className="text-xs text-gray-400 mt-1 line-clamp-2">{d.description}</p>
                   <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-600/30">

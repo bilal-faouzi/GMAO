@@ -56,33 +56,62 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         actif = serializer.validated_data.get('idActif')
         
-        
-        idUtilisateurSignalement=getattr(self.request.user, 'id', None)
-        
-        
+        idUtilisateurSignalement = getattr(self.request.user, 'id', None)
         user_instance = Utilisateur.objects.get(id=idUtilisateurSignalement)
         
-        instance = serializer.save(idUtilisateurSignalement=user_instance) 
+        instance = serializer.save(idUtilisateurSignalement=user_instance)
 
-        
+        # --- Trouver l'actif parent (racine de la hiérarchie) ---
+        actif_parent = actif
+        while actif_parent.idParent:
+            actif_parent = actif_parent.idParent
 
-        if instance.urgence == 'critique':
-            ancien_statut = actif.statut
-            if ancien_statut != 'en_panne':
-                actif.statut = 'en_panne'
-                actif.save()
+        # --- Toujours changer le statut de l'actif parent à "en_panne" ---
+        ancien_statut_parent = actif_parent.statut
+        if ancien_statut_parent != 'en_panne':
+            actif_parent.statut = 'en_panne'
+            actif_parent.save()
 
-                from apps.actifs.models import HistoriqueStatut
-                HistoriqueStatut.objects.create(
-                    idActif=actif,
-                    ancienStatut=ancien_statut,
-                    nouveauStatut='en_panne',
-                    motif=f"Demande d'intervention critique #{instance.numero} créée",
-                    modifiePar=getattr(self.request.user, 'utilisateur', None)
-                )
+            from apps.actifs.models import HistoriqueStatut
+            HistoriqueStatut.objects.create(
+                idActif=actif_parent,
+                ancienStatut=ancien_statut_parent,
+                nouveauStatut='en_panne',
+                motif=f"Demande d'intervention #{instance.numero} créée — Actif parent ({actif_parent.code})",
+                modifiePar=getattr(self.request.user, 'utilisateur', None)
+            )
+
+        # --- Créer une indisponibilité pour l'actif parent ---
+        from apps.actifs.models import Indisponibilite
+        Indisponibilite.objects.create(
+            idActif=actif_parent,
+            dateDebut=timezone.now(),
+            motif=f"Panne déclarée via DI #{instance.numero}",
+            type='panne',
+            estTerminee=False
+        )
+
+        # --- Affecter l'unité liée à l'actif parent ---
+        unite = actif_parent.idUnite
+        if unite and unite.estProductive:
+            unite.estProductive = False
+            unite.save()
+
+            log_audit(self.request, 'UPDATE', 'ORGANISATION', 'Unite', unite.id,
+                      ancienne_valeur={'estProductive': True},
+                      nouvelle_valeur={'estProductive': False,
+                                       'motif': f"Panne déclarée DI #{instance.numero} — Actif parent {actif_parent.code}"})
 
         log_audit(self.request, 'CREATE', 'ORDRES', 'DemandeIntervention', instance.id,
-                  nouvelle_valeur={'numero': instance.numero, 'urgence': instance.urgence, 'statut': instance.statut})
+                  nouvelle_valeur={
+                      'numero': instance.numero,
+                      'titre': instance.titre,
+                      'urgence': instance.urgence,
+                      'statut': instance.statut,
+                      'actif_parent': actif_parent.code,
+                      'actif_selectionne': actif.code,
+                      'unite': unite.libelle if unite else None,
+                  })
 
     def perform_update(self, serializer):
         old_instance = self.get_object()
@@ -110,7 +139,11 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
         di.dateValidation = timezone.now()
         di.save()
 
-        
+        # --- Trouver l'actif parent (racine de la hiérarchie) ---
+        actif = di.idActif
+        actif_parent = actif
+        while actif_parent.idParent:
+            actif_parent = actif_parent.idParent
 
         ot = OrdreTravail.objects.create(
             idActif=di.idActif,
@@ -122,22 +155,23 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
             description=di.description,
         )
 
-        ancien_statut_actif = di.idActif.statut
-    
-        di.idActif.statut = 'en_maintenance'
-        di.idActif.save()
+        # --- Changer le statut de l'actif parent (pas l'actif sélectionné) ---
+        ancien_statut_parent = actif_parent.statut
+        if ancien_statut_parent != 'en_maintenance':
+            actif_parent.statut = 'en_maintenance'
+            actif_parent.save()
 
-        from apps.actifs.models import HistoriqueStatut
-        HistoriqueStatut.objects.create(
-            idActif=di.idActif,
-            ancienStatut=ancien_statut_actif,
-            nouveauStatut='en_maintenance',
-            motif=f'OT #{ot.numero} créé - Demande Intervention #{di.numero}',
-            modifiePar=getattr(request.user, 'utilisateur', None)
+            from apps.actifs.models import HistoriqueStatut
+            HistoriqueStatut.objects.create(
+                idActif=actif_parent,
+                ancienStatut=ancien_statut_parent,
+                nouveauStatut='en_maintenance',
+                motif=f'OT #{ot.numero} créé - Demande Intervention #{di.numero} — Actif parent ({actif_parent.code})',
+                modifiePar=getattr(request.user, 'utilisateur', None)
             )
 
         config = ConfigurationSLA.objects.filter(
-            idSite=di.idActif.idSite,
+            idSite=actif_parent.idSite,
             typeOrdreTravail='correctif',
             priorite=di.urgence,
             estActif=True
@@ -161,7 +195,7 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
         return Response(OrdreTravailSerializer(ot).data, status=status.HTTP_201_CREATED)
 
     # -------------------------------------------------------------------------
-    # REJETER — logique de restauration conditionnelle de l'actif et de l'unité
+    # REJETER — logique de restauration conditionnelle de l'actif parent et de l'unité
     # -------------------------------------------------------------------------
     @action(detail=True, methods=['post'])
     def rejeter(self, request, pk=None):
@@ -180,91 +214,97 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
         di.isencours = False
         di.save()
 
-
         log_audit(request, 'REJECT', 'ORDRES', 'DemandeIntervention', di.id,
                   ancienne_valeur={'statut': 'en_attente'},
                   nouvelle_valeur={'statut': 'rejetee', 'motif': di.motifRejet})
 
-        # Seules les DIs critiques ont modifié le statut de l'actif à la création,
-        # donc on ne restaure que dans ce cas.
-        if di.urgence == 'critique':
-            actif = di.idActif
+        # --- Trouver l'actif parent (racine de la hiérarchie) ---
+        actif = di.idActif
+        actif_parent = actif
+        while actif_parent.idParent:
+            actif_parent = actif_parent.idParent
 
-            # 1. Autres DIs critiques encore en attente sur le même actif
-            #    (la DI courante est déjà 'rejetee', exclude par sécurité
-            #     contre les éventuelles race conditions)
-            autres_di_critiques = DemandeIntervention.objects.filter(
-                idActif=actif,
-                urgence='critique',
-                statut='en_attente'
-            ).exclude(id=di.id).exists()
+        # Toutes les DIs modifient le statut de l'actif parent à la création,
+        # donc on restaure toujours si possible.
+        # 1. Autres DIs en attente sur le même actif parent
+        autres_di_en_attente = DemandeIntervention.objects.filter(
+            idActif=actif_parent,
+            statut='en_attente'
+        ).exclude(id=di.id).exists()
 
-            # 2. OTs actifs sur le même actif :
-            #    EN_COURS  → intervention en cours
-            #    DEPANNE   → dépannage temporaire, pas encore clôturé
-            autres_ots_actifs = OrdreTravail.objects.filter(
-                idActif=actif,
-                statut__in=['EN_COURS', 'DEPANNE']
-            ).exists()
+        # 2. OTs actifs sur le même actif parent :
+        #    EN_COURS  → intervention en cours
+        #    DEPANNE   → dépannage temporaire, pas encore clôturé
+        autres_ots_actifs = OrdreTravail.objects.filter(
+            idActif=actif_parent,
+            statut__in=['EN_COURS', 'DEPANNE']
+        ).exists()
 
-            if autres_di_critiques or autres_ots_actifs:
-                # D'autres interventions bloquent la restauration, on s'arrête
-                return Response(DemandeInterventionSerializer(di).data)
+        if autres_di_en_attente or autres_ots_actifs:
+            # D'autres interventions bloquent la restauration, on s'arrête
+            return Response(DemandeInterventionSerializer(di).data)
 
-            # --- Restauration de l'actif ---
-            ancien_statut_actif = actif.statut
-            estActif_avant      = actif.estActif  # capture AVANT save (bug fix audit log)
+        # --- Restauration de l'actif parent ---
+        ancien_statut_actif = actif_parent.statut
+        estActif_avant = actif_parent.estActif
 
-            actif.statut   = 'actif'
-            actif.estActif = True
-            actif.save()
+        actif_parent.statut = 'actif'
+        actif_parent.estActif = True
+        actif_parent.save()
 
-            from apps.actifs.models import HistoriqueStatut
-            HistoriqueStatut.objects.create(
-                idActif=actif,
-                ancienStatut=ancien_statut_actif,
-                nouveauStatut='actif',
-                motif=f"Rejet DI critique #{di.numero} — aucune intervention active sur l'actif",
-                modifiePar=getattr(request.user, 'utilisateur', None)
+        # Terminer l'indisponibilité ouverte
+        from apps.actifs.models import Indisponibilite
+        Indisponibilite.objects.filter(
+            idActif=actif_parent,
+            estTerminee=False
+        ).update(estTerminee=True, dateFin=timezone.now())
+
+        from apps.actifs.models import HistoriqueStatut
+        HistoriqueStatut.objects.create(
+            idActif=actif_parent,
+            ancienStatut=ancien_statut_actif,
+            nouveauStatut='actif',
+            motif=f"Rejet DI #{di.numero} — aucune intervention active sur l'actif parent ({actif_parent.code})",
+            modifiePar=getattr(request.user, 'utilisateur', None)
+        )
+
+        log_audit(request, 'UPDATE', 'ACTIFS', 'Actif', actif_parent.id,
+                  ancienne_valeur={'statut': ancien_statut_actif, 'estActif': estActif_avant},
+                  nouvelle_valeur={'statut': 'actif', 'estActif': True})
+
+        # --- Restauration de l'unité liée à l'actif parent ---
+        unite = actif_parent.idUnite
+        if unite and not unite.estProductive:
+            # On ne remet productive que si aucun autre actif de la même unité
+            # n'est encore en panne ou en maintenance.
+            autres_actifs_unite_bloques = (
+                actif_parent.__class__.objects
+                .filter(
+                    idUnite=unite,
+                    statut__in=['en_panne', 'en_maintenance']
+                )
+                .exclude(id=actif_parent.id)
+                .exists()
             )
 
-            log_audit(request, 'UPDATE', 'ACTIFS', 'Actif', actif.id,
-                      ancienne_valeur={'statut': ancien_statut_actif, 'estActif': estActif_avant},
-                      nouvelle_valeur={'statut': 'actif',             'estActif': True})
+            if not autres_actifs_unite_bloques:
+                unite.estProductive = True
+                unite.save()
 
-            # --- Restauration de l'unité liée ---
-            unite = actif.idUnite
-            if unite and not unite.estProductive:
-                # Edge case : l'unité peut avoir plusieurs actifs.
-                # On ne la remet productive que si aucun autre actif
-                # de la même unité n'est encore en panne ou en maintenance.
-                autres_actifs_unite_bloques = (
-                    actif.__class__.objects
-                    .filter(
-                        idUnite=unite,
-                        statut__in=['en_panne', 'en_maintenance']
-                    )
-                    .exclude(id=actif.id)
-                    .exists()
-                )
-
-                if not autres_actifs_unite_bloques:
-                    unite.estProductive = True
-                    unite.save()
-
-                    log_audit(request, 'UPDATE', 'ORGANISATION', 'Unite', unite.id,
-                              ancienne_valeur={'estProductive': False},
-                              nouvelle_valeur={'estProductive': True})
+                log_audit(request, 'UPDATE', 'ORGANISATION', 'Unite', unite.id,
+                          ancienne_valeur={'estProductive': False},
+                          nouvelle_valeur={'estProductive': True})
 
         return Response(DemandeInterventionSerializer(di).data)
 
     @action(detail=True, methods=['post'])
     def telecharger_fichiers(self, request, pk=None):
         """
-        Upload fichiers (images ou audio) pour une demande d'intervention.
+        Upload fichiers (images, audio ou vidéo) pour une demande d'intervention.
 
         Types acceptés:
         - Images: jpg, jpeg, png, gif, bmp (5 MB max chacun)
+        - Vidéos: mp4, avi, mov, mkv, webm (20 MB max chacun)
         - Audio: mp3, wav, m4a, aac, ogg, webm (10 MB max chacun)
         """
         from django.core.files.storage import default_storage
@@ -280,8 +320,10 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
             )
 
         TYPES_IMAGES = {'jpg', 'jpeg', 'png', 'gif', 'bmp'}
+        TYPES_VIDEO = {'mp4', 'avi', 'mov', 'mkv', 'webm'}
         TYPES_AUDIO = {'mp3', 'wav', 'm4a', 'aac', 'ogg', 'webm'}
         MAX_SIZE_IMAGE = 5 * 1024 * 1024
+        MAX_SIZE_VIDEO = 20 * 1024 * 1024
         MAX_SIZE_AUDIO = 10 * 1024 * 1024
 
         pieces_creees = []
@@ -294,13 +336,16 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
                 if ext in TYPES_IMAGES:
                     max_size = MAX_SIZE_IMAGE
                     type_fichier = 'image'
+                elif ext in TYPES_VIDEO:
+                    max_size = MAX_SIZE_VIDEO
+                    type_fichier = 'video'
                 elif ext in TYPES_AUDIO:
                     max_size = MAX_SIZE_AUDIO
                     type_fichier = 'audio'
                 else:
                     erreurs.append({
                         'fichier': fichier.name,
-                        'motif': f'Type non autorisé (.{ext}). Images: jpg/png/gif/bmp, Audio: mp3/wav/m4a/aac/ogg/webm'
+                        'motif': f'Type non autorisé (.{ext}). Images: jpg/png/gif/bmp, Vidéos: mp4/avi/mov/mkv/webm, Audio: mp3/wav/m4a/aac/ogg/webm'
                     })
                     continue
 
@@ -367,17 +412,22 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
         log_audit(self.request, 'CREATE', 'ORDRES', 'OrdreTravail', ot.id,
                   nouvelle_valeur={'numero': ot.numero, 'type': ot.type, 'statut': ot.statut, 'isvalide': True})
 
-        ancien_statut_actif = ot.idActif.statut
-        if ancien_statut_actif != 'en_maintenance':
-            ot.idActif.statut = 'en_maintenance'
-            ot.idActif.save()
+        # --- Trouver l'actif parent (racine de la hiérarchie) ---
+        actif_parent = ot.idActif
+        while actif_parent.idParent:
+            actif_parent = actif_parent.idParent
+
+        ancien_statut_parent = actif_parent.statut
+        if ancien_statut_parent != 'en_maintenance':
+            actif_parent.statut = 'en_maintenance'
+            actif_parent.save()
 
             from apps.actifs.models import HistoriqueStatut
             HistoriqueStatut.objects.create(
-                idActif=ot.idActif,
-                ancienStatut=ancien_statut_actif,
+                idActif=actif_parent,
+                ancienStatut=ancien_statut_parent,
                 nouveauStatut='en_maintenance',
-                motif=f'OT #{ot.numero} créé',
+                motif=f'OT #{ot.numero} créé — Actif parent ({actif_parent.code})',
                 modifiePar=getattr(self.request.user, 'utilisateur', None)
             )
 
@@ -418,28 +468,41 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                 ot.dureeReelleMin = int(delta.total_seconds() / 60)
         if nouveau in ('CLOTURE', 'DEPANNE'):
             ot.isvalide = False
+            # --- Trouver l'actif parent (racine de la hiérarchie) ---
             actif = ot.idActif
-            if actif.statut != 'actif':
-                ancien_statut_actif = actif.statut
-                actif.statut = 'actif'
-                actif.save()
+            actif_parent = actif
+            while actif_parent.idParent:
+                actif_parent = actif_parent.idParent
+
+            if actif_parent.statut != 'actif':
+                ancien_statut_parent = actif_parent.statut
+                actif_parent.statut = 'actif'
+                actif_parent.save()
+
+                # Terminer l'indisponibilité ouverte
+                from apps.actifs.models import Indisponibilite
+                Indisponibilite.objects.filter(
+                    idActif=actif_parent,
+                    estTerminee=False
+                ).update(estTerminee=True, dateFin=timezone.now())
+
                 from apps.actifs.models import HistoriqueStatut
                 HistoriqueStatut.objects.create(
-                    idActif=actif,
-                    ancienStatut=ancien_statut_actif,
+                    idActif=actif_parent,
+                    ancienStatut=ancien_statut_parent,
                     nouveauStatut='actif',
-                    motif=f'OT #{ot.numero} {nouveau.lower()} - Actif rétabli',
+                    motif=f'OT #{ot.numero} {nouveau.lower()} - Actif parent ({actif_parent.code}) rétabli',
                     modifiePar=getattr(request.user, 'utilisateur', None)
                 )
-                unite = actif.idUnite
+                unite = actif_parent.idUnite
                 if unite and not unite.estProductive:
                     autres_actifs_unite_bloques = (
-                        actif.__class__.objects
+                        actif_parent.__class__.objects
                         .filter(
                             idUnite=unite,
                             statut__in=['en_panne', 'en_maintenance']
                         )
-                        .exclude(id=actif.id)
+                        .exclude(id=actif_parent.id)
                         .exists()
                     )
                     if not autres_actifs_unite_bloques:
@@ -656,6 +719,12 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
         print(f"[DEBUG] isValide reçu = {repr(est_approuve)} | type = {type(est_approuve)}")
         print(f"[DEBUG] request.data complet = {request.data}")
 
+        # --- Trouver l'actif parent (racine de la hiérarchie) ---
+        actif = ot.idActif
+        actif_parent = actif
+        while actif_parent.idParent:
+            actif_parent = actif_parent.idParent
+
         if est_approuve:
             ot.isvalide = True
             ot.statut    = 'CLOTURE'
@@ -666,21 +735,17 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
             ot.save()
 
             di = ot.idDemandeIntervention
-            di.isencours = False
-            di.save()
-                         
-
-            actif = ot.idActif
-            
+            if di:
+                di.isencours = False
+                di.save()
 
             autres_ots_ouverts = OrdreTravail.objects.filter(
-                idActif=actif,
+                idActif=actif_parent,
                 statut__in=['EN_COURS']
             ).exclude(id=ot.id).exists()
 
-            autres_di_critiques = DemandeIntervention.objects.filter(
-                idActif=actif,
-                urgence='critique',
+            autres_di_en_attente = DemandeIntervention.objects.filter(
+                idActif=actif_parent,
                 statut='en_attente'
             ).exists()
 
@@ -691,20 +756,27 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                 idUtilisateur=getattr(request.user, 'utilisateur', None),
                 motif=motif or 'Validation opérateur approuvée'
                 )
-            if not autres_ots_ouverts and not autres_di_critiques:
-                ancien_statut_actif = actif.statut
-                actif.statut = 'actif'
-                actif.save()
+            if not autres_ots_ouverts and not autres_di_en_attente:
+                ancien_statut_parent = actif_parent.statut
+                actif_parent.statut = 'actif'
+                actif_parent.save()
 
-                unite = actif.idUnite
+                # Terminer l'indisponibilité ouverte
+                from apps.actifs.models import Indisponibilite
+                Indisponibilite.objects.filter(
+                    idActif=actif_parent,
+                    estTerminee=False
+                ).update(estTerminee=True, dateFin=timezone.now())
+
+                unite = actif_parent.idUnite
                 if unite and not unite.estProductive:
                     autres_actifs_unite_bloques = (
-                        actif.__class__.objects
+                        actif_parent.__class__.objects
                         .filter(
                             idUnite=unite,
                             statut__in=['en_panne', 'en_maintenance']
                         )
-                        .exclude(id=actif.id)
+                        .exclude(id=actif_parent.id)
                         .exists()
                     )
 
@@ -724,28 +796,28 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
             ot.save()
             
             di = ot.idDemandeIntervention
-            di.isencours = True
-            di.statut    = 'en_attente'
-            print('test validation di',di.isencours, di.statut)
-            di.save()
+            if di:
+                di.isencours = True
+                di.statut    = 'en_attente'
+                print('test validation di',di.isencours, di.statut)
+                di.save()
 
-            actif = ot.idActif
-            if actif.statut != 'en_panne':
-                ancien_statut_actif = actif.statut
-                actif.statut = 'en_panne'
-                actif.save()
+            if actif_parent.statut != 'en_panne':
+                ancien_statut_parent = actif_parent.statut
+                actif_parent.statut = 'en_panne'
+                actif_parent.save()
 
                 from apps.actifs.models import HistoriqueStatut
                 HistoriqueStatut.objects.create(
-                    idActif=actif,
-                    ancienStatut=ancien_statut_actif,
+                    idActif=actif_parent,
+                    ancienStatut=ancien_statut_parent,
                     nouveauStatut='en_panne',
-                    motif=f'Validation OT #{ot.numero} rejetée',
+                    motif=f'Validation OT #{ot.numero} rejetée — Actif parent ({actif_parent.code})',
                     modifiePar=getattr(request.user, 'utilisateur', None)
                 )
 
-                log_audit(request, 'UPDATE', 'ACTIFS', 'Actif', actif.id,
-                        ancienne_valeur={'statut': ancien_statut_actif},
+                log_audit(request, 'UPDATE', 'ACTIFS', 'Actif', actif_parent.id,
+                        ancienne_valeur={'statut': ancien_statut_parent},
                         nouvelle_valeur={'statut': 'en_panne'})
 
             HistoriqueStatutOT.objects.create(
@@ -767,34 +839,32 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                         nouvelle_valeur={'statut': 'en_attente',
                                         'motif': f'Validation OT #{ot.numero} rejetée'})
 
-                if di.urgence == 'critique':
-                    actif = ot.idActif
-                    ancien_statut_actif = actif.statut
-                    actif.statut   = 'en_panne'
-                    
-                    actif.save()
+                # Toujours remettre l'actif parent en panne et l'unité non productive
+                ancien_statut_parent = actif_parent.statut
+                actif_parent.statut = 'en_panne'
+                actif_parent.save()
 
-                    from apps.actifs.models import HistoriqueStatut
-                    HistoriqueStatut.objects.create(
-                        idActif=actif,
-                        ancienStatut=ancien_statut_actif,
-                        nouveauStatut='en_panne',
-                        motif=f'Validation OT #{ot.numero} rejetée — DI critique #{di.numero}',
-                        modifiePar=getattr(request.user, 'utilisateur', None)
-                    )
+                from apps.actifs.models import HistoriqueStatut
+                HistoriqueStatut.objects.create(
+                    idActif=actif_parent,
+                    ancienStatut=ancien_statut_parent,
+                    nouveauStatut='en_panne',
+                    motif=f'Validation OT #{ot.numero} rejetée — DI #{di.numero} — Actif parent ({actif_parent.code})',
+                    modifiePar=getattr(request.user, 'utilisateur', None)
+                )
 
-                    log_audit(request, 'UPDATE', 'ACTIFS', 'Actif', actif.id,
-                            ancienne_valeur={'statut': ancien_statut_actif, 'estActif': actif.estActif},
-                            nouvelle_valeur={'statut': 'en_panne',          'estActif': False})
+                log_audit(request, 'UPDATE', 'ACTIFS', 'Actif', actif_parent.id,
+                        ancienne_valeur={'statut': ancien_statut_parent, 'estActif': actif_parent.estActif},
+                        nouvelle_valeur={'statut': 'en_panne',          'estActif': False})
 
-                    unite = actif.idUnite
-                    if unite and unite.estProductive:
-                        unite.estProductive = False
-                        unite.save()
+                unite = actif_parent.idUnite
+                if unite and unite.estProductive:
+                    unite.estProductive = False
+                    unite.save()
 
-                        log_audit(request, 'UPDATE', 'ORGANISATION', 'Unite', unite.id,
-                                ancienne_valeur={'estProductive': True},
-                                nouvelle_valeur={'estProductive': False})
+                    log_audit(request, 'UPDATE', 'ORGANISATION', 'Unite', unite.id,
+                            ancienne_valeur={'estProductive': True},
+                            nouvelle_valeur={'estProductive': False})
 
             log_audit(request, 'REJETER_VALIDATION', 'ORDRES', 'OrdreTravail', ot.id,
                     ancienne_valeur={'statut': ancien_statut, 'isvalide': False},
