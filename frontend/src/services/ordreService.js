@@ -40,8 +40,14 @@ export const changerStatutOT = (id, statut, motif = "", typeCloture = "") =>
 export const affecterEquipe = (id, data) =>
   api.post(`/v1/ordres/ots/${id}/affecter_equipe/`, data);
 
+export const getMembresEquipe = (equipeId) =>
+  api.get(`/v1/organisation/equipe-utilisateurs/?equipe=${equipeId}`);
+
 export const enregistrerPiece = (id, idPiece, quantite) =>
   api.post(`/v1/ordres/ots/${id}/enregistrer_piece/`, { idPiece, quantite });
+
+export const enregistrerPieces = (id, pieces) =>
+  api.post(`/v1/ordres/ots/${id}/enregistrer_pieces/`, { pieces });
 
 export const ajouterCommentaire = (id, commentaire, estInterne = false) =>
   api.post(`/v1/ordres/ots/${id}/ajouter_commentaire/`, {
@@ -54,11 +60,20 @@ export const cloturerOT = (id) => api.post(`/v1/ordres/ots/${id}/cloturer/`);
 export const validerOT = (id, isValide, motif) =>
   api.post(`/v1/ordres/ots/${id}/valider/`, { isValide, motif });
 
+export const changerActifOT = (id, idActif) =>
+  api.post(`/v1/ordres/ots/${id}/changer_actif/`, { idActif });
+
+export const enregistrerActifsCorriges = (id, actifs) =>
+  api.post(`/v1/ordres/ots/${id}/enregistrer_actifs_corriges/`, { actifs });
+
 export const getDashboardOT = () => api.get("/v1/ordres/ots/dashboard/");
 
 // ── Données secondaires ──────────────────────────────
 export const getAffectations = (idOT) =>
   api.get(`/v1/ordres/affectations/?idOrdreTravail=${idOT}`);
+
+export const deleteAffectation = (id) =>
+  api.delete(`/v1/ordres/affectations/${id}/`);
 
 export const getSuiviTemps = (idOT) =>
   api.get(`/v1/ordres/suivitemps/?idOrdreTravail=${idOT}`);

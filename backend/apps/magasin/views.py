@@ -1,8 +1,11 @@
-from decimal import Decimal
+import csv
+import io
+from decimal import Decimal, InvalidOperation
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Sum, F, Count
 from django.utils import timezone
@@ -17,7 +20,7 @@ from .serializers import PieceSerializer, MouvementStockSerializer
 class PiecePagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
-    max_page_size = 100
+    max_page_size = 5000
 
 
 class PieceViewSet(viewsets.ModelViewSet):
@@ -136,6 +139,152 @@ class PieceViewSet(viewsets.ModelViewSet):
             'count':   pieces.count(),
             'results': PieceSerializer(pieces, many=True).data
         })
+
+    @action(detail=False, methods=['post'])
+    def importer_csv(self, request):
+        """Importe un fichier CSV SAGE X3 (@ARTICLES GMAO) dans la table Piece."""
+        fichier = request.FILES.get('fichier')
+        if not fichier:
+            return Response({'error': 'Aucun fichier CSV fourni.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Lecture du fichier (support UTF-8 avec BOM et Windows-1252 fallback)
+        try:
+            raw = fichier.read()
+            try:
+                decoded = raw.decode('utf-8-sig')
+            except UnicodeDecodeError:
+                decoded = raw.decode('windows-1252', errors='replace')
+        except Exception as e:
+            return Response({'error': f'Impossible de lire le fichier : {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Détection du délimiteur (virgule ou point-virgule)
+        first_line = decoded.splitlines()[0] if decoded else ''
+        delimiter = ';' if ';' in first_line else ','
+
+        reader = csv.DictReader(io.StringIO(decoded), delimiter=delimiter)
+        if not reader.fieldnames:
+            return Response({'error': 'Le fichier CSV semble vide ou mal formaté.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Normaliser les en-têtes (minuscules, sans espaces ni accents)
+        def normalize_header(h):
+            return h.strip().lower().replace(' ', '_').replace('-', '_')
+
+        headers = [normalize_header(h) for h in reader.fieldnames]
+
+        # Mapping flexible des colonnes — inclut les noms exacts SAGE X3
+        mapping = {
+            'reference': ['reference', 'ref', 'code', 'code_article', 'article', 'art',
+                          'article'],
+            'designation': ['designation', 'design', 'libelle', 'libellé', 'nom', 'description', 'article_desc', 'des',
+                            'désignation_1', 'designation_1'],
+            'categorie': ['categorie', 'catégorie', 'category', 'famille', 'fam', 'famille_article',
+                          'catégorie'],
+            'unite': ['unite', 'unité', 'unit', 'uom', 'unite_mesure', 'unité_mesure', 'un',
+                      'unité_stock', 'unite_stock'],
+            'emplacement': ['emplacement', 'location', 'empl', 'zone', 'emplacement_stock', 'lieu'],
+            'quantiteStock': ['quantitestock', 'quantite', 'quantité', 'qte', 'qté', 'qty', 'stock', 'quantity', 'quantité_stock', 'qte_stock'],
+            'seuilMinimum': ['seuilminimum', 'seuil', 'seuil_min', 'seuil_minimal', 'min', 'minimum', 'stock_min', 'stock_minimum', 'seuil_alert'],
+            'prixUnitaire': ['prixunitaire', 'prix', 'pu', 'price', 'prix_unit', 'prix_unitaire', 'cout', 'coût', 'cost'],
+            'fournisseur': ['fournisseur', 'supplier', 'four', 'fourn', 'fournisseur_principal', 'fournisseur_ref',
+                            'fournisseur'],
+            'referenceConstructeur': ['referenceconstructeur', 'refconstructeur', 'ref_constructeur', 'ref_fab', 'ref_fabricant', 'manufacturerref', 'mfgref', 'ref_fournisseur', 'ref_mfg',
+                                      'article_fournisseur'],
+        }
+
+        def find_col(headers, candidates):
+            for i, h in enumerate(headers):
+                if h in candidates:
+                    return reader.fieldnames[i]
+            return None
+
+        col_map = {}
+        for champ, cands in mapping.items():
+            col_map[champ] = find_col(headers, cands)
+
+        if not col_map['reference']:
+            return Response({
+                'error': 'Colonne "Référence" introuvable.',
+                'headers_trouves': reader.fieldnames
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        crees = 0
+        mis_a_jour = 0
+        erreurs = []
+        total_lignes = 0
+
+        for idx, row in enumerate(reader, start=2):
+            total_lignes += 1
+            ref_val = (row.get(col_map['reference']) or '').strip()
+            if not ref_val:
+                continue
+
+            data = {}
+            for champ, col in col_map.items():
+                if not col:
+                    continue
+                val = (row.get(col) or '').strip()
+                if not val:
+                    continue
+                if champ in ('quantiteStock', 'seuilMinimum', 'prixUnitaire'):
+                    # Gérer les séparateurs décimaux français (virgule)
+                    val_clean = val.replace(',', '.').replace(' ', '')
+                    try:
+                        data[champ] = Decimal(val_clean)
+                    except InvalidOperation:
+                        pass
+                else:
+                    data[champ] = val
+
+            try:
+                piece, created = Piece.objects.update_or_create(
+                    reference=ref_val,
+                    defaults={
+                        'designation': data.get('designation', ref_val),
+                        'categorie': data.get('categorie', ''),
+                        'unite': data.get('unite', 'piece'),
+                        'emplacement': data.get('emplacement', ''),
+                        'quantiteStock': data.get('quantiteStock', Decimal('0')),
+                        'seuilMinimum': data.get('seuilMinimum', Decimal('0')),
+                        'prixUnitaire': data.get('prixUnitaire'),
+                        'fournisseur': data.get('fournisseur', ''),
+                        'referenceConstructeur': data.get('referenceConstructeur', ''),
+                        'estActif': True,
+                    }
+                )
+                if created:
+                    crees += 1
+                else:
+                    mis_a_jour += 1
+            except Exception as e:
+                erreurs.append({'ligne': idx, 'reference': ref_val, 'erreur': str(e)})
+
+        log_audit(request, 'IMPORT_CSV', 'MAGASIN', 'Piece', None,
+                  nouvelle_valeur={
+                      'fichier': fichier.name,
+                      'total_lignes': total_lignes,
+                      'creees': crees,
+                      'mises_a_jour': mis_a_jour,
+                      'erreurs': len(erreurs)
+                  })
+
+        return Response({
+            'success': True,
+            'fichier': fichier.name,
+            'total_lignes': total_lignes,
+            'creees': crees,
+            'mises_a_jour': mis_a_jour,
+            'erreurs': erreurs,
+            'headers_trouves': reader.fieldnames,
+        })
+
+    @action(detail=False, methods=['get'])
+    def categories(self, request):
+        cats = Piece.objects.exclude(
+            categorie=''
+        ).exclude(
+            categorie__isnull=True
+        ).values_list('categorie', flat=True).distinct().order_by('categorie')
+        return Response(list(cats))
 
     @action(detail=False, methods=['get'])
     def dashboard(self, request):

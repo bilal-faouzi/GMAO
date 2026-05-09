@@ -5,6 +5,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from django.db import transaction
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from django.utils import timezone
@@ -17,7 +18,8 @@ from apps.securite.audit_utils import log_audit
 from .models import (
     DemandeIntervention, OrdreTravail, AffectationEquipe,
     MembreIntervention, SuiviTemps, PieceUtiliseeOT, PieceJointeDI,
-    CommentaireOT, CauseRacine, HistoriqueStatutOT, ConfigurationSLA
+    CommentaireOT, CauseRacine, HistoriqueStatutOT, ConfigurationSLA,
+    ActifCorrigeOT
 )
 from .serializers import (
     DemandeInterventionSerializer, OrdreTravailSerializer,
@@ -47,6 +49,14 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
     filterset_fields = ['statut', 'urgence', 'idActif']
     search_fields = ['numero', 'description']
     ordering_fields = ['dateSignalement', 'urgence']
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        statut_in = self.request.query_params.get('statut__in')
+        if statut_in:
+            statuts = [s.strip() for s in statut_in.split(',')]
+            queryset = queryset.filter(statut__in=statuts)
+        return queryset
 
     def paginate_queryset(self, queryset):
         if self.request.query_params.get('no_page') == 'true':
@@ -129,9 +139,9 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def valider(self, request, pk=None):
         di = self.get_object()
-        if di.statut != 'en_attente':
+        if di.statut not in ('en_attente', 'rejetee_apres_validation'):
             return Response(
-                {'error': 'Seules les demandes en attente peuvent être validées.'},
+                {'error': 'Seules les demandes en attente ou rejetées après validation peuvent être validées.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         di.statut = 'validee'
@@ -153,6 +163,7 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
             statut='EN_COURS',
             isvalide=True,
             description=di.description,
+            idUtilisateurCreateur=getattr(request.user, 'utilisateur', None),
         )
 
         # --- Changer le statut de l'actif parent (pas l'actif sélectionné) ---
@@ -394,7 +405,12 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
     queryset = OrdreTravail.objects.select_related(
         'idActif', 'idDemandeIntervention'
     ).prefetch_related(
-        'affectations', 'commentaires', 'historiques_statut', 'pieces_utilisees'
+        'affectations__membres__idUtilisateur',
+        'commentaires',
+        'historiques_statut',
+        'pieces_utilisees',
+        'actifs_corriges__idActif',
+        'actifs_corriges__corrigePar',
     ).all()
     serializer_class = OrdreTravailSerializer
     permission_classes = [IsAuthenticated]
@@ -407,7 +423,8 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         ot = serializer.save()
         ot.isvalide = True
-        ot.save(update_fields=['isvalide'])
+        ot.idUtilisateurCreateur = getattr(self.request.user, 'utilisateur', None)
+        ot.save(update_fields=['isvalide', 'idUtilisateurCreateur'])
 
         log_audit(self.request, 'CREATE', 'ORDRES', 'OrdreTravail', ot.id,
                   nouvelle_valeur={'numero': ot.numero, 'type': ot.type, 'statut': ot.statut, 'isvalide': True})
@@ -556,6 +573,28 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
             statut='en_attente'
         )
 
+        # --- Créer les MembreIntervention pour chaque utilisateur sélectionné ---
+        membres_ids = request.data.get('membres', [])
+        if isinstance(membres_ids, list) and len(membres_ids) > 0:
+            from apps.securite.models import Utilisateur
+            for uid in membres_ids:
+                try:
+                    user = Utilisateur.objects.get(id=uid)
+                    MembreIntervention.objects.create(
+                        idAffectationEquipe=aff,
+                        idUtilisateur=user,
+                        dateDebut=aff.dateDebut,
+                    )
+                except Utilisateur.DoesNotExist:
+                    pass  # Ignorer les IDs invalides
+
+        log_audit(request, 'CREATE', 'ORDRES', 'AffectationEquipe', aff.id,
+                  nouvelle_valeur={
+                      'equipe': str(aff.idEquipe_id) if aff.idEquipe_id else None,
+                      'soustraitant': str(aff.idSousTraitant_id) if aff.idSousTraitant_id else None,
+                      'membres': len(membres_ids)
+                  })
+
         return Response(AffectationEquipeSerializer(aff).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'])
@@ -598,6 +637,106 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                   nouvelle_valeur={'piece_id': str(piece.id), 'quantite': str(quantite), 'stock_avant': str(stock_avant)})
 
         return Response(OrdreTravailSerializer(ot).data)
+
+    @action(detail=True, methods=['post'])
+    def enregistrer_pieces(self, request, pk=None):
+        ot = self.get_object()
+        from apps.magasin.models import Piece, MouvementStock
+        from decimal import Decimal
+
+        pieces_data = request.data.get('pieces', [])
+        if not isinstance(pieces_data, list) or len(pieces_data) == 0:
+            return Response({'error': 'Liste de pièces requise (ex: [{idPiece, quantite}, ...])'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # --- Phase 1 : validation sans écriture ---
+        validations = []
+        for idx, item in enumerate(pieces_data):
+            pid = item.get('idPiece')
+            qte_raw = item.get('quantite', 0)
+            try:
+                qte = Decimal(str(qte_raw))
+            except Exception:
+                return Response({'error': f'Ligne {idx+1}: quantité invalide.'}, status=status.HTTP_400_BAD_REQUEST)
+            if qte <= 0:
+                return Response({'error': f'Ligne {idx+1}: quantité doit être > 0.'}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                piece = Piece.objects.get(id=pid)
+            except Piece.DoesNotExist:
+                return Response({'error': f'Ligne {idx+1}: pièce introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+            if piece.quantiteStock < qte:
+                return Response(
+                    {'error': f'Ligne {idx+1} ({piece.reference}): stock insuffisant — {piece.quantiteStock} {piece.unite} disponible(s), {qte} demandé(s).'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            validations.append({'piece': piece, 'quantite': qte})
+
+        # --- Phase 2 : écriture atomique ---
+        with transaction.atomic():
+            for v in validations:
+                piece = v['piece']
+                qte = v['quantite']
+                stock_avant = piece.quantiteStock
+                piece.quantiteStock -= qte
+                piece.save()
+                mouvement = MouvementStock.objects.create(
+                    idPiece=piece,
+                    typeMouvement='sortie',
+                    quantite=qte,
+                    stockAvant=stock_avant,
+                    stockApres=piece.quantiteStock,
+                    idOrdreTravail=str(ot.numero),
+                    idUtilisateurMagasinier=getattr(request.user, 'utilisateur', None),
+                )
+                PieceUtiliseeOT.objects.create(
+                    idOrdreTravail=ot,
+                    idPiece=piece,
+                    idMouvementStock=mouvement,
+                    quantite=qte,
+                    prixUnitaireCapture=piece.prixUnitaire or 0,
+                )
+                log_audit(request, 'ENREGISTRER_PIECE', 'ORDRES', 'OrdreTravail', ot.id,
+                          nouvelle_valeur={'piece_id': str(piece.id), 'quantite': str(qte), 'stock_avant': str(stock_avant)})
+
+        return Response({
+            'message': f'{len(validations)} pièce(s) enregistrée(s) avec succès.',
+            'ot': OrdreTravailSerializer(ot).data
+        })
+
+    @action(detail=True, methods=['post'])
+    def enregistrer_actifs_corriges(self, request, pk=None):
+        ot = self.get_object()
+        actifs_data = request.data.get('actifs', [])
+        if not isinstance(actifs_data, list):
+            return Response({'error': 'La liste des actifs est requise.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from apps.actifs.models import Actif
+        crees = []
+        for item in actifs_data:
+            actif_id = item.get('idActif')
+            description = item.get('description', '')
+            if not actif_id:
+                continue
+            try:
+                actif = Actif.objects.get(id=actif_id)
+                obj, created = ActifCorrigeOT.objects.get_or_create(
+                    idOrdreTravail=ot,
+                    idActif=actif,
+                    defaults={'description': description}
+                )
+                if not created:
+                    obj.description = description
+                    obj.save()
+                crees.append(obj)
+            except Actif.DoesNotExist:
+                pass
+
+        log_audit(request, 'UPDATE', 'ORDRES', 'OrdreTravail', ot.id,
+                  nouvelle_valeur={'actifs_corriges': len(crees)})
+
+        return Response({
+            'message': f'{len(crees)} actif(s) enregistré(s) comme corrigé(s).',
+            'actifs_corriges': [str(a.idActif.id) for a in crees]
+        })
 
     @action(detail=True, methods=['post'])
     def ajouter_commentaire(self, request, pk=None):
@@ -729,6 +868,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
             ot.isvalide = True
             ot.statut    = 'CLOTURE'
             ot.typeCloture = type_cloture
+            ot.idUtilisateurValidation = getattr(request.user, 'utilisateur', None)
             print('test validation', ot.typeCloture)
             ot.dateCloture = timezone.now()
 
@@ -790,15 +930,23 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                             nouvelle_valeur={'statut': ot.statut,    'isvalide': True, 'typeCloture': type_cloture})
 
         else:
-            ot.isvalide   =  True
-            ot.statut     = 'REJETE'
-            print('test validation',ot.isvalide)
+            # Rejet opérateur — on garde le statut CLOTURE/DEPANNE inchangé
+            ot.isvalide = True
+            ot.rejetOperateur = True
+            ot.motifRejetOperateur = motif
+            ot.dateRejetOperateur = timezone.now()
+            ot.idUtilisateurRejetOperateur = getattr(request.user, 'utilisateur', None)
+            print('test validation rejet', ot.isvalide, ot.statut)
             ot.save()
             
             di = ot.idDemandeIntervention
             if di:
                 di.isencours = True
-                di.statut    = 'en_attente'
+                di.statut    = 'rejetee_apres_validation'
+                di.rejetCount = (di.rejetCount or 0) + 1
+                di.dateDernierRejet = timezone.now()
+                if motif:
+                    di.motifRejet = motif
                 print('test validation di',di.isencours, di.statut)
                 di.save()
 
@@ -823,9 +971,9 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
             HistoriqueStatutOT.objects.create(
                 idOrdreTravail=ot,
                 ancienStatut=ancien_statut,
-                nouveauStatut='EN_COURS',
+                nouveauStatut=ancien_statut,
                 idUtilisateur=getattr(request.user, 'utilisateur', None),
-                motif=motif or 'Validation opérateur rejetée — intervention à reprendre'
+                motif=motif or 'Validation opérateur rejetée — statut OT conservé'
             )
 
             AffectationEquipe.objects.filter(idOrdreTravail=ot).update(statut='rejeter')
@@ -836,8 +984,8 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
 
                 log_audit(request, 'UPDATE', 'ORDRES', 'DemandeIntervention', di.id,
                         ancienne_valeur={'statut': ancien_statut_di},
-                        nouvelle_valeur={'statut': 'en_attente',
-                                        'motif': f'Validation OT #{ot.numero} rejetée'})
+                        nouvelle_valeur={'statut': 'rejetee_apres_validation',
+                                        'motif': f'Validation OT #{ot.numero} rejetée', 'rejetCount': di.rejetCount})
 
                 # Toujours remettre l'actif parent en panne et l'unité non productive
                 ancien_statut_parent = actif_parent.statut
@@ -867,8 +1015,80 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                             nouvelle_valeur={'estProductive': False})
 
             log_audit(request, 'REJETER_VALIDATION', 'ORDRES', 'OrdreTravail', ot.id,
-                    ancienne_valeur={'statut': ancien_statut, 'isvalide': False},
-                    nouvelle_valeur={'statut': 'EN_COURS',    'isvalide': False, 'motif': motif})
+                    ancienne_valeur={'statut': ancien_statut, 'isvalide': False, 'rejetOperateur': False},
+                    nouvelle_valeur={'statut': ancien_statut, 'isvalide': True, 'rejetOperateur': True, 'motif': motif})
+
+        return Response(OrdreTravailSerializer(ot).data)
+
+    @action(detail=True, methods=['post'])
+    def changer_actif(self, request, pk=None):
+        ot = self.get_object()
+        actif_id = request.data.get('idActif')
+        if not actif_id:
+            return Response({'error': 'idActif requis.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from apps.actifs.models import Actif
+        try:
+            nouveau_actif = Actif.objects.get(id=actif_id)
+        except Actif.DoesNotExist:
+            return Response({'error': 'Actif introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+        ancien_actif = ot.idActif
+        if ancien_actif and ancien_actif.id == nouveau_actif.id:
+            return Response({'message': 'Même actif, aucun changement.'}, status=status.HTTP_200_OK)
+
+        # Trouver les parents racines
+        def get_racine(actif):
+            while actif.idParent:
+                actif = actif.idParent
+            return actif
+
+        ancien_parent = get_racine(ancien_actif) if ancien_actif else None
+        nouveau_parent = get_racine(nouveau_actif)
+
+        ot.idActif = nouveau_actif
+        ot.save()
+
+        # Si le parent racine change, mettre à jour les statuts
+        if ancien_parent and ancien_parent.id != nouveau_parent.id:
+            # Mettre l'ancien parent à actif s'il n'a plus d'OT/DI ouverts
+            autres_ots = OrdreTravail.objects.filter(
+                idActif=ancien_parent,
+                statut__in=['EN_COURS', 'DEPANNE']
+            ).exclude(id=ot.id).exists()
+            autres_di = DemandeIntervention.objects.filter(
+                idActif=ancien_parent,
+                statut__in=['en_attente', 'rejetee_apres_validation']
+            ).exists()
+            if not autres_ots and not autres_di:
+                ancien_parent.statut = 'actif'
+                ancien_parent.save()
+                from apps.actifs.models import HistoriqueStatut
+                HistoriqueStatut.objects.create(
+                    idActif=ancien_parent,
+                    ancienStatut='en_maintenance',
+                    nouveauStatut='actif',
+                    motif=f'Changement actif OT #{ot.numero} — ancien parent libéré',
+                    modifiePar=getattr(request.user, 'utilisateur', None)
+                )
+
+            # Mettre le nouveau parent en maintenance
+            if nouveau_parent.statut != 'en_maintenance':
+                ancien_statut_np = nouveau_parent.statut
+                nouveau_parent.statut = 'en_maintenance'
+                nouveau_parent.save()
+                from apps.actifs.models import HistoriqueStatut
+                HistoriqueStatut.objects.create(
+                    idActif=nouveau_parent,
+                    ancienStatut=ancien_statut_np,
+                    nouveauStatut='en_maintenance',
+                    motif=f'Changement actif OT #{ot.numero} — nouveau parent ({nouveau_actif.code})',
+                    modifiePar=getattr(request.user, 'utilisateur', None)
+                )
+
+        log_audit(request, 'UPDATE', 'ORDRES', 'OrdreTravail', ot.id,
+                  ancienne_valeur={'idActif': str(ancien_actif.id) if ancien_actif else None},
+                  nouvelle_valeur={'idActif': str(nouveau_actif.id)})
 
         return Response(OrdreTravailSerializer(ot).data)
 

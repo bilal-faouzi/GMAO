@@ -45,6 +45,15 @@ export const getSessions = (params = {}) =>
 export const forcedLogout = (session_id) =>
   api.delete(`/auth/sessions/${session_id}/logout/`);
 
+// ─── Interfaces ─────────────────────────────────────────────────
+export const getInterfaces = () => api.get("/auth/interfaces/");
+export const assignInterfaceToRole = (roleId, data) =>
+  api.post(`/auth/roles/${roleId}/interfaces/`, data);
+export const removeInterfaceFromRole = (roleId, { id_interface: interfaceId }) =>
+  api.delete(`/auth/roles/${roleId}/interfaces/`, {
+    data: { id_interface: interfaceId },
+  });
+
 // ─── Journal d'audit ────────────────────────────────────────────
 // export const getJournalAudits = (params = {}) =>
 //   api.get("/auth/journal-audits/", { params });

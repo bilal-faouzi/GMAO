@@ -63,6 +63,11 @@ const STATUT_CONFIG = {
     text: "var(--status-red-text)",
     dot: "var(--status-red-dot)",
   },
+  rejetee_apres_validation: {
+    bg: "var(--status-red-bg)",
+    text: "var(--status-red-text)",
+    dot: "var(--status-red-dot)",
+  },
 };
 
 export default function ListeDemandes() {
@@ -196,6 +201,7 @@ export default function ListeDemandes() {
               <SelectItem value="en_attente">En attente</SelectItem>
               <SelectItem value="validee">Validée</SelectItem>
               <SelectItem value="rejetee">Rejetée</SelectItem>
+              <SelectItem value="rejetee_apres_validation">Rejetée après validation</SelectItem>
             </SelectContent>
           </Select>
           <Select
@@ -335,18 +341,25 @@ export default function ListeDemandes() {
                       </span>
                     </td>
                     <td>
-                      <span
-                        className="badge"
-                        style={{
-                          background: statusCfg.bg,
-                          color: statusCfg.text,
-                        }}>
+                      <div className="flex flex-col gap-1">
                         <span
-                          className="bdot"
-                          style={{ background: statusCfg.dot }}
-                        />
-                        {d.statut?.replace(/_/g, " ")}
-                      </span>
+                          className="badge"
+                          style={{
+                            background: statusCfg.bg,
+                            color: statusCfg.text,
+                          }}>
+                          <span
+                            className="bdot"
+                            style={{ background: statusCfg.dot }}
+                          />
+                          {d.statut?.replace(/_/g, " ")}
+                        </span>
+                        {d.rejet_info && (
+                          <span className="text-[10px] text-red-400">
+                            Rejet {d.rejet_info.count}x
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td
                       style={{ color: "var(--text-muted)", fontSize: "12px" }}>
@@ -356,11 +369,11 @@ export default function ListeDemandes() {
                       <div
                         style={{ display: "flex", gap: 4, flexWrap: "wrap" }}
                         className="justify-center">
-                        {d.statut === "en_attente" && (
+                        {(d.statut === "en_attente" || d.statut === "rejetee_apres_validation") && (
                           <>
                             <button
                               className="btn btn-ghost btn-icon"
-                              title="Valider"
+                              title={d.statut === "rejetee_apres_validation" ? "Re-créer un OT" : "Valider"}
                               onClick={(e) => {
                                 handleValider(d.id);
                                 e.stopPropagation();
@@ -368,17 +381,19 @@ export default function ListeDemandes() {
                               style={{ color: "var(--status-green-text)" }}>
                               <Check size={14} />
                             </button>
-                            <button
-                              className="btn btn-ghost btn-icon"
-                              title="Rejeter"
-                              onClick={(e) => {
-                                setModalRejet(d.id);
-                                setMotifRejet("");
-                                e.stopPropagation();
-                              }}
-                              style={{ color: "var(--status-red-text)" }}>
-                              <X size={14} />
-                            </button>
+                            {d.statut === "en_attente" && (
+                              <button
+                                className="btn btn-ghost btn-icon"
+                                title="Rejeter"
+                                onClick={(e) => {
+                                  setModalRejet(d.id);
+                                  setMotifRejet("");
+                                  e.stopPropagation();
+                                }}
+                                style={{ color: "var(--status-red-text)" }}>
+                                <X size={14} />
+                              </button>
+                            )}
                           </>
                         )}
                         {d.statut === "validee" &&

@@ -116,7 +116,7 @@ export default function FormulaireDemande({
   const recordingStartTimeRef = useRef(null);
 
   useEffect(() => {
-    getActifs({ estActif: true }).then((r) =>
+    getActifs({ estActif: true, my_unite: true }).then((r) =>
       setActifs(r.data.results || r.data),
     );
   }, []);

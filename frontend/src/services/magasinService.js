@@ -43,3 +43,16 @@ export const getMouvements = (filters = {}) => {
 
 export const getMouvementsByPiece = (idPiece) =>
     api.get(`/v1/magasin/mouvements/?idPiece=${idPiece}`);
+
+// ── Categories ───────────────────────────────────────────
+export const getCategoriesPieces = () =>
+    api.get('/v1/magasin/pieces/categories/');
+
+// ── Import CSV SAGE X3 ───────────────────────────────────
+export const importerPiecesCSV = (file) => {
+    const formData = new FormData();
+    formData.append('fichier', file);
+    return api.post('/v1/magasin/pieces/importer_csv/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+};

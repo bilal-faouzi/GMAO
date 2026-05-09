@@ -59,6 +59,42 @@ class Permission(models.Model):
         return f"{self.module}.{self.action}.{self.ressource}"
 
 
+class InterfaceApp(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    code = models.CharField(max_length=100, unique=True)
+    libelle = models.CharField(max_length=150)
+    route = models.CharField(max_length=100)
+    icon = models.CharField(max_length=50, blank=True)
+    module = models.CharField(max_length=100)
+    ordre = models.IntegerField(default=0)
+    est_actif = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = 'interface_app'
+        ordering = ['ordre', 'libelle']
+
+    def __str__(self):
+        return self.libelle
+
+
+class RoleInterface(models.Model):
+    id_role = models.ForeignKey(
+        Role, on_delete=models.CASCADE,
+        db_column='id_role', related_name='interfaces'
+    )
+    id_interface = models.ForeignKey(
+        InterfaceApp, on_delete=models.CASCADE,
+        db_column='id_interface', related_name='roles'
+    )
+
+    class Meta:
+        db_table = 'role_interface'
+        unique_together = ('id_role', 'id_interface')
+        constraints = [
+            models.UniqueConstraint(fields=['id_role', 'id_interface'], name='unique_role_interface')
+        ]
+
+
 class UtilisateurRole(models.Model):
     id_utilisateur = models.ForeignKey(
         Utilisateur, on_delete=models.CASCADE,

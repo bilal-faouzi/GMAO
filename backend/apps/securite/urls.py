@@ -7,6 +7,7 @@ from .views import (
     PermissionListCreateView,
     AssignRoleToUserView, AssignPermissionToRoleView,
     SessionListView, JournalAuditListView,
+    InterfaceAppListView, AssignInterfaceToRoleView,
 )
 
 urlpatterns = [
@@ -25,6 +26,10 @@ urlpatterns = [
     path('roles/', RoleListCreateView.as_view(), name='roles'),
     path('roles/<uuid:role_id>/', RoleDetailView.as_view(), name='role-detail'),
     path('roles/<uuid:role_id>/permissions/', AssignPermissionToRoleView.as_view(), name='role-permissions'),
+    path('roles/<uuid:role_id>/interfaces/', AssignInterfaceToRoleView.as_view(), name='role-interfaces'),
+
+    # Interfaces
+    path('interfaces/', InterfaceAppListView.as_view(), name='interfaces'),
 
     # Permissions
     path('permissions/', PermissionListCreateView.as_view(), name='permissions'),

@@ -16,7 +16,7 @@ export default function FormulaireOT() {
   const [erreur, setErreur]   = useState(null);
 
   useEffect(() => {
-    getActifs({estActif:true}).then(r => setActifs(r.data.results || r.data));
+    getActifs({ estActif: true, my_unite: true }).then(r => setActifs(r.data.results || r.data));
     if (isEdit) getOT(id).then(r => {
       const o = r.data;
       setForm({ idActif:o.idActif, type:o.type, priorite:o.priorite,

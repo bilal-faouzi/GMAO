@@ -8,14 +8,18 @@ import {
   Power,
   ChevronDown,
   ChevronUp,
+  LayoutDashboard,
 } from "lucide-react";
 import {
   getRoles,
   getPermissions,
+  getInterfaces,
   createRole,
   updateRole,
   assignPermissionToRole,
   deletePermissionfromRole,
+  assignInterfaceToRole,
+  removeInterfaceFromRole,
   deleteRole,
 } from "@/services/securiteService";
 
@@ -83,8 +87,10 @@ export default function Roles() {
   const [search, setSearch] = useState("");
   const [openCreate, setOpenCreate] = useState(false);
   const [openPerms, setOpenPerms] = useState(false);
+  const [openInterfaces, setOpenInterfaces] = useState(false);
   const [selectedRole, setSelectedRole] = useState(null);
   const [allPermissions, setAllPermissions] = useState([]);
+  const [allInterfaces, setAllInterfaces] = useState([]);
   const [form, setForm] = useState({ code: "", libelle: "", niveau: "" });
   const [selectedNiveau, setSelectedNiveau] = useState(null);
   const [expandedRoles, setExpandedRoles] = useState({});
@@ -110,6 +116,13 @@ export default function Roles() {
   const fetchAllPermissions = async () => {
     const res = await getPermissions();
     setAllPermissions(
+      Array.isArray(res.data) ? res.data : res.data.results || [],
+    );
+  };
+
+  const fetchAllInterfaces = async () => {
+    const res = await getInterfaces();
+    setAllInterfaces(
       Array.isArray(res.data) ? res.data : res.data.results || [],
     );
   };
@@ -163,6 +176,12 @@ export default function Roles() {
     setOpenPerms(true);
   };
 
+  const openInterfacesModal = (role) => {
+    setSelectedRole(role);
+    fetchAllInterfaces();
+    setOpenInterfaces(true);
+  };
+
   const handleAssignPermission = async (permId) => {
     try {
       await assignPermissionToRole(selectedRole.id, { id_permission: permId });
@@ -185,6 +204,35 @@ export default function Roles() {
       setSelectedRole((prev) => ({
         ...prev,
         permissions: prev.permissions.filter((p) => p.id !== permId),
+      }));
+      fetchRoles();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAssignInterface = async (interfaceId) => {
+    try {
+      await assignInterfaceToRole(selectedRole.id, { id_interface: interfaceId });
+      const iface = allInterfaces.find((i) => i.id === interfaceId);
+      setSelectedRole((prev) => ({
+        ...prev,
+        interfaces: [...(prev.interfaces || []), iface],
+      }));
+      fetchRoles();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleRemoveInterface = async (interfaceId) => {
+    try {
+      await removeInterfaceFromRole(selectedRole.id, {
+        id_interface: interfaceId,
+      });
+      setSelectedRole((prev) => ({
+        ...prev,
+        interfaces: prev.interfaces.filter((i) => i.id !== interfaceId),
       }));
       fetchRoles();
     } catch (err) {
@@ -278,6 +326,13 @@ export default function Roles() {
 
                 {/* Actions */}
                 <div className="flex gap-1">
+                  <Button
+                    onClick={() => openInterfacesModal(role)}
+                    title="Interfaces"
+                    variant="ghost"
+                    className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-500/10 text-text-muted hover:text-blue-700 dark:hover:text-blue-400 transition-colors">
+                    <LayoutDashboard size={13} />
+                  </Button>
                   <Button
                     onClick={() => openPermsModal(role)}
                     title="Permissions"
@@ -511,6 +566,91 @@ export default function Roles() {
                 ).length === 0 && (
                   <p className="text-sm text-text-muted p-2">
                     Toutes les permissions sont assignées
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ── Modal Interfaces ── */}
+      {openInterfaces && (
+        <Modal
+          title={`Interfaces — ${selectedRole?.code}`}
+          onClose={() => setOpenInterfaces(false)}>
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            {/* Assignées */}
+            <div>
+              <p className="text-xs text-text-secondary mb-2 uppercase tracking-wider">
+                Assignées ({selectedRole?.interfaces?.length || 0})
+              </p>
+              <div className="space-y-2">
+                {selectedRole?.interfaces?.length > 0 ? (
+                  selectedRole.interfaces.map((iface) => (
+                    <div
+                      key={iface.id}
+                      className="flex items-center justify-between p-2.5 rounded-lg bg-surface">
+                      <div>
+                        <span className="text-sm font-medium text-text">
+                          {iface.libelle}
+                        </span>
+                        <span className="text-xs text-text-muted ml-2">
+                          {iface.route}
+                        </span>
+                      </div>
+                      <Button
+                        onClick={() => handleRemoveInterface(iface.id)}
+                        className="text-text-muted hover:text-danger transition-colors text-lg leading-none"
+                        variant="ghost">
+                        ×
+                      </Button>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-text-muted p-2">
+                    Aucune interface assignée
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Ajouter */}
+            <div>
+              <p className="text-xs text-text-secondary mb-2 uppercase tracking-wider">
+                Ajouter
+              </p>
+              <div className="space-y-2">
+                {allInterfaces
+                  .filter(
+                    (iface) =>
+                      !selectedRole?.interfaces?.find((si) => si.id === iface.id),
+                  )
+                  .map((iface) => (
+                    <div
+                      key={iface.id}
+                      className="flex items-center justify-between p-2.5 rounded-lg border border-border">
+                      <div>
+                        <span className="text-sm font-medium text-text">
+                          {iface.libelle}
+                        </span>
+                        <span className="text-xs text-text-muted ml-2">
+                          {iface.route}
+                        </span>
+                      </div>
+                      <Button
+                        onClick={() => handleAssignInterface(iface.id)}
+                        variant="custom">
+                        Ajouter
+                      </Button>
+                    </div>
+                  ))}
+                {allInterfaces.filter(
+                  (iface) =>
+                    !selectedRole?.interfaces?.find((si) => si.id === iface.id),
+                ).length === 0 && (
+                  <p className="text-sm text-text-muted p-2">
+                    Toutes les interfaces sont assignées
                   </p>
                 )}
               </div>

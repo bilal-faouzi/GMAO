@@ -46,9 +46,10 @@ class DemandeIntervention(BaseModel):
         ('basse',    'Basse'),
     ]
     STATUT_CHOICES = [
-        ('en_attente', 'En attente'),
-        ('validee',    'Validée'),
-        ('rejetee',    'Rejetée'),
+        ('en_attente',              'En attente'),
+        ('validee',                 'Validée'),
+        ('rejetee',                 'Rejetée'),
+        ('rejetee_apres_validation','Rejetée après validation'),
     ]
 
     id                       = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -59,10 +60,12 @@ class DemandeIntervention(BaseModel):
     dateSignalement          = models.DateTimeField(auto_now_add=True)
     description              = models.TextField(blank=True)
     urgence                  = models.CharField(max_length=10, choices=URGENCE_CHOICES)
-    statut                   = models.CharField(max_length=15, choices=STATUT_CHOICES, default='en_attente')
+    statut                   = models.CharField(max_length=30, choices=STATUT_CHOICES, default='en_attente')
     idUtilisateurValidation  = models.ForeignKey('securite.Utilisateur', on_delete=models.SET_NULL, null=True, blank=True, related_name='demandes_validees')
     dateValidation           = models.DateTimeField(null=True, blank=True)
     motifRejet               = models.TextField(blank=True)
+    rejetCount               = models.PositiveSmallIntegerField(default=0)
+    dateDernierRejet         = models.DateTimeField(null=True, blank=True)
     isencours                 = models.BooleanField(default=True)
     class Meta:
         ordering = ['-dateSignalement']
@@ -140,6 +143,12 @@ class OrdreTravail(BaseModel):
     typeCloture           = models.CharField(max_length=10, choices=CLOTURE_CHOICES, blank=True)
     description           = models.TextField(blank=True)
     isvalide              = models.BooleanField(default=True)
+    idUtilisateurCreateur = models.ForeignKey('securite.Utilisateur', on_delete=models.SET_NULL, null=True, blank=True, related_name='ots_crees')
+    idUtilisateurValidation = models.ForeignKey('securite.Utilisateur', on_delete=models.SET_NULL, null=True, blank=True, related_name='ots_valides')
+    rejetOperateur        = models.BooleanField(default=False)
+    motifRejetOperateur   = models.TextField(blank=True)
+    dateRejetOperateur    = models.DateTimeField(null=True, blank=True)
+    idUtilisateurRejetOperateur = models.ForeignKey('securite.Utilisateur', on_delete=models.SET_NULL, null=True, blank=True, related_name='ots_rejetes')
 
     class Meta:
         ordering = ['-created_at']
@@ -387,3 +396,28 @@ class ConfigurationSLA(models.Model):
 
     def __str__(self):
         return f"SLA {self.typeOrdreTravail}/{self.priorite} — {self.delaiResolutionMin} min"
+
+
+class ActifCorrigeOT(models.Model):
+    id              = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    idOrdreTravail  = models.ForeignKey(
+                        OrdreTravail,
+                        on_delete=models.CASCADE,
+                        related_name='actifs_corriges'
+                      )
+    idActif         = models.ForeignKey(
+                        'actifs.Actif',
+                        on_delete=models.CASCADE,
+                        related_name='corrections_ot'
+                      )
+    description     = models.TextField(blank=True)
+    dateCorrection  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-dateCorrection']
+        verbose_name = 'Actif corrigé (OT)'
+        verbose_name_plural = 'Actifs corrigés (OT)'
+        unique_together = [('idOrdreTravail', 'idActif')]
+
+    def __str__(self):
+        return f"{self.idOrdreTravail.numero} → {self.idActif.code}"

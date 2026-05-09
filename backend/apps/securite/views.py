@@ -16,13 +16,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.models import Q, Count
 
 
-from .models import Utilisateur, SessionActive, JournalAudit, Role, Permission, UtilisateurRole, RolePermission
+from .models import Utilisateur, SessionActive, JournalAudit, Role, Permission, UtilisateurRole, RolePermission, InterfaceApp, RoleInterface
 from .serializers import (
     JournalAuditSerializer, LoginSerializer, UtilisateurSerializer,
     CreateUtilisateurSerializer, UpdateUtilisateurSerializer,
     CreateRoleSerializer, CreatePermissionSerializer,
     AssignRoleSerializer, AssignPermissionSerializer,
-    RoleSerializer, PermissionSerializer
+    RoleSerializer, PermissionSerializer, InterfaceAppSerializer
 )
 
 
@@ -132,15 +132,12 @@ class MeView(APIView):
     permission_classes = [IsAuthenticated, IsSessionActive]
 
     def get(self, request):
-        # Get user_id from JWT payload
         user_id = request.auth.get('user_id')
-        
         if not user_id:
             return Response(
                 {'detail': 'Token invalide.'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-        
         try:
             import uuid
             utilisateur = Utilisateur.objects.get(
@@ -392,13 +389,30 @@ class RoleDetailView(APIView):
             return None
 
     def get(self, request, role_id):
-        """Get single role with its permissions"""
+        """Get single role with its permissions and interfaces"""
         role = self.get_object(role_id)
         if not role:
             return Response(
                 {'detail': 'Rôle non trouvé.'},
                 status=status.HTTP_404_NOT_FOUND
             )
+        return Response(RoleSerializer(role).data)
+
+    def patch(self, request, role_id):
+        """Update role code/libelle/niveau"""
+        role = self.get_object(role_id)
+        if not role:
+            return Response(
+                {'detail': 'Rôle non trouvé.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        if 'libelle' in request.data:
+            role.libelle = request.data['libelle']
+        if 'code' in request.data:
+            role.code = request.data['code'].upper()
+        if 'niveau' in request.data:
+            role.niveau = request.data['niveau']
+        role.save()
         return Response(RoleSerializer(role).data)
 
     def delete(self, request, role_id):
@@ -422,7 +436,7 @@ class RoleDetailView(APIView):
         )
 
         return Response({'detail': 'Rôle désactivé avec succès.'})
-    
+
     def put(self, request, role_id):
         """Met à jour un rôle (ex: activation/désactivation)"""
         role = self.get_object(role_id)
@@ -455,6 +469,70 @@ class RoleDetailView(APIView):
             
         
         return Response({'detail': 'Rôle désactivé avec succès.'})
+
+
+# ─────────────────────────────────────────
+# INTERFACES
+# ─────────────────────────────────────────
+
+class InterfaceAppListView(APIView):
+    permission_classes = [IsAuthenticated, IsSessionActive]
+
+    def get(self, request):
+        interfaces = InterfaceApp.objects.filter(est_actif=True).order_by('ordre', 'libelle')
+        return Response(InterfaceAppSerializer(interfaces, many=True).data)
+
+    def post(self, request):
+        serializer = InterfaceAppSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        interface = serializer.save()
+        return Response(InterfaceAppSerializer(interface).data, status=status.HTTP_201_CREATED)
+
+
+class AssignInterfaceToRoleView(APIView):
+    permission_classes = [IsAuthenticated, IsSessionActive]
+
+    def post(self, request, role_id):
+        try:
+            role = Role.objects.get(id=uuid.UUID(str(role_id)))
+        except (Role.DoesNotExist, ValueError):
+            return Response({'detail': 'Rôle non trouvé.'}, status=status.HTTP_404_NOT_FOUND)
+
+        interface_id = request.data.get('id_interface')
+        if not interface_id:
+            return Response({'detail': 'id_interface requis.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            interface = InterfaceApp.objects.get(id=uuid.UUID(str(interface_id)))
+        except (InterfaceApp.DoesNotExist, ValueError):
+            return Response({'detail': 'Interface non trouvée.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if RoleInterface.objects.filter(id_role=role, id_interface=interface).exists():
+            return Response({'detail': 'Interface déjà assignée.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        RoleInterface.objects.create(id_role=role, id_interface=interface)
+        return Response(RoleSerializer(role).data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, role_id):
+        try:
+            role = Role.objects.get(id=uuid.UUID(str(role_id)))
+        except (Role.DoesNotExist, ValueError):
+            return Response({'detail': 'Rôle non trouvé.'}, status=status.HTTP_404_NOT_FOUND)
+
+        interface_id = request.data.get('id_interface')
+        if not interface_id:
+            return Response({'detail': 'id_interface requis.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        deleted, _ = RoleInterface.objects.filter(
+            id_role=role,
+            id_interface__id=uuid.UUID(str(interface_id))
+        ).delete()
+
+        if deleted == 0:
+            return Response({'detail': 'Interface non assignée à ce rôle.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({'detail': 'Interface retirée avec succès.'})
 
 
 # ─────────────────────────────────────────
@@ -751,6 +829,8 @@ class JournalAuditView(APIView):
         action = request.query_params.get('action')
         module = request.query_params.get('module')
         utilisateur = request.query_params.get('utilisateur')
+        id_entite = request.query_params.get('id_entite')
+        type_entite = request.query_params.get('type_entite')
         print("utilisateur:", utilisateur)
         date_debut = request.query_params.get('date_debut')
         date_fin = request.query_params.get('date_fin')
@@ -764,6 +844,10 @@ class JournalAuditView(APIView):
             queryset = queryset.filter(
                 id_utilisateur__nom_utilisateur__icontains=utilisateur
             )
+        if id_entite:
+            queryset = queryset.filter(id_entite=id_entite)
+        if type_entite:
+            queryset = queryset.filter(type_entite__iexact=type_entite)
         if date_debut:
             queryset = queryset.filter(horodatage__date__gte=date_debut)
         if date_fin:

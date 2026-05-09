@@ -42,8 +42,8 @@ const navSections = [
     label: null,
     icon: null,
     items: [
-      { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-      { to: "/journal-audit", icon: ClipboardList, label: "Journal Audit" },
+      { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", code: "DASHBOARD" },
+      { to: "/journal-audit", icon: ClipboardList, label: "Journal Audit", code: "SEC_JOURNAL_AUDIT" },
     ],
   },
 
@@ -51,63 +51,65 @@ const navSections = [
     label: "Accès & Sécurité",
     icon: Shield,
     items: [
-      { to: "/roles", icon: Drama, label: "Rôles" },
-      { to: "/permissions", icon: Key, label: "Permissions" },
-      { to: "/utilisateurs", icon: Users, label: "Utilisateurs" },
-      { to: "/sessions", icon: MonitorSmartphone, label: "Sessions" },
+      { to: "/roles", icon: Drama, label: "Rôles", code: "SEC_ROLES" },
+      { to: "/permissions", icon: Key, label: "Permissions", code: "SEC_PERMISSIONS" },
+      { to: "/utilisateurs", icon: Users, label: "Utilisateurs", code: "SEC_UTILISATEURS" },
+      { to: "/sessions", icon: MonitorSmartphone, label: "Sessions", code: "SEC_SESSIONS" },
     ],
   },
   {
     label: null,
     icon: null,
-    items: [{ to: "/organisation", icon: Building2, label: "Arborescence" }],
+    items: [{ to: "/organisation", icon: Building2, label: "Arborescence", code: "ORGANISATION" }],
   },
   {
     label: "Organisation",
     icon: Pyramid,
     items: [
-      { to: "/societes", icon: Building2, label: "Sociétés" },
-      { to: "/sites", icon: MapPin, label: "Sites" },
-      { to: "/secteurs", icon: Grid3x3, label: "Secteurs" },
-      { to: "/unites", icon: Factory, label: "Unités" },
+      { to: "/societes", icon: Building2, label: "Sociétés", code: "ORG_SOCIETES" },
+      { to: "/sites", icon: MapPin, label: "Sites", code: "ORG_SITES" },
+      { to: "/secteurs", icon: Grid3x3, label: "Secteurs", code: "ORG_SECTEURS" },
+      { to: "/unites", icon: Factory, label: "Unités", code: "ORG_UNITES" },
     ],
   },
   {
     label: "Ressources",
     icon: UsersRound,
     items: [
-      { to: "/specialites", icon: Wrench, label: "Spécialités" },
-      { to: "/equipes", icon: UsersRound, label: "Équipes" },
-      { to: "/appartenances", icon: Link2, label: "Appartenances" },
+      { to: "/specialites", icon: Wrench, label: "Spécialités", code: "ORG_SPECIALITES" },
+      { to: "/equipes", icon: UsersRound, label: "Équipes", code: "ORG_EQUIPES" },
+      { to: "/appartenances", icon: Link2, label: "Appartenances", code: "ORG_APPARTENANCES" },
     ],
   },
   {
     label: "Actifs",
     icon: Package,
     items: [
-      { to: "/actifs/dashboard", icon: BarChart2, label: "Dashboard" },
-      { to: "/actifs", icon: Package, label: "Liste des actifs", end: true },
+      { to: "/actifs/dashboard", icon: BarChart2, label: "Dashboard", code: "ACTIFS_DASHBOARD" },
+      { to: "/actifs", icon: Package, label: "Liste des actifs", end: true, code: "ACTIFS_LISTE" },
       {
         to: "/actifs-racines",
         icon: FolderTree,
         label: "Actifs racines",
         end: true,
+        code: "ACTIFS_RACINES",
       },
-      { to: "/actifs/arborescence", icon: GitBranch, label: "Arborescence" },
-      { to: "/actifs/unite", icon: FactoryIcon, label: "Unités" },
+      { to: "/actifs/arborescence", icon: GitBranch, label: "Arborescence", code: "ACTIFS_ARBORESCENCE" },
+      { to: "/actifs/unite", icon: FactoryIcon, label: "Unités", code: "ACTIFS_UNITE" },
     ],
   },
   {
     label: "Magasin",
     icon: Store,
     items: [
-      { to: "/magasin/dashboard", icon: BarChart2, label: "Dashboard Magasin" },
-      { to: "/magasin", icon: Package2, label: "Catalogue pièces", end: true },
+      { to: "/magasin/dashboard", icon: BarChart2, label: "Dashboard Magasin", code: "MAGASIN_DASHBOARD" },
+      { to: "/magasin", icon: Package2, label: "Catalogue pièces", end: true, code: "MAGASIN_CATALOGUE" },
       {
         to: "/magasin/sortie",
         icon: ArrowDownToLine,
         label: "Sortie pièces",
         end: true,
+        code: "MAGASIN_SORTIE",
       },
     ],
   },
@@ -119,12 +121,14 @@ const navSections = [
         to: "/soustraitants/dashboard",
         icon: ClipboardCheck,
         label: "Dashboard Sous-Traitants",
+        code: "SOUS_TRAITANTS_DASHBOARD",
       },
       {
         to: "/soustraitants",
         icon: Hammer,
         label: "Liste Sous-Traitants",
         end: true,
+        code: "SOUS_TRAITANTS_LISTE",
       },
     ],
   },
@@ -132,40 +136,57 @@ const navSections = [
     label: "Interventions",
     icon: ClipboardCheck,
     items: [
-      { to: "/ordres/demandes", icon: FileText, label: "Demandes (DI)" },
+      { to: "/ordres/demandes", icon: FileText, label: "Demandes (DI)", code: "ORDRES_DEMANDES" },
       {
         to: "/ordres/ots",
         icon: ClipboardCheck,
         label: "Ordres (OT)",
         end: true,
+        code: "ORDRES_OTS",
       },
-      { to: "/ordres/ots/dashboard", icon: BarChart2, label: "Dashboard OT" },
+      { to: "/ordres/ots/dashboard", icon: BarChart2, label: "Dashboard OT", code: "ORDRES_DASHBOARD_OT" },
       {
         to: "/ordres/declarer",
         icon: AlertTriangle,
         label: "Déclarer une panne",
         end: true,
+        code: "ORDRES_DECLARER",
       },
       {
         to: "/ordres/gestion",
         icon: Settings2,
         label: "Gestion OT (Resp.)",
         end: true,
+        code: "ORDRES_GESTION",
       },
       {
         to: "/ordres/validation",
         icon: CheckCircle2,
         label: "Valider interventions",
         end: true,
+        code: "ORDRES_VALIDATION",
       },
     ],
   },
 ];
 
+function filterNavSections(sections, interfaces) {
+  if (!interfaces || interfaces.length === 0) return sections;
+  const allowedCodes = new Set(interfaces.map((i) => i.code));
+  return sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => allowedCodes.has(item.code)),
+    }))
+    .filter((section) => section.items.length > 0);
+}
+
 export default function Sidebar() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const interfaces = user?.interfaces || [];
+  const visibleSections = filterNavSections(navSections, interfaces);
 
   // Calcule les groupes ouverts basé sur la location actuelle
   const getOpenGroups = (pathname) => {
@@ -234,7 +255,7 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 px-2 py-2 overflow-y-auto overflow-x-hidden">
-        {navSections.map((section, i) => {
+        {visibleSections.map((section, i) => {
           const isOpen = openGroups.has(i);
           const isGroupActive = section.items.some((item) =>
             item.end

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { getPieces, deletePiece } from "../../services/magasinService";
+import { getPieces, deletePiece, getCategoriesPieces } from "../../services/magasinService";
 import MouvementStockModal from "../../components/MouvementStockModal";
 import {
   Plus,
@@ -24,6 +24,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
+  List,
 } from "lucide-react";
 import {
   Select,
@@ -34,7 +35,13 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [
+  { label: "10", value: 10 },
+  { label: "25", value: 25 },
+  { label: "50", value: 50 },
+  { label: "100", value: 100 },
+  { label: "Tout", value: 5000 },
+];
 
 const fmtQty = (v) => {
   const n = parseFloat(v);
@@ -53,11 +60,12 @@ export default function CataloguePieces() {
 
   // Pagination
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [total, setTotal] = useState(0);
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = Math.ceil(total / pageSize);
 
   const buildParams = useCallback(() => {
-    const params = { page, page_size: PAGE_SIZE };
+    const params = { page, page_size: pageSize };
     if (search.trim()) params.search = search.trim();
     if (filtreAlerte) params.sous_seuil = "true";
     if (filtreCategorie) params.categorie = filtreCategorie;
@@ -88,13 +96,9 @@ export default function CataloguePieces() {
 
   // Charger les catégories distinctes une seule fois
   useEffect(() => {
-    getPieces({ page_size: 1000 })
+    getCategoriesPieces()
       .then((res) => {
-        const data = res.data.results || res.data;
-        const cats = [
-          ...new Set(data.map((p) => p.categorie).filter(Boolean)),
-        ].sort();
-        setCategories(cats);
+        setCategories(res.data || []);
       })
       .catch(() => {});
   }, []);
@@ -102,6 +106,11 @@ export default function CataloguePieces() {
   const resetFiltersAndPage = (setter) => {
     setPage(1);
     setter();
+  };
+
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(Number(newSize));
+    setPage(1);
   };
 
   const handleDelete = async (id) => {
@@ -331,31 +340,65 @@ export default function CataloguePieces() {
         <div
           style={{
             display: "flex",
-            justifyContent: "flex-end",
-            gap: 8,
+            justifyContent: "space-between",
+            alignItems: "center",
             marginTop: 12,
+            gap: 8,
           }}>
-          <button
-            className="btn btn-outline btn-icon"
-            disabled={page === 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}>
-            <ChevronLeft size={16} />
-          </button>
-          <span
-            style={{
-              display: "flex",
-              alignItems: "center",
-              fontSize: 13,
-              color: "var(--text-secondary)",
-            }}>
-            {page} / {totalPages}
-          </span>
-          <button
-            className="btn btn-outline btn-icon"
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
-            <ChevronRight size={16} />
-          </button>
+          {/* Page size selector */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <List size={14} style={{ color: "var(--text-muted)" }} />
+            <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+              Afficher :
+            </span>
+            <select
+              value={pageSize}
+              onChange={(e) => handlePageSizeChange(e.target.value)}
+              style={{
+                background: "var(--card-bg)",
+                color: "var(--text-primary)",
+                border: "1px solid var(--border-color)",
+                borderRadius: 6,
+                padding: "4px 8px",
+                fontSize: 13,
+                outline: "none",
+                cursor: "pointer",
+              }}>
+              {PAGE_SIZE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+              sur {total} références
+            </span>
+          </div>
+
+          {/* Page navigation */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              className="btn btn-outline btn-icon"
+              disabled={page === 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}>
+              <ChevronLeft size={16} />
+            </button>
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+                fontSize: 13,
+                color: "var(--text-secondary)",
+              }}>
+              {page} / {totalPages}
+            </span>
+            <button
+              className="btn btn-outline btn-icon"
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       )}
 

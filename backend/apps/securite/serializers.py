@@ -1,6 +1,12 @@
 # securite/serializers.py
 from rest_framework import serializers
-from .models import JournalAudit, Utilisateur, Role, Permission, UtilisateurRole, RolePermission
+from .models import JournalAudit, Utilisateur, Role, Permission, UtilisateurRole, RolePermission, InterfaceApp, RoleInterface
+
+class InterfaceAppSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InterfaceApp
+        fields = ['id', 'code', 'libelle', 'route', 'icon', 'module', 'ordre', 'est_actif']
+
 
 class PermissionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -10,10 +16,11 @@ class PermissionSerializer(serializers.ModelSerializer):
 
 class RoleSerializer(serializers.ModelSerializer):
     permissions = serializers.SerializerMethodField()
+    interfaces = serializers.SerializerMethodField()
 
     class Meta:
         model = Role
-        fields = ['id', 'code', 'libelle', 'niveau', 'permissions', 'est_actif']
+        fields = ['id', 'code', 'libelle', 'niveau', 'permissions', 'interfaces', 'est_actif']
 
     def get_permissions(self, obj):
         perms = obj.permissions.filter(
@@ -23,16 +30,26 @@ class RoleSerializer(serializers.ModelSerializer):
             [rp.id_permission for rp in perms], many=True
         ).data
 
+    def get_interfaces(self, obj):
+        ints = obj.interfaces.filter(
+            id_interface__est_actif=True
+        ).select_related('id_interface')
+        return InterfaceAppSerializer(
+            [ri.id_interface for ri in ints], many=True
+        ).data
+
 
 class UtilisateurSerializer(serializers.ModelSerializer):
     roles = serializers.SerializerMethodField()
+    interfaces = serializers.SerializerMethodField()
+    unite_principale = serializers.SerializerMethodField()
 
     class Meta:
         model = Utilisateur
         fields = [
             'id', 'nom_utilisateur', 'email',
             'prenom', 'nom', 'est_actif',
-            'date_creation', 'derniere_connexion', 'roles'
+            'date_creation', 'derniere_connexion', 'roles', 'interfaces', 'unite_principale'
         ]
 
     def get_roles(self, obj):
@@ -42,6 +59,32 @@ class UtilisateurSerializer(serializers.ModelSerializer):
         return RoleSerializer(
             [ur.id_role for ur in roles], many=True
         ).data
+
+    def get_interfaces(self, obj):
+        # Union of all interfaces from all active roles
+        from .models import InterfaceApp
+        interface_ids = InterfaceApp.objects.filter(
+            roles__id_role__utilisateurs__id_utilisateur=obj,
+            roles__id_role__est_actif=True,
+            est_actif=True
+        ).values_list('id', flat=True).distinct()
+        return InterfaceAppSerializer(
+            InterfaceApp.objects.filter(id__in=interface_ids).order_by('ordre', 'libelle'),
+            many=True
+        ).data
+
+    def get_unite_principale(self, obj):
+        try:
+            app = obj.appartenances.select_related('unite').get(estPrincipale=True)
+            if app.unite:
+                return {
+                    'id': str(app.unite.id),
+                    'code': app.unite.code,
+                    'libelle': app.unite.libelle,
+                }
+        except Exception:
+            pass
+        return None
 
 
 class LoginSerializer(serializers.Serializer):

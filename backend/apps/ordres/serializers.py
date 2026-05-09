@@ -3,7 +3,7 @@ from .models import (
     DemandeIntervention, PieceJointeDI, OrdreTravail,
     AffectationEquipe, MembreIntervention, SuiviTemps,
     PieceUtiliseeOT, CommentaireOT, CauseRacine,
-    HistoriqueStatutOT, ConfigurationSLA
+    HistoriqueStatutOT, ConfigurationSLA, ActifCorrigeOT
 )
 
 
@@ -20,10 +20,20 @@ class DemandeInterventionSerializer(serializers.ModelSerializer):
     nb_pieces_jointes   = serializers.SerializerMethodField()
     pieces_jointes      = serializers.SerializerMethodField()
     idUtilisateurSignalement = serializers.PrimaryKeyRelatedField(read_only=True)
+    rejet_info          = serializers.SerializerMethodField()
 
     class Meta:
         model  = DemandeIntervention
         fields = '__all__'
+
+    def get_rejet_info(self, obj):
+        if obj.statut == 'rejetee_apres_validation' and obj.rejetCount > 0:
+            return {
+                'count': obj.rejetCount,
+                'date': obj.dateDernierRejet,
+                'motif': obj.motifRejet,
+            }
+        return None
 
     def get_actif_detail(self, obj):
         actif = obj.idActif
@@ -108,6 +118,34 @@ class MembreInterventionSerializer(serializers.ModelSerializer):
             'nom':    obj.idUtilisateur.nom,
             'prenom': obj.idUtilisateur.prenom,
         }
+
+
+class ActifCorrigeOTSerializer(serializers.ModelSerializer):
+    actif_detail    = serializers.SerializerMethodField()
+    corrigePar_detail = serializers.SerializerMethodField()
+
+    class Meta:
+        model  = ActifCorrigeOT
+        fields = '__all__'
+
+    def get_actif_detail(self, obj):
+        if obj.idActif:
+            return {
+                'id':     str(obj.idActif.id),
+                'code':   obj.idActif.code,
+                'libelle':obj.idActif.libelle,
+                'statut': obj.idActif.statut,
+            }
+        return None
+
+    def get_corrigePar_detail(self, obj):
+        if obj.corrigePar:
+            return {
+                'id':     str(obj.corrigePar.id),
+                'nom':    obj.corrigePar.nom,
+                'prenom': obj.corrigePar.prenom,
+            }
+        return None
 
 
 class AffectationEquipeSerializer(serializers.ModelSerializer):
@@ -212,8 +250,15 @@ class OrdreTravailSerializer(serializers.ModelSerializer):
     cout_total          = serializers.SerializerMethodField()
     nb_commentaires     = serializers.SerializerMethodField()
     nb_pieces_utilisees = serializers.SerializerMethodField()
+    createur_detail     = serializers.SerializerMethodField()
+    validation_detail   = serializers.SerializerMethodField()
+    rejetOperateur_detail = serializers.SerializerMethodField()
+    demande_detail      = serializers.SerializerMethodField()
     affectations        = AffectationEquipeSerializer(many=True, read_only=True)
     historiques_statut  = HistoriqueStatutOTSerializer(many=True, read_only=True)
+    pieces_utilisees_detail = serializers.SerializerMethodField()
+    commentaires_detail = serializers.SerializerMethodField()
+    actifs_corriges     = ActifCorrigeOTSerializer(many=True, read_only=True)
 
     class Meta:
         model  = OrdreTravail
@@ -227,6 +272,53 @@ class OrdreTravailSerializer(serializers.ModelSerializer):
             'statut':  obj.idActif.statut,
         }
 
+    def get_createur_detail(self, obj):
+        if obj.idUtilisateurCreateur:
+            return {
+                'id':     str(obj.idUtilisateurCreateur.id),
+                'nom':    obj.idUtilisateurCreateur.nom,
+                'prenom': obj.idUtilisateurCreateur.prenom,
+            }
+        return None
+
+    def get_validation_detail(self, obj):
+        if obj.idUtilisateurValidation:
+            return {
+                'id':     str(obj.idUtilisateurValidation.id),
+                'nom':    obj.idUtilisateurValidation.nom,
+                'prenom': obj.idUtilisateurValidation.prenom,
+            }
+        return None
+
+    def get_rejetOperateur_detail(self, obj):
+        if obj.idUtilisateurRejetOperateur:
+            return {
+                'id':     str(obj.idUtilisateurRejetOperateur.id),
+                'nom':    obj.idUtilisateurRejetOperateur.nom,
+                'prenom': obj.idUtilisateurRejetOperateur.prenom,
+            }
+        return None
+
+    def get_demande_detail(self, obj):
+        if obj.idDemandeIntervention:
+            di = obj.idDemandeIntervention
+            return {
+                'id':               str(di.id),
+                'numero':           di.numero,
+                'titre':            di.titre,
+                'description':      di.description,
+                'urgence':          di.urgence,
+                'dateSignalement':  di.dateSignalement,
+                'signalement_detail': {
+                    'id':     str(di.idUtilisateurSignalement.id) if di.idUtilisateurSignalement else None,
+                    'nom':    di.idUtilisateurSignalement.nom if di.idUtilisateurSignalement else None,
+                    'prenom': di.idUtilisateurSignalement.prenom if di.idUtilisateurSignalement else None,
+                } if di.idUtilisateurSignalement else None,
+                'pieces_jointes':   PieceJointeDISerializer(di.pieces_jointes.all(), many=True).data,
+                'nb_pieces_jointes': di.pieces_jointes.count(),
+            }
+        return None
+
     def get_est_en_retard(self, obj):
         return obj.est_en_retard
 
@@ -238,3 +330,9 @@ class OrdreTravailSerializer(serializers.ModelSerializer):
 
     def get_nb_pieces_utilisees(self, obj):
         return obj.pieces_utilisees.count()
+
+    def get_pieces_utilisees_detail(self, obj):
+        return PieceUtiliseeOTSerializer(obj.pieces_utilisees.all(), many=True).data
+
+    def get_commentaires_detail(self, obj):
+        return CommentaireOTSerializer(obj.commentaires.all(), many=True).data

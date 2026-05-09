@@ -16,6 +16,24 @@ const useAuthStore = create((set) => ({
   },
 
   setUser: (user) => set({ user, isAuthenticated: true }),
+
+  hasInterface: (code) => {
+    const state = useAuthStore.getState()
+    if (!state.user?.interfaces) return false
+    return state.user.interfaces.some((i) => i.code === code)
+  },
+
+  canAccessRoute: (route) => {
+    const state = useAuthStore.getState()
+    if (!state.user?.interfaces) return false
+    // Exact match or parent route match
+    return state.user.interfaces.some((i) => {
+      if (i.route === route) return true
+      // Allow child routes if parent is accessible
+      if (route.startsWith(i.route + '/')) return true
+      return false
+    })
+  },
 }))
 
 export default useAuthStore
