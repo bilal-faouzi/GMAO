@@ -4,7 +4,7 @@ import {
   Image, Music, Video, ChevronRight, FolderTree,
 } from "lucide-react";
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const BASE_URL = import.meta.env.VITE_API_URL || "";
 
 export function formatDate(iso) {
   if (!iso) return "—";

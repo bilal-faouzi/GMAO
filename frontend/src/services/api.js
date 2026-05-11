@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api',
+  baseURL: '/api',
 })
 
 // Ajoute le token JWT à chaque requête automatiquement
@@ -22,7 +22,7 @@ api.interceptors.response.use(
       original._retry = true
       try {
         const refresh = localStorage.getItem('refresh_token')
-        const res = await axios.post('http://127.0.0.1:8000/api/auth/refresh/', { refresh })
+        const res = await axios.post('/api/auth/refresh/', { refresh })
         localStorage.setItem('access_token', res.data.access)
         original.headers.Authorization = `Bearer ${res.data.access}`
         return api(original)

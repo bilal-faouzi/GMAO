@@ -88,7 +88,7 @@ export default function DeclarerPanne() {
       .catch(err => console.error('Erreur chargement actifs racines:', err))
       .finally(() => setLoadingActifs(false));
 
-    getDemandes().then(r => setMesDemandes((r.data.results || r.data).slice(0, 6)));
+    getDemandes({ my_unite: true }).then(r => setMesDemandes((r.data.results || r.data).slice(0, 6)));
   }, []);
 
   useEffect(() => {
@@ -256,7 +256,7 @@ export default function DeclarerPanne() {
       setAudioFiles([]); setRecordedAudios([]);
       setSelectionPath([]);
       setOptionsAtLevel(prev => prev.slice(0, 1));
-      const r = await getDemandes();
+      const r = await getDemandes({ my_unite: true });
       setMesDemandes((r.data.results || r.data).slice(0, 6));
     } catch(e) {
       setErreur(e.response?.data?.description?.[0] || e.response?.data?.error || 'Erreur lors de la déclaration.');

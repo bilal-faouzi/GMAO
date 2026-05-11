@@ -88,7 +88,7 @@ export default function ListeDemandes() {
   const charger = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { page, limit: PAGE_SIZE };
+      const params = { page, limit: PAGE_SIZE, my_unite: true };
       if (search.trim()) params.search = search.trim();
       if (filtreStatut) params.statut = filtreStatut;
       if (filtreUrgence) params.urgence = filtreUrgence;

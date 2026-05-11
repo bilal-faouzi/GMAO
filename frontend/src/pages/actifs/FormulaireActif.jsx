@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   getActif,
   createActif,
   updateActif,
   getActifs,
+  getTypesActifs,
 } from "../../services/actifService";
 import {
   getSites,
@@ -14,13 +15,6 @@ import {
 import { ArrowLeft, Save, X } from "lucide-react";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
-
-const ACTIF_TYPES = [
-  { value: "equipement", label: "Équipement" },
-  { value: "infrastructure", label: "Infrastructure" },
-  { value: "vehicule", label: "Véhicule" },
-  { value: "autre", label: "Autre" },
-];
 
 const STATUTS = [
   { value: "actif", label: "Actif" },
@@ -104,6 +98,9 @@ export default function FormulaireActif() {
   const navigate = useNavigate();
   const isEdit = Boolean(id);
 
+  const [searchParams] = useSearchParams();
+  const parentFromUrl = searchParams.get("parent");
+
   const [form, setForm] = useState(initialFormState);
   const [sites, setSites] = useState([]);
   const [unites, setUnites] = useState([]);
@@ -113,6 +110,7 @@ export default function FormulaireActif() {
   const [errors, setErrors] = useState({});
   const [isDirty, setIsDirty] = useState(false);
   const [secteurs, setSecteurs] = useState([]);
+  const [typesActifs, setTypesActifs] = useState([]);
 
   const formatDateForInput = (date) => {
     if (!date) return "";
@@ -137,16 +135,19 @@ export default function FormulaireActif() {
   useEffect(() => {
     const init = async () => {
       try {
-        const [s, u, a, sec] = await Promise.all([
+        const [s, u, a, sec, t] = await Promise.all([
           getSites(),
           getUnites(),
           getActifs(),
           getSecteurs(),
+          getTypesActifs(),
         ]);
         setSites(s.data.results || s.data);
         setUnites(u.data.results || u.data);
         setActifs(a.data.results || a.data);
         setSecteurs(sec.data.results || sec.data);
+        const types = t.data.results || t.data;
+        setTypesActifs(types.map(t => ({ value: t.code, label: t.libelle })));
         if (isEdit) {
           const res = await getActif(id);
           const a2 = res.data;
@@ -166,6 +167,20 @@ export default function FormulaireActif() {
             numSerie: a2.numSerie || "",
             estActif: a2.estActif !== undefined ? a2.estActif : true,
           });
+        } else if (parentFromUrl) {
+          // Pré-remplir depuis le parent (ajout de sous-actif)
+          try {
+            const res = await getActif(parentFromUrl);
+            const parent = res.data;
+            setForm((f) => ({
+              ...f,
+              idParent: parent.id || "",
+              idSite: parent.idSite || "",
+              idUnite: parent.idUnite || "",
+            }));
+          } catch {
+            // Si le parent n'est pas trouvé, on laisse vide
+          }
         }
       } catch {
         setErreur("Erreur lors du chargement des données");
@@ -313,7 +328,7 @@ export default function FormulaireActif() {
             <Field
               label="Type"
               name="type"
-              options={ACTIF_TYPES}
+              options={typesActifs}
               value={form.type}
               onChange={handleChange}
             />

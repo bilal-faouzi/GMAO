@@ -56,6 +56,22 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
         if statut_in:
             statuts = [s.strip() for s in statut_in.split(',')]
             queryset = queryset.filter(statut__in=statuts)
+
+        # Filtre par unite de l'utilisateur (my_unite)
+        my_unite = self.request.query_params.get('my_unite')
+        if my_unite is not None and my_unite.lower() in ('true', '1'):
+            try:
+                appartenance_principale = self.request.user.appartenances.get(
+                    estPrincipale=True
+                )
+                user_unite = appartenance_principale.unite
+                if user_unite:
+                    queryset = queryset.filter(idActif__idUnite=user_unite)
+                else:
+                    queryset = queryset.none()
+            except Exception:
+                queryset = queryset.none()
+
         return queryset
 
     def paginate_queryset(self, queryset):

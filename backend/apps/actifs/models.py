@@ -3,13 +3,23 @@ from django.db import models
 from apps.core.models import BaseModel
 
 
+class TypeActif(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    code = models.CharField(max_length=50, unique=True)
+    libelle = models.CharField(max_length=100)
+    ordre = models.IntegerField(default=0)
+    est_actif = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['ordre', 'libelle']
+        verbose_name = 'Type d\'actif'
+        verbose_name_plural = 'Types d\'actifs'
+
+    def __str__(self):
+        return self.libelle
+
+
 class Actif(BaseModel):
-    TYPE_CHOICES = [
-        ('equipement', 'Équipement'),
-        ('infrastructure', 'Infrastructure'),
-        ('vehicule', 'Véhicule'),
-        ('autre', 'Autre'),
-    ]
     STATUT_CHOICES = [
         ('actif', 'Actif'),
         ('en_panne', 'En panne'),
@@ -27,7 +37,7 @@ class Actif(BaseModel):
     code            = models.CharField(max_length=50, unique=True)
     libelle         = models.CharField(max_length=200)
     description     = models.TextField(blank=True)
-    type            = models.CharField(max_length=20, choices=TYPE_CHOICES, default='equipement')
+    type            = models.CharField(max_length=20, default='equipement')
     statut          = models.CharField(max_length=20, choices=STATUT_CHOICES, default='actif')
     idSite          = models.ForeignKey(
                         'organisation.Site',

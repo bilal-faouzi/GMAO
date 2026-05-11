@@ -5,6 +5,7 @@ import {
   deleteActif,
   changerStatut,
   getDashboard,
+  getTypesActifs,
 } from "../../services/actifService";
 import { getSites } from "../../services/organisationService";
 import { Input } from "@/components/ui/input";
@@ -59,28 +60,7 @@ const STATUTS = {
   },
 };
 
-const TYPES = {
-  equipement: {
-    label: "Équipement",
-    bg: "var(--status-blue-bg)",
-    text: "var(--status-blue-text)",
-  },
-  infrastructure: {
-    label: "Infrastructure",
-    bg: "var(--status-purple-bg)",
-    text: "var(--status-purple-text)",
-  },
-  vehicule: {
-    label: "Véhicule",
-    bg: "var(--status-cyan-bg)",
-    text: "var(--status-cyan-text)",
-  },
-  autre: {
-    label: "Autre",
-    bg: "var(--status-gray-bg)",
-    text: "var(--status-gray-text)",
-  },
-};
+
 
 const ALL = "__all__";
 const PAGE_SIZE = 10;
@@ -100,8 +80,8 @@ function StatutBadge({ statut }) {
   );
 }
 
-function TypeBadge({ type }) {
-  const cfg = TYPES[type] || {
+function TypeBadge({ type, typesMap }) {
+  const cfg = typesMap?.[type] || {
     label: type,
     bg: "var(--color-elevated)",
     text: "var(--color-text-muted)",
@@ -136,17 +116,36 @@ export default function ListeActifs() {
   const [erreur, setErreur] = useState(null);
   const [sites, setSites] = useState([]);
   const [data, setData] = useState(null);
+  const [typesActifs, setTypesActifs] = useState([]);
+  const [typesMap, setTypesMap] = useState({});
 
   // Pagination
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
-  // Charger la liste des sites pour le filtre
+  // Charger la liste des sites et types pour les filtres
   useEffect(() => {
     getSites()
       .then((res) => {
         setSites(res.data.results || res.data);
+      })
+      .catch(() => {});
+    getTypesActifs()
+      .then((res) => {
+        const types = res.data.results || res.data;
+        setTypesActifs(types);
+        const map = {};
+        const colors = ['blue','purple','cyan','amber','emerald','rose'];
+        types.forEach((t, i) => {
+          const c = colors[i % colors.length];
+          map[t.code] = {
+            label: t.libelle,
+            bg: `var(--status-${c}-bg)`,
+            text: `var(--status-${c}-text)`,
+          };
+        });
+        setTypesMap(map);
       })
       .catch(() => {});
   }, []);
@@ -399,9 +398,9 @@ export default function ListeActifs() {
               </SelectTrigger>
               <SelectContent className="z-[9999]">
                 <SelectItem value={ALL}>Tous les types</SelectItem>
-                {Object.entries(TYPES).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>
-                    {v.label}
+                {typesActifs.map((t) => (
+                  <SelectItem key={t.code} value={t.code}>
+                    {t.libelle}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -499,7 +498,7 @@ export default function ListeActifs() {
                     </td>
                     <td className="desig">{actif.libelle}</td>
                     <td>
-                      <TypeBadge type={actif.type} />
+                      <TypeBadge type={actif.type} typesMap={typesMap} />
                     </td>
                     <td>
                       <StatutBadge statut={actif.statut} />

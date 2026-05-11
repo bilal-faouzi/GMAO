@@ -1,7 +1,13 @@
 from rest_framework import serializers
 from django.utils import timezone
 from datetime import timedelta
-from .models import Actif, HistoriqueStatut, Indisponibilite, Remplacement
+from .models import Actif, HistoriqueStatut, Indisponibilite, Remplacement, TypeActif
+
+
+class TypeActifSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TypeActif
+        fields = '__all__'
 
 
 class ActifSerializer(serializers.ModelSerializer):

@@ -53,3 +53,16 @@ export const createRemplacement = (data) =>
 
 export const deleteRemplacement = (id) =>
     api.delete(`/v1/actifs/remplacements/${id}/`);
+
+// ── Types d'actifs ──────────────────────────────────────
+export const getTypesActifs = () =>
+    api.get('/v1/actifs/types-actifs/');
+
+export const createTypeActif = (data) =>
+    api.post('/v1/actifs/types-actifs/', data);
+
+export const updateTypeActif = (id, data) =>
+    api.put(`/v1/actifs/types-actifs/${id}/`, data);
+
+export const deleteTypeActif = (id) =>
+    api.delete(`/v1/actifs/types-actifs/${id}/`);

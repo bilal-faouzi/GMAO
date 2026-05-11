@@ -45,6 +45,9 @@ import GestionOTs from "@/pages/ordres/GestionOTs";
 import { TooltipProvider } from "./components/ui/tooltip";
 import ValidationOperateur from "@/pages/ordres/ValidationOperateur";
 import ActifUnite from "./pages/actifs/actifunite";
+import ParametrageHome from "@/pages/parametrage/ParametrageHome";
+import ParametrageActifs from "@/pages/parametrage/ParametrageActifs";
+import TypeActifsPage from "@/pages/parametrage/TypeActifsPage";
 import useAuthStore from "@/store/authStore";
 
 function ProtectedRoute({ children, requiredInterface }) {
@@ -129,6 +132,11 @@ export default function App() {
 
               {/* ── Magasin supplémentaire ── */}
               <Route path="magasin/sortie" element={<ProtectedRoute requiredInterface="MAGASIN_SORTIE"><InterfaceMagasinier /></ProtectedRoute>} />
+
+              {/* ── Paramétrage ── */}
+              <Route path="parametrage" element={<ProtectedRoute requiredInterface="PARAMETRAGE"><ParametrageHome /></ProtectedRoute>} />
+              <Route path="parametrage/actifs" element={<ProtectedRoute requiredInterface="PARAMETRAGE"><ParametrageActifs /></ProtectedRoute>} />
+              <Route path="parametrage/actifs/types" element={<ProtectedRoute requiredInterface="PARAMETRAGE"><TypeActifsPage /></ProtectedRoute>} />
             </Route>
 
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

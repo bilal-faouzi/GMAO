@@ -41,7 +41,10 @@ def get_user_roles(user):
 
 
 def check_roles(user, allowed_roles):
-    """Vérifie que l'utilisateur a au moins un des rôles autorisés."""
+    """Vérifie que l'utilisateur a au moins un des rôles autorisés.
+    Les superutilisateurs et staff ont accès à tout."""
+    if user.is_superuser or user.is_staff:
+        return True
     user_roles = get_user_roles(user)
     return any(role in allowed_roles for role in user_roles)
 

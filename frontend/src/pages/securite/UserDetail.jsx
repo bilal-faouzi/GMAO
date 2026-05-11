@@ -44,7 +44,7 @@ import { hover } from "framer-motion";
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 // Adaptez cette constante à votre environnement
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const BASE_URL = import.meta.env.VITE_API_URL || "";
 
 const NIVEAU_LABELS = {
   1: "Niveau 1 — Directeur Technique",

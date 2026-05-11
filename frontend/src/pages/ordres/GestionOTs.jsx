@@ -607,7 +607,7 @@ export default function GestionOTs() {
 
     const fullUrl = audioUrl.startsWith("http")
       ? audioUrl
-      : `http://localhost:8000${audioUrl}`;
+      : `${window.location.origin}${audioUrl}`;
     console.log("🔗 Full audio URL:", fullUrl);
 
     const audio = new Audio(fullUrl);

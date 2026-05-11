@@ -32,6 +32,7 @@ import {
   Settings2,
   CheckCircle2,
   FactoryIcon,
+  Settings,
 } from "lucide-react";
 import useAuthStore from "@/store/authStore";
 import api from "@/services/api";
@@ -165,6 +166,19 @@ const navSections = [
         label: "Valider interventions",
         end: true,
         code: "ORDRES_VALIDATION",
+      },
+    ],
+  },
+  {
+    label: "Administration",
+    icon: Settings,
+    items: [
+      {
+        to: "/parametrage",
+        icon: Settings2,
+        label: "Paramétrage",
+        end: true,
+        code: "PARAMETRAGE",
       },
     ],
   },

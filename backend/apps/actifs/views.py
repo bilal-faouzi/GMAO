@@ -8,10 +8,10 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
 from apps.securite.audit_utils import log_audit
-from .models import Actif, HistoriqueStatut, Indisponibilite, Remplacement
+from .models import Actif, HistoriqueStatut, Indisponibilite, Remplacement, TypeActif
 from .serializers import (
     ActifSerializer, HistoriqueStatutSerializer,
-    IndisponibiliteSerializer, RemplacementSerializer
+    IndisponibiliteSerializer, RemplacementSerializer, TypeActifSerializer
 )
 
 
@@ -19,6 +19,15 @@ class ActifPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
     max_page_size = 100
+
+
+class TypeActifViewSet(viewsets.ModelViewSet):
+    queryset = TypeActif.objects.filter(est_actif=True)
+    serializer_class = TypeActifSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = ['code', 'libelle']
+    ordering_fields = ['ordre', 'libelle']
 
 
 class ActifViewSet(viewsets.ModelViewSet):

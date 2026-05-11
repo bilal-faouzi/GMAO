@@ -490,14 +490,59 @@ class InterfaceAppListView(APIView):
         return Response(InterfaceAppSerializer(interface).data, status=status.HTTP_201_CREATED)
 
 
+# Mapping interface -> permissions automatiques
+INTERFACE_PERMISSIONS = {
+    "DASHBOARD": ["KPI_TABLEAU_BORD_READ", "KPI_READ", "NOTIF_READ"],
+    "SEC_UTILISATEURS": ["ADMIN_UTILISATEUR_CREATE", "ADMIN_UTILISATEUR_READ", "ADMIN_UTILISATEUR_UPDATE", "ADMIN_UTILISATEUR_DELETE"],
+    "SEC_ROLES": ["ADMIN_ROLE_CREATE", "ADMIN_ROLE_READ", "ADMIN_ROLE_UPDATE"],
+    "SEC_PERMISSIONS": ["ADMIN_PERMISSION_READ", "ADMIN_PERMISSION_UPDATE"],
+    "SEC_SESSIONS": ["ADMIN_UTILISATEUR_READ"],
+    "SEC_JOURNAL_AUDIT": ["ADMIN_JOURNAL_READ"],
+    "ORGANISATION": ["ADMIN_ORGANISATION_READ"],
+    "ORG_SOCIETES": ["ADMIN_ORGANISATION_READ", "ADMIN_ORGANISATION_CREATE", "ADMIN_ORGANISATION_UPDATE"],
+    "ORG_SITES": ["ADMIN_ORGANISATION_READ", "ADMIN_ORGANISATION_CREATE", "ADMIN_ORGANISATION_UPDATE"],
+    "ORG_SECTEURS": ["ADMIN_ORGANISATION_READ", "ADMIN_ORGANISATION_CREATE", "ADMIN_ORGANISATION_UPDATE"],
+    "ORG_UNITES": ["ADMIN_ORGANISATION_READ", "ADMIN_ORGANISATION_CREATE", "ADMIN_ORGANISATION_UPDATE"],
+    "ORG_SPECIALITES": ["ADMIN_ORGANISATION_READ", "ADMIN_ORGANISATION_CREATE", "ADMIN_ORGANISATION_UPDATE"],
+    "ORG_EQUIPES": ["ADMIN_EQUIPE_CREATE", "ADMIN_EQUIPE_READ", "ADMIN_EQUIPE_UPDATE"],
+    "ORG_APPARTENANCES": ["ADMIN_ORGANISATION_READ", "ADMIN_ORGANISATION_CREATE", "ADMIN_ORGANISATION_UPDATE"],
+    "ACTIFS_LISTE": ["ACTIF_CREATE", "ACTIF_READ", "ACTIF_UPDATE", "ACTIF_DELETE", "ACTIF_CHANGER_STATUT"],
+    "ACTIFS_DASHBOARD": ["ACTIF_READ", "ACTIF_HISTORIQUE_READ", "KPI_READ", "KPI_TABLEAU_BORD_READ"],
+    "ACTIFS_ARBORESCENCE": ["ACTIF_READ"],
+    "ACTIFS_RACINES": ["ACTIF_READ"],
+    "ACTIFS_UNITE": ["ACTIF_READ"],
+    "MAGASIN_CATALOGUE": ["STOCK_PIECE_CREATE", "STOCK_PIECE_READ", "STOCK_PIECE_UPDATE", "STOCK_MOUVEMENT_READ"],
+    "MAGASIN_DASHBOARD": ["STOCK_PIECE_READ", "STOCK_MOUVEMENT_READ", "KPI_READ"],
+    "MAGASIN_SORTIE": ["STOCK_SORTIE", "STOCK_ENTREE"],
+    "SOUS_TRAITANTS_LISTE": ["ST_CREATE", "ST_READ", "ST_UPDATE", "ST_SUSPENDRE"],
+    "SOUS_TRAITANTS_DASHBOARD": ["ST_READ", "KPI_READ", "KPI_TABLEAU_BORD_READ"],
+    "ORDRES_DEMANDES": ["DI_CREATE", "DI_READ", "DI_UPDATE", "DI_VALIDER", "DI_REJETER"],
+    "ORDRES_DASHBOARD_OT": ["OT_READ", "KPI_READ", "KPI_TABLEAU_BORD_READ"],
+    "ORDRES_OTS": ["OT_CREATE", "OT_READ", "OT_UPDATE", "OT_AFFECTER_EQUIPE", "OT_AFFECTER_SOUSTRAIT", "OT_SAISIR_COMPTE_RENDU", "OT_CLOTURER"],
+    "ORDRES_DECLARER": ["DI_CREATE"],
+    "ORDRES_GESTION": ["OT_CREATE", "OT_READ", "OT_UPDATE", "OT_AFFECTER_EQUIPE", "OT_AFFECTER_SOUSTRAIT", "OT_SAISIR_COMPTE_RENDU", "OT_CLOTURER", "DI_READ", "DI_VALIDER", "DI_REJETER"],
+    "ORDRES_VALIDATION": ["OT_VALIDER_CLOTURE", "OT_REJETER_CONFIRMATION"],
+}
+
+
 class AssignInterfaceToRoleView(APIView):
     permission_classes = [IsAuthenticated, IsSessionActive]
+
+    def _assign_permissions_for_interface(self, role, interface):
+        """Assigne automatiquement les permissions liees a une interface."""
+        perm_codes = INTERFACE_PERMISSIONS.get(interface.code, [])
+        for code in perm_codes:
+            try:
+                perm = Permission.objects.get(code=code)
+                RolePermission.objects.get_or_create(id_role=role, id_permission=perm)
+            except Permission.DoesNotExist:
+                pass
 
     def post(self, request, role_id):
         try:
             role = Role.objects.get(id=uuid.UUID(str(role_id)))
         except (Role.DoesNotExist, ValueError):
-            return Response({'detail': 'Rôle non trouvé.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': 'Role non trouve.'}, status=status.HTTP_404_NOT_FOUND)
 
         interface_id = request.data.get('id_interface')
         if not interface_id:
@@ -506,12 +551,13 @@ class AssignInterfaceToRoleView(APIView):
         try:
             interface = InterfaceApp.objects.get(id=uuid.UUID(str(interface_id)))
         except (InterfaceApp.DoesNotExist, ValueError):
-            return Response({'detail': 'Interface non trouvée.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': 'Interface non trouvee.'}, status=status.HTTP_404_NOT_FOUND)
 
         if RoleInterface.objects.filter(id_role=role, id_interface=interface).exists():
-            return Response({'detail': 'Interface déjà assignée.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'Interface deja assignee.'}, status=status.HTTP_400_BAD_REQUEST)
 
         RoleInterface.objects.create(id_role=role, id_interface=interface)
+        self._assign_permissions_for_interface(role, interface)
         return Response(RoleSerializer(role).data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, role_id):
