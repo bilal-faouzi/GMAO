@@ -184,6 +184,7 @@ class OrdreTravailSerializer(serializers.ModelSerializer):
     nb_pieces_utilisees = serializers.SerializerMethodField()
     affectations        = AffectationEquipeSerializer(many=True, read_only=True)
     historiques_statut  = HistoriqueStatutOTSerializer(many=True, read_only=True)
+    pieces_utilisees  = PieceUtiliseeOTSerializer(many=True, read_only=True)
 
     class Meta:
         model  = OrdreTravail

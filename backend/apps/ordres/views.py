@@ -539,9 +539,10 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def ajouter_commentaire(self, request, pk=None):
         ot = self.get_object()
+        print(getattr(request.user,'id'),)
         commentaire = CommentaireOT.objects.create(
             idOrdreTravail=ot,
-            idUtilisateur=getattr(request.user, 'utilisateur', None),
+            idUtilisateur_id=request.user.id,
             commentaire=request.data.get('commentaire', ''),
             estInterne=request.data.get('estInterne', False)
         )
