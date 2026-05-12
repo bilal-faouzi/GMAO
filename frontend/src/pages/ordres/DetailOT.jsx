@@ -6,8 +6,9 @@ import {
   ajouterCommentaire,
   getCommentaires,
   getHistoriqueOT,
+  affecterEquipe,
 } from "../../services/ordreService";
-import { getJournalAuditv2 } from "../../services/securiteService";
+import { getJournalAuditv2, getUtilisateurs } from "../../services/securiteService";
 
 import {
   Dialog,
@@ -17,7 +18,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { CheckCircle, User, Wrench, MessageSquare, AlertTriangle } from "lucide-react";
+import { CheckCircle, User, Wrench, MessageSquare, AlertTriangle, Plus, X } from "lucide-react";
 
 // ─── Couleurs d'audit ─────────────────────────────────────────────────────────
 const AUDIT_ACTION_CONFIG = {
@@ -179,6 +180,12 @@ export default function DetailOT() {
   const [newComment, setNewComment] = useState("");
   const [estInterne, setEstInterne] = useState(false);
 
+  // Affectation
+  const [modalAffectation, setModalAffectation] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState("");
+  const [loadingAffectation, setLoadingAffectation] = useState(false);
+
   const estVerrouille = ["DEPANNE", "CLOTURE", "REJETE"].includes(ot?.statut);
 
   // ─── Chargement ─────────────────────────────────────────────────────────────
@@ -195,7 +202,7 @@ export default function DetailOT() {
       setHistorique(h.data.results ?? h.data);
       setAudit(a.data.results ?? a.data);
     } catch (e) {
-      console.error(e);
+      console.error(e)
     } finally {
       setLoading(false);
     }
@@ -204,6 +211,38 @@ export default function DetailOT() {
   useEffect(() => {
     charger();
   }, [id]);
+
+  // ─── Action : Affecter une personne ──────────────────────────────────────────
+  const openAffectationModal = async () => {
+    setModalAffectation(true);
+    setSelectedUser("");
+    try {
+      const r = await getUtilisateurs({ est_actif: true, no_page: true });
+      setUsers(r.data.results ?? r.data ?? []);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleAffecter = async () => {
+    if (!selectedUser) return;
+    setLoadingAffectation(true);
+    try {
+      await affecterEquipe(id, {
+        idChefTechnicien: selectedUser,
+        dateDebut: new Date().toISOString(),
+        membres: [selectedUser],
+      });
+      setModalAffectation(false);
+      setSelectedUser("");
+      charger();
+    } catch (e) {
+      console.error(e);
+      alert("Erreur lors de l'affectation");
+    } finally {
+      setLoadingAffectation(false);
+    }
+  };
 
   // ─── Action : Dépanner ──────────────────────────────────────────────────────
   const handleDepanner = async () => {
@@ -544,14 +583,25 @@ export default function DetailOT() {
 
         <div className="p-4">
           {/* Affectations */}
-          {onglet === "affectations" &&
-            (ot.affectations?.length === 0 ? (
-              <p className="text-gray-500 text-sm text-center py-8">
-                Aucune affectation
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {ot.affectations?.map((a) => (
+          {onglet === "affectations" && (
+            <div className="space-y-3">
+              {!estVerrouille && (
+                <div className="flex justify-end">
+                  <button
+                    onClick={openAffectationModal}
+                    className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition">
+                    <Plus size={14} />
+                    Affecter une personne
+                  </button>
+                </div>
+              )}
+              {ot.affectations?.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-8">
+                  Aucune affectation
+                </p>
+              ) : (
+                <>
+                  {ot.affectations?.map((a) => (
                   <div
                     key={a.id}
                     className="bg-gray-700/40 rounded-lg p-3 border border-gray-700/50">
@@ -603,8 +653,10 @@ export default function DetailOT() {
                     )}
                   </div>
                 ))}
-              </div>
-            ))}
+              </>
+            )}
+          </div>
+        )}
 
           {/* Pièces */}
           {onglet === "pieces" && (
@@ -872,6 +924,60 @@ export default function DetailOT() {
               disabled={loadingCloture}
               className="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition text-white font-medium">
               {loadingCloture ? "Clôture en cours…" : "Clôturer définitivement"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ════════════════════════════════════════════════════════════════════════
+          Dialog — Affecter une personne
+      ════════════════════════════════════════════════════════════════════════ */}
+      <Dialog open={modalAffectation} onOpenChange={setModalAffectation}>
+        <DialogContent className="bg-gray-900 border border-gray-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-purple-400">
+              <User size={18} /> Affecter une personne
+            </DialogTitle>
+            <DialogDescription className="text-gray-400 text-sm">
+              Sélectionnez la personne qui interviendra sur l'OT{" "}
+              <span className="font-mono text-white">{ot?.numero}</span>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-2">
+            <label className="text-xs text-gray-400 mb-1.5 block">
+              Personne <span className="text-red-400">*</span>
+            </label>
+            <select
+              value={selectedUser}
+              onChange={(e) => setSelectedUser(e.target.value)}
+              className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-purple-500 transition">
+              <option value="">— Sélectionner une personne —</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.prenom} {u.nom} ({u.nom_utilisateur})
+                </option>
+              ))}
+            </select>
+            {users.length === 0 && (
+              <p className="text-xs text-gray-500 mt-2">Chargement des utilisateurs…</p>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 mt-2">
+            <button
+              onClick={() => {
+                setModalAffectation(false);
+                setSelectedUser("");
+              }}
+              className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition text-white">
+              Annuler
+            </button>
+            <button
+              onClick={handleAffecter}
+              disabled={loadingAffectation || !selectedUser}
+              className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg transition text-white font-medium">
+              {loadingAffectation ? "Affectation en cours…" : "Affecter"}
             </button>
           </DialogFooter>
         </DialogContent>
