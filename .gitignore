@@ -231,4 +231,6 @@ yarn-error.log*
 # Django Media and Static
 /static/
 /media/
-/staticfiles/
+/staticfiles/backend/cert.pem
+backend/key.pem
+backend/key.pem
