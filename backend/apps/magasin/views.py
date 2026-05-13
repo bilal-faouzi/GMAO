@@ -142,7 +142,11 @@ class PieceViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def importer_csv(self, request):
-        """Importe un fichier CSV SAGE X3 (@ARTICLES GMAO) dans la table Piece."""
+        """Importe un fichier CSV dans la table Piece.
+        Supporte deux formats :
+        - SAGE X3 : nombreuses colonnes avec headers connus
+        - PDR simplifié : 3 colonnes (Référence, Désignation, Unité) avec ou sans headers
+        """
         fichier = request.FILES.get('fichier')
         if not fichier:
             return Response({'error': 'Aucun fichier CSV fourni.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -200,6 +204,17 @@ class PieceViewSet(viewsets.ModelViewSet):
         col_map = {}
         for champ, cands in mapping.items():
             col_map[champ] = find_col(headers, cands)
+
+        # ── Détection du format PDR (3 colonnes sans headers connus) ──
+        format_pdr = False
+        if not col_map['reference'] and len(reader.fieldnames) == 3:
+            # Si on a exactement 3 colonnes et aucune ne correspond à "reference",
+            # on considère que c'est un fichier PDR avec headers génériques ou sans headers :
+            # Colonne 1 = Référence, Colonne 2 = Désignation, Colonne 3 = Unité
+            format_pdr = True
+            col_map['reference'] = reader.fieldnames[0]
+            col_map['designation'] = reader.fieldnames[1]
+            col_map['unite'] = reader.fieldnames[2]
 
         if not col_map['reference']:
             return Response({
@@ -275,6 +290,7 @@ class PieceViewSet(viewsets.ModelViewSet):
             'mises_a_jour': mis_a_jour,
             'erreurs': erreurs,
             'headers_trouves': reader.fieldnames,
+            'format_detecte': 'pdr' if format_pdr else 'sage_x3',
         })
 
     @action(detail=False, methods=['get'])

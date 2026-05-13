@@ -1,5 +1,6 @@
 from apps.securite.permissions import IsSessionActive
 from apps.securite.audit_utils import log_audit
+from apps.securite.models import Utilisateur
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -182,6 +183,28 @@ class EquipeViewSet(ModelViewSet):
         log_audit(self.request, 'DELETE', 'ORGANISATION', 'Equipe', instance.id,
                   ancienne_valeur={'libelle': instance.libelle})
         instance.delete()
+
+    @action(detail=False, methods=['get'], url_path='techniciens')
+    def techniciens(self, request):
+        """Liste tous les utilisateurs appartenant à une équipe active."""
+        user_ids = EquipeUtilisateur.objects.filter(
+            estActif=True
+        ).values_list('utilisateur_id', flat=True).distinct()
+
+        techniciens = Utilisateur.objects.filter(
+            id__in=user_ids,
+            est_actif=True
+        ).order_by('prenom', 'nom')
+
+        data = [{
+            'id': str(u.id),
+            'nom_utilisateur': u.nom_utilisateur,
+            'prenom': u.prenom,
+            'nom': u.nom,
+            'nom_complet': f"{u.prenom or ''} {u.nom or ''}".strip() or u.nom_utilisateur,
+        } for u in techniciens]
+
+        return Response(data)
 
 
 class EquipeUtilisateurViewSet(ModelViewSet):

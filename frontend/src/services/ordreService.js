@@ -46,8 +46,8 @@ export const getMembresEquipe = (equipeId) =>
 export const enregistrerPiece = (id, idPiece, quantite) =>
   api.post(`/v1/ordres/ots/${id}/enregistrer_piece/`, { idPiece, quantite });
 
-export const enregistrerPieces = (id, pieces) =>
-  api.post(`/v1/ordres/ots/${id}/enregistrer_pieces/`, { pieces });
+export const enregistrerPieces = (id, pieces, idTechnicien = null) =>
+  api.post(`/v1/ordres/ots/${id}/enregistrer_pieces/`, { pieces, idTechnicien });
 
 export const ajouterCommentaire = (id, commentaire, estInterne = false) =>
   api.post(`/v1/ordres/ots/${id}/ajouter_commentaire/`, {

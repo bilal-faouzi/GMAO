@@ -701,8 +701,17 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
         from decimal import Decimal
 
         pieces_data = request.data.get('pieces', [])
+        id_technicien = request.data.get('idTechnicien')
         if not isinstance(pieces_data, list) or len(pieces_data) == 0:
             return Response({'error': 'Liste de pièces requise (ex: [{idPiece, quantite}, ...])'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Résoudre le technicien si fourni
+        technicien = None
+        if id_technicien:
+            try:
+                technicien = Utilisateur.objects.get(id=id_technicien)
+            except Utilisateur.DoesNotExist:
+                return Response({'error': 'Technicien bénéficiaire introuvable.'}, status=status.HTTP_400_BAD_REQUEST)
 
         # --- Phase 1 : validation sans écriture ---
         validations = []
@@ -742,6 +751,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                     stockApres=piece.quantiteStock,
                     idOrdreTravail=str(ot.numero),
                     idUtilisateurMagasinier=request.user,
+                    idUtilisateurTechnicien=technicien,
                 )
                 PieceUtiliseeOT.objects.create(
                     idOrdreTravail=ot,
@@ -751,7 +761,8 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                     prixUnitaireCapture=piece.prixUnitaire or 0,
                 )
                 log_audit(request, 'ENREGISTRER_PIECE', 'ORDRES', 'OrdreTravail', ot.id,
-                          nouvelle_valeur={'piece_id': str(piece.id), 'quantite': str(qte), 'stock_avant': str(stock_avant)})
+                          nouvelle_valeur={'piece_id': str(piece.id), 'quantite': str(qte), 'stock_avant': str(stock_avant),
+                                           'technicien_id': str(technicien.id) if technicien else None})
 
         return Response({
             'message': f'{len(validations)} pièce(s) enregistrée(s) avec succès.',

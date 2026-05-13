@@ -9,9 +9,9 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { getPieces, deletePiece, getCategoriesPieces } from "../../services/magasinService";
+import { getPieces, deletePiece, getCategoriesPieces, importerPiecesCSV } from "../../services/magasinService";
 import MouvementStockModal from "../../components/MouvementStockModal";
 import {
   Plus,
@@ -25,6 +25,7 @@ import {
   ChevronRight,
   Filter,
   List,
+  Upload,
 } from "lucide-react";
 import {
   Select,
@@ -57,6 +58,8 @@ export default function CataloguePieces() {
   const [filtreCategorie, setFiltreCategorie] = useState("");
   const [categories, setCategories] = useState([]);
   const [modal, setModal] = useState(null);
+  const [importLoading, setImportLoading] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -130,11 +133,47 @@ export default function CataloguePieces() {
           <h1>Catalogue des pièces</h1>
           <p>{total} références</p>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={() => navigate("/magasin/nouveau")}>
-          <Plus size={14} /> Nouvelle pièce
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importLoading}
+            className="btn btn-outline"
+            title="Importer CSV (Référence, Désignation, Unité)">
+            {importLoading ? (
+              <><span className="animate-spin" /> Import...</>
+            ) : (
+              <><Upload size={14} /> Importer CSV</>
+            )}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,.txt"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              setImportLoading(true);
+              try {
+                const res = await importerPiecesCSV(file);
+                alert(`Import terminé : ${res.data.creees} créées, ${res.data.mises_a_jour} mises à jour`);
+                await charger();
+              } catch (err) {
+                const msg = err.response?.data?.error || "Erreur lors de l'import CSV.";
+                alert(msg);
+              } finally {
+                setImportLoading(false);
+                e.target.value = "";
+              }
+            }}
+          />
+          <button
+            className="btn btn-primary"
+            onClick={() => navigate("/magasin/nouveau")}>
+            <Plus size={14} /> Nouvelle pièce
+          </button>
+        </div>
       </div>
 
       {/* Filtres */}

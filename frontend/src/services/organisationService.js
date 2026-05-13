@@ -58,6 +58,13 @@ export const getSpecialites = () =>
 
 //  Equipes 
 
+export const getEquipes = (filters = {}) => {
+    const params = new URLSearchParams(filters).toString();
+    return api.get(`/v1/organisation/equipes/${params ? '?' + params : ''}`);
+};
+
+export const getTechniciens = () =>
+  api.get('/v1/organisation/equipes/techniciens/')
 
 export const createEquipe = (data) =>
   api.post('/v1/organisation/equipes/', data)
@@ -98,8 +105,3 @@ export const updateSpecialite = (id, data) =>
 
 export const createSpecialite = (data) =>
   api.post('/v1/organisation/specialites/', data)
-// Dans src/services/organisationService.js
-export const getEquipes = (filters = {}) => {
-    const params = new URLSearchParams(filters).toString();
-    return api.get(`/v1/organisation/equipes/${params ? '?' + params : ''}`);
-};

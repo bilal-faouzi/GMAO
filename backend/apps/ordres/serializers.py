@@ -169,8 +169,9 @@ class AffectationEquipeSerializer(serializers.ModelSerializer):
 
 
 class PieceUtiliseeOTSerializer(serializers.ModelSerializer):
-    piece_detail = serializers.SerializerMethodField()
-    cout_total   = serializers.SerializerMethodField()
+    piece_detail      = serializers.SerializerMethodField()
+    cout_total        = serializers.SerializerMethodField()
+    technicien_detail = serializers.SerializerMethodField()
 
     class Meta:
         model  = PieceUtiliseeOT
@@ -185,6 +186,18 @@ class PieceUtiliseeOTSerializer(serializers.ModelSerializer):
 
     def get_cout_total(self, obj):
         return obj.cout_total
+
+    def get_technicien_detail(self, obj):
+        mvt = obj.idMouvementStock
+        if mvt and mvt.idUtilisateurTechnicien:
+            u = mvt.idUtilisateurTechnicien
+            return {
+                'id':     str(u.id),
+                'prenom': u.prenom,
+                'nom':    u.nom,
+                'nom_complet': f"{u.prenom or ''} {u.nom or ''}".strip() or u.nom_utilisateur,
+            }
+        return None
 
 
 class CommentaireOTSerializer(serializers.ModelSerializer):

@@ -22,7 +22,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { CheckCircle, User, Wrench, MessageSquare, AlertTriangle, Plus, X } from "lucide-react";
+import { CheckCircle, User, Wrench, MessageSquare, AlertTriangle, Plus, X, Package } from "lucide-react";
 
 //  Statuts affectation 
 const STATUT_AFFECTATION_LABEL = {
@@ -816,11 +816,58 @@ export default function DetailOT() {
 
           {/* Pièces */}
           {onglet === "pieces" && (
-            <p className="text-text-muted text-sm text-center py-8">
-              {ot.nb_pieces_utilisees === 0
-                ? "Aucune pièce utilisée"
-                : `${ot.nb_pieces_utilisees} pièce(s) utilisée(s)`}
-            </p>
+            <div>
+              {ot.pieces_utilisees_detail?.length === 0 ? (
+                <p className="text-text-muted text-sm text-center py-8">
+                  Aucune pièce utilisée
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-text-muted border-b border-border">
+                        <th className="pb-2 font-medium">Référence</th>
+                        <th className="pb-2 font-medium">Désignation</th>
+                        <th className="pb-2 font-medium text-right">Quantité</th>
+                        <th className="pb-2 font-medium">Technicien bénéficiaire</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {ot.pieces_utilisees_detail?.map((p) => (
+                        <tr key={p.id} className="hover:bg-hover/30 transition">
+                          <td className="py-2.5 font-mono text-primary text-xs">
+                            {p.piece_detail?.reference}
+                          </td>
+                          <td className="py-2.5 text-text">
+                            {p.piece_detail?.designation}
+                          </td>
+                          <td className="py-2.5 text-right font-semibold text-text">
+                            {p.quantite} <span className="text-text-muted font-normal text-xs">{p.idPiece_unite || 'pc'}</span>
+                          </td>
+                          <td className="py-2.5">
+                            {p.technicien_detail ? (
+                              <span className="inline-flex items-center gap-1.5 text-xs">
+                                <span className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[9px] font-bold border border-primary/25">
+                                  {`${p.technicien_detail.prenom?.[0] || ''}${p.technicien_detail.nom?.[0] || ''}`.toUpperCase()}
+                                </span>
+                                {p.technicien_detail.nom_complet}
+                              </span>
+                            ) : (
+                              <span className="text-text-muted text-xs">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <p className="text-xs text-text-muted flex items-center gap-1.5">
+                      <Package size={12} /> {ot.nb_pieces_utilisees} pièce(s) utilisée(s)
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Commentaires */}

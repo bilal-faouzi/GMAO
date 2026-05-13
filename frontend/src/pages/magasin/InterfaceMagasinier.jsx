@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { getPieces, getAlertes, importerPiecesCSV } from "../../services/magasinService";
+import { getPieces, getAlertes } from "../../services/magasinService";
 import { getOTs, enregistrerPieces } from "../../services/ordreService";
+import { getTechniciens } from "../../services/organisationService";
 import { motion, AnimatePresence } from "framer-motion";
 import { Package, Trash2, Plus, ShoppingCart, AlertTriangle, CheckCircle, Upload, FileSpreadsheet } from "lucide-react";
 
@@ -30,26 +31,28 @@ export default function InterfaceMagasinier() {
   const [pieceSearch, setPieceSearch] = useState("");
   const [quantite, setQuantite] = useState("");
   const [technicien, setTechnicien] = useState("");
+  const [techniciens, setTechniciens] = useState([]);
 
   const [erreur, setErreur] = useState("");
   const [succes, setSucces] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [importLoading, setImportLoading] = useState(false);
-  const [importResult, setImportResult] = useState(null);
-  const fileInputRef = useRef(null);
 
   const chargerDonnees = useCallback(async () => {
     setLoading(true);
     try {
-      const [o, p, a] = await Promise.all([
+      const [o, p, a, t] = await Promise.all([
         getOTs({ statut__in: STATUTS_ACTIFS.join(",") }),
         getPieces({ estActif: true, page: tablePage, page_size: 50 }),
         getAlertes(),
+        getTechniciens(),
       ]);
       setOTs(o.data.results || o.data);
       setPieces(p.data.results || p.data);
       setTotalPieces(p.data.count || p.data.length);
       setAlertes(a.data.results || a.data);
+      setTechniciens(t.data || []);
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }
@@ -148,6 +151,7 @@ export default function InterfaceMagasinier() {
     setSucces("");
     if (!otSelectionne) return setErreur("Sélectionnez un OT.");
     if (panier.length === 0) return setErreur("Le panier est vide. Ajoutez au moins une pièce.");
+    if (!technicien) return setErreur("Sélectionnez un technicien bénéficiaire.");
 
     setSubmitting(true);
     try {
@@ -155,7 +159,7 @@ export default function InterfaceMagasinier() {
         idPiece: l.piece.id,
         quantite: l.quantite,
       }));
-      const res = await enregistrerPieces(otSelectionne, piecesPayload);
+      const res = await enregistrerPieces(otSelectionne, piecesPayload, technicien || null);
       setSucces(` ${res.data.message || "Sorties enregistrées"} → ${otCourant?.numero}`);
       setPanier([]);
       setTechnicien("");
@@ -185,54 +189,7 @@ export default function InterfaceMagasinier() {
             Enregistrement des sorties de pièces détachées — mode batch
           </p>
         </div>
-        <div className="flex flex-col items-end gap-2">
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 rounded-lg text-sm font-semibold transition text-white">
-            {importLoading ? (
-              <><span className="animate-spin"></span> Import en cours...</>
-            ) : (
-              <><Upload size={16} /> Importer CSV SAGE X3</>
-            )}
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv,.txt"
-            className="hidden"
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              setImportLoading(true);
-              setErreur("");
-              setSucces("");
-              setImportResult(null);
-              try {
-                const res = await importerPiecesCSV(file);
-                setImportResult(res.data);
-                setSucces(` Import terminé : ${res.data.creees} créées, ${res.data.mises_a_jour} mises à jour${res.data.erreurs?.length ? `, ${res.data.erreurs.length} erreurs` : ""}`);
-                await chargerDonnees();
-              } catch (err) {
-                const msg = err.response?.data?.error || "Erreur lors de l'import CSV.";
-                setErreur(msg);
-              } finally {
-                setImportLoading(false);
-                e.target.value = "";
-              }
-            }}
-          />
-          {importResult && (
-            <div className="text-xs text-text-secondary text-right">
-              <p>Fichier : <span className="text-text">{importResult.fichier}</span></p>
-              <p>Lignes : <span className="text-text">{importResult.total_lignes}</span> | Créées : <span className="text-success dark:text-success">{importResult.creees}</span> | MàJ : <span className="text-blue-500 dark:text-primary">{importResult.mises_a_jour}</span></p>
-              {importResult.erreurs?.length > 0 && (
-                <p className="text-danger">Erreurs : {importResult.erreurs.length}</p>
-              )}
-            </div>
-          )}
-        </div>
+        <div />
       </div>
 
       {/* Alertes stock */}
@@ -393,14 +350,19 @@ export default function InterfaceMagasinier() {
             {/* Technicien */}
             <div className="mt-3">
               <label className="block text-xs text-text-secondary mb-1 font-medium">Technicien bénéficiaire</label>
-              <input
-                type="text"
+              <select
                 value={technicien}
                 onChange={(e) => setTechnicien(e.target.value)}
-                disabled={!otSelectionne}
-                placeholder="Nom du technicien bénéficiaire"
+                disabled={!otSelectionne || techniciens.length === 0}
                 className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-status-cyan disabled:opacity-40"
-              />
+              >
+                <option value="">— Sélectionner un technicien —</option>
+                {techniciens.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.nom_complet}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
