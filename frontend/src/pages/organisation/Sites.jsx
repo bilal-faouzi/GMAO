@@ -41,7 +41,7 @@ export default function Sites() {
   const rows = data.map(s => ({
     id:      s.id,
     societe: <span className="text-text-secondary text-xs">{s.societe_libelle}</span>,
-    code:    <span className="font-mono text-blue-700 dark:text-blue-400 text-xs font-bold">{s.code}</span>,
+    code:    <span className="font-mono text-blue-700 dark:text-primary text-xs font-bold">{s.code}</span>,
     libelle: <span className="font-medium text-text">{s.libelle}</span>,
     ville:   <span className="text-text-secondary">{s.ville || '—'}</span>,
     pays:    <span className="text-text-secondary">{s.pays}</span>,

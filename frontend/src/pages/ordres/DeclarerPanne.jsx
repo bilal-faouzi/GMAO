@@ -6,32 +6,32 @@ import { Upload, X, Image, Mic, Video, AlertTriangle, Building2, Clock, Wrench, 
 import api from '../../services/api';
 import useAuthStore from '@/store/authStore';
 
-/* ── Couleurs d'urgence : variables CSS du thème (ok clair & sombre) ── */
+/*  Couleurs d'urgence : variables CSS du thème (ok clair & sombre)  */
 const URGENCE_INFO = {
   critique: {
     label: 'Critique',
-    emoji: '🔴',
+    emoji: '',
     desc: 'Production arrêtée — intervention immédiate requise',
     style: { borderColor: 'var(--status-red-dot)', background: 'var(--status-red-bg)', color: 'var(--status-red-text)' },
     dot: 'var(--status-red-dot)',
   },
   haute: {
     label: 'Haute',
-    emoji: '🟠',
+    emoji: '',
     desc: 'Impact fort sur la production — traiter dans la journée',
     style: { borderColor: 'var(--status-orange-dot)', background: 'var(--status-orange-bg)', color: 'var(--status-orange-text)' },
     dot: 'var(--status-orange-dot)',
   },
   normale: {
     label: 'Normale',
-    emoji: '🔵',
+    emoji: '',
     desc: 'Gêne partielle — peut attendre quelques jours',
     style: { borderColor: 'var(--status-blue-dot)', background: 'var(--status-blue-bg)', color: 'var(--status-blue-text)' },
     dot: 'var(--status-blue-dot)',
   },
   basse: {
     label: 'Basse',
-    emoji: '⚪',
+    emoji: '',
     desc: 'Non urgent — à traiter selon disponibilité',
     style: { borderColor: 'var(--status-gray-dot)', background: 'var(--status-gray-bg)', color: 'var(--status-gray-text)' },
     dot: 'var(--status-gray-dot)',
@@ -178,29 +178,57 @@ export default function DeclarerPanne() {
     setPreviewVideos(newVideos.map(f => URL.createObjectURL(f)));
   };
 
+  const isSecureContext = () => {
+    return window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  };
+
+  const getSupportedMimeType = () => {
+    const types = ['audio/webm', 'audio/mp4', 'audio/ogg', 'audio/wav'];
+    for (const t of types) {
+      if (MediaRecorder.isTypeSupported(t)) return t;
+    }
+    return '';
+  };
+
   const startRecording = async () => {
+    if (!isSecureContext()) {
+      setErreur(' L\'enregistrement audio nécessite HTTPS. Utilisez https://192.168.2.232:9669');
+      return;
+    }
     try {
       chunksRef.current = [];
       recordingStartTimeRef.current = Date.now();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm', audioBitsPerSecond: 128000 });
+      const mimeType = getSupportedMimeType();
+      const options = mimeType ? { mimeType, audioBitsPerSecond: 128000 } : {};
+      const recorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = recorder;
 
-      recorder.ondataavailable = (e) => { chunksRef.current.push(e.data); };
+      recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
       recorder.onstop = () => {
         const durationSeconds = Math.floor((Date.now() - recordingStartTimeRef.current) / 1000);
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        if (blob.size === 0) { setErreur('❌ Aucun audio enregistré.'); return; }
-        const fileName = `recording_${Date.now()}.webm`;
+        const finalType = mimeType || 'audio/webm';
+        const blob = new Blob(chunksRef.current, { type: finalType });
+        if (blob.size === 0) { setErreur(' Aucun audio enregistré.'); return; }
+        const ext = finalType.includes('mp4') ? 'mp4' : finalType.includes('ogg') ? 'ogg' : 'webm';
+        const fileName = `recording_${Date.now()}.${ext}`;
         setRecordedAudios(prev => [...prev, { blob, url: URL.createObjectURL(blob), duration: durationSeconds, name: fileName }]);
-        setAudioFiles(prev => [...prev, new File([blob], fileName, { type: 'audio/webm' })]);
+        setAudioFiles(prev => [...prev, new File([blob], fileName, { type: finalType })]);
         setRecordingTime(0);
       };
-      recorder.onerror = (e) => { setErreur(`Erreur: ${e.error}`); };
+      recorder.onerror = (e) => { setErreur(`Erreur enregistrement: ${e.message || e}`); };
       recorder.start(1000);
       setIsRecording(true);
-    } catch (err) { setErreur(`Erreur microphone: ${err.message}`); }
+    } catch (err) {
+      if (err.name === 'NotAllowedError') {
+        setErreur(' Microphone bloqué. Autorisez l\'accès au micro dans les paramètres du navigateur.');
+      } else if (err.name === 'NotFoundError') {
+        setErreur(' Aucun microphone détecté.');
+      } else {
+        setErreur(`Erreur microphone: ${err.message}`);
+      }
+    }
   };
 
   const stopRecording = () => {
@@ -249,7 +277,7 @@ export default function DeclarerPanne() {
           });
         } catch(e) { console.warn('Upload non-bloquant:', e.message); }
       }
-      setSucces(`✅ Demande ${res.data.numero} enregistrée avec succès.`);
+      setSucces(` Demande ${res.data.numero} enregistrée avec succès.`);
       setForm({ idActif: '', titre: '', urgence: 'normale', description: '' });
       setImages([]); setPreviewImages([]);
       setVideos([]); setPreviewVideos([]);
@@ -263,7 +291,7 @@ export default function DeclarerPanne() {
     } finally { setLoading(false); }
   };
 
-  /* ── Helpers d'affichage ── */
+  /*  Helpers d'affichage  */
   const formatDate = (d) => new Date(d).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
 
   return (
@@ -296,7 +324,7 @@ export default function DeclarerPanne() {
       </div>
 
       <div className={`grid gap-6 transition-all duration-300 ${showRecents ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
-        {/* ═══════════════ FORMULAIRE ═══════════════ */}
+        {/*  FORMULAIRE  */}
         <div className="bg-surface rounded-xl border border-border p-6 shadow-card">
           <div className="flex items-center gap-2 mb-5 pb-4 border-b border-border-subtle">
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -329,7 +357,7 @@ export default function DeclarerPanne() {
           {succes && (
             <div className="mb-4 flex items-start gap-2 text-sm rounded-lg px-3 py-2.5 border"
                  style={{ background: 'var(--status-green-bg)', borderColor: 'rgba(22,163,74,0.2)', color: 'var(--status-green-text)' }}>
-              <span className="shrink-0 mt-0.5">✅</span> {succes}
+              <span className="shrink-0 mt-0.5"></span> {succes}
             </div>
           )}
 
@@ -351,7 +379,7 @@ export default function DeclarerPanne() {
                     <select
                       value={selectionPath[levelIndex]?.id || ''}
                       onChange={e => handleSelectAtLevel(levelIndex, e.target.value)}
-                      className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-purple-500 appearance-none cursor-pointer"
+                      className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-primary appearance-none cursor-pointer"
                       style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1rem' }}
                     >
                       <option value="">-- Sélectionner --</option>
@@ -418,7 +446,7 @@ export default function DeclarerPanne() {
               <input type="text" value={form.titre}
                 onChange={e => setForm(f => ({...f, titre: e.target.value}))}
                 placeholder="Ex: Arrêt moteur principal, Fuite hydraulique…"
-                className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-purple-500"
+                className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-primary"
               />
               <p className="text-xs text-text-muted mt-1">Un titre clair permet au responsable de comprendre rapidement la panne</p>
             </div>
@@ -438,10 +466,10 @@ export default function DeclarerPanne() {
                     <input type="radio" name="urgence" value={k}
                       checked={form.urgence === k}
                       onChange={e => setForm(f => ({...f, urgence: e.target.value}))}
-                      className="mt-1 accent-purple-500"/>
+                      className="mt-1 accent-primary"/>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm" style={{ color: v.dot }}>●</span>
+                        <span className="text-sm" style={{ color: v.dot }}></span>
                         <p className="text-sm font-semibold text-text">{v.label}</p>
                       </div>
                       <p className="text-xs text-text-secondary mt-0.5">{v.desc}</p>
@@ -460,7 +488,7 @@ export default function DeclarerPanne() {
                 onChange={e => setForm(f => ({...f, description: e.target.value}))}
                 rows={5}
                 placeholder={`Décrivez précisément ce que vous observez :\n• Quel est le symptôme ? (bruit, fuite, arrêt, surchauffe…)\n• Depuis quand ?\n• Dans quelles conditions cela se produit-il ?`}
-                className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-purple-500 resize-none"
+                className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-primary resize-none"
               />
               <p className="text-xs text-text-muted mt-1">{form.description.length} caractères — plus vous êtes précis, plus vite l'intervention sera réalisée</p>
             </div>
@@ -567,7 +595,7 @@ export default function DeclarerPanne() {
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <button type="button" onClick={() => playRecordedAudio(i)}
                           className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white transition"
-                          style={{ background: '#0ea5e9' }}>▶</button>
+                          style={{ background: '#0ea5e9' }}></button>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium text-text truncate">{rec.name}</p>
                           <p className="text-[11px] text-text-muted font-mono">{Math.floor(rec.duration / 60)}:{String(rec.duration % 60).padStart(2, '0')}</p>
@@ -590,13 +618,13 @@ export default function DeclarerPanne() {
               {loading ? (
                 <><div className="w-4 h-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin" /> Envoi en cours…</>
               ) : (
-                <>📢 Déclarer la panne</>
+                <> Déclarer la panne</>
               )}
             </button>
           </form>
         </div>
 
-        {/* ═══════════════ DÉCLARATIONS RÉCENTES ═══════════════ */}
+        {/*  DÉCLARATIONS RÉCENTES  */}
         {showRecents && (
           <div className="bg-surface rounded-xl border border-border p-6 shadow-card flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="flex items-center gap-2 mb-5 pb-4 border-b border-border-subtle">
@@ -650,7 +678,7 @@ export default function DeclarerPanne() {
                       <div className="flex justify-between items-center mt-3 pt-2.5" style={{ borderTop: '1px solid var(--color-border-subtle)' }}>
                         <span className="flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-full border font-medium"
                               style={{ background: ur.style.background, color: ur.style.color, borderColor: ur.dot + '35' }}>
-                          <span style={{ color: ur.dot }}>●</span> {ur.label}
+                          <span style={{ color: ur.dot }}></span> {ur.label}
                         </span>
                         <span className="text-[11px] text-text-muted font-mono flex items-center gap-1">
                           <Clock size={11} /> {formatDate(d.dateSignalement)}
@@ -667,7 +695,7 @@ export default function DeclarerPanne() {
                       {d.statut === 'validee' && (
                         <div className="mt-2.5 p-2.5 rounded-lg border text-xs flex items-center gap-1.5"
                              style={{ background: 'var(--status-green-bg)', borderColor: 'rgba(22,163,74,0.12)', color: 'var(--status-green-text)' }}>
-                          <span>✅</span> <span className="font-semibold">OT créé</span> — intervention en cours de traitement
+                          <span></span> <span className="font-semibold">OT créé</span> — intervention en cours de traitement
                         </div>
                       )}
                     </div>

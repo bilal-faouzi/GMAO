@@ -38,7 +38,7 @@ export default function MouvementStockModal({
             {type === "entree" ? "+ Entrée stock" : "- Sortie stock"}
           </span>
           <button className="m-close" onClick={onClose}>
-            ✕
+            
           </button>
         </div>
         <div className="m-body-plain">

@@ -68,6 +68,7 @@
   /* Couleurs sémantiques (variantes soft pour light) */
   --color-primary-soft: rgba(79,  70,  229, 0.10);
   --color-success-soft: rgba(22, 163,  74, 0.12);
+  --color-warning-soft: rgba(245, 158,  11, 0.12);
   --color-danger-soft:  rgba(220,  38,  38, 0.10);
 
   /* Sidebar — fond bleuté */
@@ -152,6 +153,7 @@
   /* Couleurs sémantiques (variantes soft pour dark) */
   --color-primary-soft: rgba(99, 102, 241, 0.18);
   --color-success-soft: rgba(34, 197,  94, 0.14);
+  --color-warning-soft: rgba(245, 158,  11, 0.14);
   --color-danger-soft:  rgba(239,  68,  68, 0.14);
 
   /* Sidebar */

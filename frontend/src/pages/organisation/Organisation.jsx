@@ -11,17 +11,17 @@ import {
 import { getSocietes, getArborescence } from "@/services/organisationService";
 import { Button } from "@/components/ui/button";
 
-// ─── Nœud de l'arbre ─────────────────────────────────────────────────────────
+//  Nœud de l'arbre 
 function TreeNode({ node, level = 0, icon: Icon, color }) {
   const [open, setOpen] = useState(level < 2);
   const children = node.sites || node.secteurs || node.unites || [];
   const hasChildren = children.length > 0;
 
   const icons = {
-    0: { Icon: Building2, color: "text-blue-700 dark:text-blue-400", bg: "bg-blue-100 dark:bg-blue-500/10" },
+    0: { Icon: Building2, color: "text-blue-700 dark:text-primary", bg: "bg-blue-100 dark:bg-primary-soft" },
     1: { Icon: MapPin, color: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-100 dark:bg-emerald-500/10" },
     2: { Icon: Grid3x3, color: "text-violet-700 dark:text-violet-400", bg: "bg-violet-100 dark:bg-violet-500/10" },
-    3: { Icon: Factory, color: "text-amber-700 dark:text-amber-400", bg: "bg-amber-100 dark:bg-amber-500/10" },
+    3: { Icon: Factory, color: "text-amber-700 dark:text-warning", bg: "bg-amber-100 dark:bg-warning/10" },
   };
   const { Icon: NodeIcon, color: nodeColor, bg } = icons[level] || icons[3];
 
@@ -50,7 +50,7 @@ function TreeNode({ node, level = 0, icon: Icon, color }) {
         <span className="text-xs text-text-muted font-mono">{node.code}</span>
 
         {!node.estActif && (
-          <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400">
+          <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 dark:bg-danger-soft text-red-700 dark:text-danger">
             Inactif
           </span>
         )}
@@ -67,7 +67,7 @@ function TreeNode({ node, level = 0, icon: Icon, color }) {
   );
 }
 
-// ─── Page principale ──────────────────────────────────────────────────────────
+//  Page principale 
 export default function Organisation() {
   const [societes, setSocietes] = useState([]);
   const [arbres, setArbres] = useState({});
@@ -146,8 +146,8 @@ export default function Organisation() {
             label: "Sociétés",
             value: societes.length,
             icon: Building2,
-            color: "text-blue-700 dark:text-blue-400",
-            bg: "bg-blue-100 dark:bg-blue-500/10",
+            color: "text-blue-700 dark:text-primary",
+            bg: "bg-blue-100 dark:bg-primary-soft",
           },
           {
             label: "Sites",
@@ -167,8 +167,8 @@ export default function Organisation() {
             label: "Unités",
             value: stats.unites,
             icon: Factory,
-            color: "text-amber-700 dark:text-amber-400",
-            bg: "bg-amber-100 dark:bg-amber-500/10",
+            color: "text-amber-700 dark:text-warning",
+            bg: "bg-amber-100 dark:bg-warning/10",
           },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <div
@@ -190,7 +190,7 @@ export default function Organisation() {
       {/* Arbre */}
       <div className="bg-surface border border-border rounded-xl p-4">
         <h2 className="text-sm font-semibold text-text-secondary mb-4 flex items-center gap-2">
-          <Building2 size={15} className="text-blue-700 dark:text-blue-400" />
+          <Building2 size={15} className="text-blue-700 dark:text-primary" />
           Arborescence complète
         </h2>
 

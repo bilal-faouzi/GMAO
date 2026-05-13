@@ -1,6 +1,6 @@
 import api from './api';
 
-// ── Pièces ───────────────────────────────────────────────
+//  Pièces 
 export const getPieces = (filters = {}) => {
     const params = new URLSearchParams(filters).toString();
     return api.get(`/v1/magasin/pieces/${params ? '?' + params : ''}`);
@@ -21,21 +21,21 @@ export const patchPiece = (id, data) =>
 export const deletePiece = (id) =>
     api.delete(`/v1/magasin/pieces/${id}/`);
 
-// ── Actions stock ────────────────────────────────────────
+//  Actions stock 
 export const sortiePiece = (id, quantite, commentaire = '', idOrdreTravail = '') =>
     api.post(`/v1/magasin/pieces/${id}/sortie/`, { quantite, commentaire, idOrdreTravail });
 
 export const entreePiece = (id, quantite, commentaire = '') =>
     api.post(`/v1/magasin/pieces/${id}/entree/`, { quantite, commentaire });
 
-// ── Alertes & Dashboard ──────────────────────────────────
+//  Alertes & Dashboard 
 export const getAlertes = () =>
     api.get('/v1/magasin/pieces/alertes/');
 
 export const getDashboardMagasin = () =>
     api.get('/v1/magasin/pieces/dashboard/');
 
-// ── Mouvements ───────────────────────────────────────────
+//  Mouvements 
 export const getMouvements = (filters = {}) => {
     const params = new URLSearchParams(filters).toString();
     return api.get(`/v1/magasin/mouvements/${params ? '?' + params : ''}`);
@@ -44,11 +44,11 @@ export const getMouvements = (filters = {}) => {
 export const getMouvementsByPiece = (idPiece) =>
     api.get(`/v1/magasin/mouvements/?idPiece=${idPiece}`);
 
-// ── Categories ───────────────────────────────────────────
+//  Categories 
 export const getCategoriesPieces = () =>
     api.get('/v1/magasin/pieces/categories/');
 
-// ── Import CSV SAGE X3 ───────────────────────────────────
+//  Import CSV SAGE X3 
 export const importerPiecesCSV = (file) => {
     const formData = new FormData();
     formData.append('fichier', file);

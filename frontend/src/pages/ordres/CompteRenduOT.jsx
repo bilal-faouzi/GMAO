@@ -34,28 +34,28 @@ import {
 const CATEGORIES_CAUSE = {
   mecanique: {
     label: "Mécanique",
-    color: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    color: "bg-primary-soft text-primary border-primary/30",
   },
   electrique: {
     label: "Électrique",
-    color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+    color: "bg-warning/20 text-warning border-warning/30",
   },
   humain: {
     label: "Erreur humaine",
-    color: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+    color: "bg-status-orange/20 text-status-orange border-status-orange/30",
   },
   externe: {
     label: "Facteur externe",
-    color: "bg-red-500/20 text-red-400 border-red-500/30",
+    color: "bg-danger-soft text-danger border-danger/30",
   },
   autre: {
     label: "Autre",
-    color: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+    color: "bg-hover text-text-muted border-border/30",
   },
 };
 
 export default function CompteRenduOT() {
-  const { idOT } = useParams();
+  const { id: idOT } = useParams();
   const navigate = useNavigate();
   const [ot, setOT] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -88,7 +88,7 @@ export default function CompteRenduOT() {
     tracabilite: false,
   });
 
-  // ── Sélecteur hiérarchique d'actif ──
+  //  Sélecteur hiérarchique d'actif 
   const [showActifSelector, setShowActifSelector] = useState(false);
   const [selectionPath, setSelectionPath] = useState([]);
   const [optionsAtLevel, setOptionsAtLevel] = useState([]);
@@ -127,7 +127,7 @@ export default function CompteRenduOT() {
       }
       // Charger les options à chaque niveau
       const options = [];
-      const racines = await getActifs({ estActif: true, idParent: "null", my_unite: true });
+      const racines = await getActifs({ estActif: true, is_parent: true, my_unite: true });
       options[0] = racines.data.results || racines.data || [];
       for (let i = 0; i < chemin.length; i++) {
         const childrenR = await getActifs({ estActif: true, idParent: chemin[i].id, my_unite: true });
@@ -183,7 +183,7 @@ export default function CompteRenduOT() {
     setChangingActif(true);
     try {
       await changerActifOT(idOT, selected.id);
-      setSucces("✅ Équipement modifié avec succès.");
+      setSucces("Équipement modifié avec succès.");
       await charger();
       setShowActifSelector(false);
     } catch (e) {
@@ -193,11 +193,11 @@ export default function CompteRenduOT() {
     }
   };
 
-  // ── Gestion actifs corrigés ──
+  //  Gestion actifs corrigés 
   const initCorrigeSelector = async () => {
     setCorrigeLoading(true);
     try {
-      const racines = await getActifs({ estActif: true, idParent: "null", my_unite: true });
+      const racines = await getActifs({ estActif: true, is_parent: true, idUnite: ot?.actif_detail?.idUnite || undefined });
       setCorrigeOptionsAtLevel([racines.data.results || racines.data || []]);
       setCorrigeSelectionPath([]);
     } catch (e) {
@@ -214,7 +214,7 @@ export default function CompteRenduOT() {
     newPath[levelIndex] = selectedAsset;
     setCorrigeSelectionPath(newPath);
     try {
-      const r = await getActifs({ estActif: true, idParent: selectedAsset.id, my_unite: true });
+      const r = await getActifs({ estActif: true, idParent: selectedAsset.id, idUnite: ot?.actif_detail?.idUnite || undefined });
       const children = r.data.results || r.data || [];
       if (children.length > 0) {
         setCorrigeOptionsAtLevel((prev) => {
@@ -269,29 +269,18 @@ export default function CompteRenduOT() {
       }
 
       const compteRendu =
-        `📋 COMPTE RENDU INTERVENTION\n\n` +
-        `📝 Travaux réalisés:\n${rapport.descriptionTravail}\n\n` +
-        `🔍 Constatations:\n${rapport.constatations || "Voir description"}\n\n` +
-        `🎯 Solution apportée:\n${rapport.solutionApportee}\n\n` +
+        `COMPTE RENDU INTERVENTION\n\n` +
+        `Travaux réalisés:\n${rapport.descriptionTravail}\n\n` +
+        `Constatations:\n${rapport.constatations || "Voir description"}\n\n` +
+        `Solution apportée:\n${rapport.solutionApportee}\n\n` +
         (actifsCorriges.length > 0
-          ? `🔧 Actifs corrigés: ${actifsCorriges.map((a) => a.code).join(", ")}\n\n`
+          ? `Actifs corrigés: ${actifsCorriges.map((a) => a.code).join(", ")}\n\n`
           : "") +
-        `⚙️ Cause racine: ${CATEGORIES_CAUSE[rapport.causeRacine]?.label || "Non identifiée"}`;
+        `Cause racine: ${CATEGORIES_CAUSE[rapport.causeRacine]?.label || "Non identifiée"}`;
 
       await ajouterCommentaire(idOT, compteRendu, true);
 
-      if (rapport.estCloture) {
-        if (rapport.typeCloture === "corrige") {
-          await changerStatutOT(idOT, "CLOTURE", "", "corrige");
-        } else {
-          await changerStatutOT(idOT, "DEPANNE", "", "depanne");
-        }
-        setSucces(
-          `✅ Rapport enregistré. OT en attente de validation opérateur.`,
-        );
-      } else {
-        setSucces("✅ Rapport enregistré. OT reste en cours.");
-      }
+      setSucces("Rapport enregistré.");
 
       setRapport({
         descriptionTravail: "",
@@ -316,9 +305,9 @@ export default function CompteRenduOT() {
 
   if (loading)
     return (
-      <div className="p-6 text-gray-400 text-center py-12">Chargement...</div>
+      <div className="p-6 text-text-muted text-center py-12">Chargement...</div>
     );
-  if (!ot) return <div className="p-6 text-red-400">OT non trouvé</div>;
+  if (!ot) return <div className="p-6 text-danger">OT non trouvé</div>;
 
   const di = ot.demande_detail;
   const pieces = ot.pieces_utilisees_detail || [];
@@ -336,98 +325,97 @@ export default function CompteRenduOT() {
   const SectionHeader = ({ title, icon: Icon, sectionKey, count }) => (
     <button
       onClick={() => toggleSection(sectionKey)}
-      className="w-full flex items-center justify-between py-3 px-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl border border-gray-700/50 transition">
-      <div className="flex items-center gap-2 text-sm font-semibold text-gray-300">
-        {Icon && <Icon size={14} className="text-purple-400" />}
+      className="w-full flex items-center justify-between py-3 px-4 bg-surface/50 hover:bg-surface rounded-xl border border-border/50 transition">
+      <div className="flex items-center gap-2 text-sm font-semibold text-text-secondary">
+        {Icon && <Icon size={14} className="text-primary" />}
         {title}
         {count !== undefined && count > 0 && (
-          <span className="text-xs bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded-full">{count}</span>
+          <span className="text-xs bg-hover text-text-muted px-1.5 py-0.5 rounded-full">{count}</span>
         )}
       </div>
-      {expandedSections[sectionKey] ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
+      {expandedSections[sectionKey] ? <ChevronUp size={16} className="text-text-muted" /> : <ChevronDown size={16} className="text-text-muted" />}
     </button>
   );
 
   return (
-    <div className="p-6 text-white max-w-4xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-6">
         <button
           onClick={() => navigate(-1)}
-          className="text-purple-400 text-sm mb-3 hover:text-purple-300">
+          className="text-primary text-sm mb-3 hover:text-primary">
           ← Retour
         </button>
-        <h1 className="text-2xl font-semibold">Compte rendu d'intervention</h1>
-        <p className="text-gray-400 text-sm mt-1">
-          Documentez l'intervention réalisée sur {ot.actif_detail?.code}
+        <h1 className="text-2xl font-semibold">Compte rendu d'ordre de travail</h1>
+        <p className="text-text-muted text-sm mt-1">
+          Documentez l'ordre de travail réalisé sur {ot.actif_detail?.code}
         </p>
       </div>
 
       {/* Infos OT */}
-      <div className="bg-gray-800 rounded-xl border border-gray-700 p-5 mb-6">
+      <div className="bg-surface rounded-xl border border-border p-5 mb-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
-            <p className="text-xs text-gray-500 uppercase">Numéro OT</p>
-            <p className="text-lg font-mono text-purple-300">{ot.numero}</p>
+            <p className="text-xs text-text-muted uppercase">Numéro OT</p>
+            <p className="text-lg font-mono text-primary">{ot.numero}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500 uppercase">Équipement</p>
+            <p className="text-xs text-text-muted uppercase">Équipement</p>
             <p className="text-sm font-medium">{ot.actif_detail?.code}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500 uppercase">Priorité</p>
+            <p className="text-xs text-text-muted uppercase">Priorité</p>
             <p className={`text-sm font-semibold ${
-              ot.priorite === "critique" ? "text-red-400" : ot.priorite === "haute" ? "text-orange-400" : "text-blue-400"
+              ot.priorite === "critique" ? "text-danger" : ot.priorite === "haute" ? "text-status-orange" : "text-primary"
             }`}>{ot.priorite}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500 uppercase">Statut</p>
-            <p className="text-sm text-amber-400">{ot.statut}</p>
+            <p className="text-xs text-text-muted uppercase">Statut</p>
+            <p className="text-sm text-warning">{ot.statut}</p>
           </div>
         </div>
       </div>
 
       {/* Messages */}
       {erreur && (
-        <div className="bg-red-500/20 border border-red-500/40 text-red-400 rounded-lg p-4 mb-4 text-sm flex items-start gap-2">
+        <div className="bg-danger-soft border border-danger/40 text-danger rounded-lg p-4 mb-4 text-sm flex items-start gap-2">
           <AlertTriangle size={16} className="mt-0.5 shrink-0" />
           {erreur}
         </div>
       )}
       {succes && (
-        <div className="bg-green-500/20 border border-green-500/40 text-green-400 rounded-lg p-4 mb-4 text-sm flex items-start gap-2">
+        <div className="bg-success-soft border border-success/40 text-success rounded-lg p-4 mb-4 text-sm flex items-start gap-2">
           <CheckCircle size={16} className="mt-0.5 shrink-0" />
           {succes}
         </div>
       )}
 
-      {/* ── Section: Équipement concerné (avec sélecteur) ── */}
-      <div className="bg-gray-800 rounded-xl border border-gray-700 p-5 mb-5">
+      {/*  Section: Équipement concerné (avec sélecteur)  */}
+      <div className="bg-surface rounded-xl border border-border p-5 mb-5">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
             <MapPin size={14} /> Équipement concerné
           </h3>
           <button
-            onClick={() => setShowActifSelector((s) => !s)}
-            className="text-xs flex items-center gap-1 text-purple-400 hover:text-purple-300 border border-purple-500/30 bg-purple-500/10 px-3 py-1.5 rounded-lg transition">
+            className="text-xs flex items-center gap-1 text-text-muted border border-border bg-surface px-3 py-1.5 rounded-lg transition cursor-not-allowed opacity-50">
             <ArrowRightLeft size={12} />
-            {showActifSelector ? "Annuler" : "Changer d'équipement"}
+            Équipement verrouillé
           </button>
         </div>
 
-        <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50">
-          <p className="text-sm font-medium text-white">{ot.actif_detail?.libelle}</p>
-          <p className="text-xs text-gray-400 font-mono">{ot.actif_detail?.code}</p>
+        <div className="bg-elevated/50 rounded-lg p-3 border border-border/50">
+          <p className="text-sm font-medium text-text">{ot.actif_detail?.libelle}</p>
+          <p className="text-xs text-text-muted font-mono">{ot.actif_detail?.code}</p>
           {di?.actif_detail?.chemin_hierarchique?.length > 0 && (
-            <p className="text-[11px] text-gray-500 mt-1">
+            <p className="text-[11px] text-text-muted mt-1">
               {di.actif_detail.chemin_hierarchique.map((h, i) => (
                 <span key={h.id}>
-                  <span className="text-gray-400">{h.code}</span>
-                  {i < di.actif_detail.chemin_hierarchique.length - 1 && <span className="mx-1 text-gray-600">›</span>}
+                  <span className="text-text-muted">{h.libelle}</span>
+                  {i < di.actif_detail.chemin_hierarchique.length - 1 && <span className="mx-1 text-text-muted">›</span>}
                 </span>
               ))}
-              <span className="mx-1 text-gray-600">›</span>
-              <span className="text-blue-400">{di?.actif_detail?.code}</span>
+              <span className="mx-1 text-text-muted">›</span>
+              <span className="text-primary">{di?.actif_detail?.libelle}</span>
             </p>
           )}
         </div>
@@ -439,21 +427,21 @@ export default function CompteRenduOT() {
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden">
-              <div className="mt-3 bg-gray-900/50 rounded-lg p-4 border border-gray-700/50 space-y-3">
-                <p className="text-xs text-gray-400">Sélectionnez le nouvel équipement concerné par cette intervention :</p>
+              <div className="mt-3 bg-elevated/50 rounded-lg p-4 border border-border/50 space-y-3">
+                <p className="text-xs text-text-muted">Sélectionnez le nouvel équipement concerné par cette intervention :</p>
                 {actifLoading ? (
-                  <p className="text-sm text-gray-500">Chargement...</p>
+                  <p className="text-sm text-text-muted">Chargement...</p>
                 ) : (
                   <>
                     {optionsAtLevel.map((options, levelIndex) => (
                       <div key={levelIndex}>
-                        <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                        <label className="text-[10px] text-text-muted uppercase tracking-wider block mb-1">
                           {levelIndex === 0 ? "Site / Zone" : `Niveau ${levelIndex + 1}`}
                         </label>
                         <select
                           value={selectionPath[levelIndex]?.id || ""}
                           onChange={(e) => handleSelectAtLevel(levelIndex, e.target.value)}
-                          className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-purple-500">
+                          className="w-full bg-hover text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-primary">
                           <option value="">Sélectionner...</option>
                           {options.map((a) => (
                             <option key={a.id} value={a.id}>
@@ -465,8 +453,8 @@ export default function CompteRenduOT() {
                     ))}
                     {selectionPath.length > 0 && (
                       <div className="flex items-center justify-between pt-2">
-                        <p className="text-xs text-gray-400">
-                          Sélection : <span className="text-white font-medium">{selectionPath[selectionPath.length - 1]?.code}</span>
+                        <p className="text-xs text-text-muted">
+                          Sélection : <span className="text-text font-medium">{selectionPath[selectionPath.length - 1]?.code}</span>
                         </p>
                         <button
                           onClick={handleChangerActif}
@@ -485,9 +473,13 @@ export default function CompteRenduOT() {
         </AnimatePresence>
       </div>
 
-      {/* ── Section: Contexte de l'intervention ── */}
-      <div className="mb-4 space-y-2">
-        <SectionHeader title="Contexte de l'intervention" icon={AlertTriangle} sectionKey="contexte" />
+      {/*  Layout 2 colonnes  */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Colonne gauche : Contexte & infos DI */}
+        <div className="lg:col-span-1 space-y-4">
+          {/*  Section: Contexte de l'ordre de travail  */}
+          <div className="space-y-2">
+        <SectionHeader title="Contexte de l'ordre de travail" icon={AlertTriangle} sectionKey="contexte" />
         <AnimatePresence>
           {expandedSections.contexte && (
             <motion.div
@@ -495,49 +487,49 @@ export default function CompteRenduOT() {
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden">
-              <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-4 space-y-3">
+              <div className="bg-surface/50 rounded-xl border border-border/50 p-4 space-y-3">
                 {di?.titre && (
                   <div>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider">Titre de la demande</p>
-                    <p className="text-sm font-medium text-white">{di.titre}</p>
+                    <p className="text-[10px] text-text-muted uppercase tracking-wider">Titre de la demande</p>
+                    <p className="text-sm font-medium text-text">{di.titre}</p>
                   </div>
                 )}
                 <div>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider">Problème signalé</p>
-                  <p className="text-sm text-gray-300 mt-1">{di?.description || "—"}</p>
+                  <p className="text-[10px] text-text-muted uppercase tracking-wider">Problème signalé</p>
+                  <p className="text-sm text-text-secondary mt-1">{di?.description || "—"}</p>
                 </div>
-                <div className="grid grid-cols-2 gap-3 text-xs text-gray-400">
+                <div className="grid grid-cols-2 gap-3 text-xs text-text-muted">
                   <div>
-                    <span className="text-gray-500">Urgence : </span>
+                    <span className="text-text-muted">Urgence : </span>
                     <span className={`font-medium ${
-                      di?.urgence === "critique" ? "text-red-400" : di?.urgence === "haute" ? "text-orange-400" : "text-blue-400"
+                      di?.urgence === "critique" ? "text-danger" : di?.urgence === "haute" ? "text-status-orange" : "text-primary"
                     }`}>{di?.urgence}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Date : </span>
+                    <span className="text-text-muted">Date : </span>
                     {formatDate(di?.dateSignalement)}
                   </div>
                   <div>
-                    <span className="text-gray-500">Signalé par : </span>
+                    <span className="text-text-muted">Signalé par : </span>
                     {di?.signalement_detail ? `${di.signalement_detail.prenom} ${di.signalement_detail.nom}` : "—"}
                   </div>
                   <div>
-                    <span className="text-gray-500">DI : </span>
-                    <span className="font-mono text-purple-300">{di?.numero}</span>
+                    <span className="text-text-muted">DI : </span>
+                    <span className="font-mono text-primary">{di?.numero}</span>
                   </div>
                 </div>
 
                 {/* Pièces jointes DI */}
                 {di?.nb_pieces_jointes > 0 && (
-                  <div className="pt-2 border-t border-gray-700/30">
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <div className="pt-2 border-t border-border/30">
+                    <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1">
                       <Image size={10} /> Pièces jointes de la demande ({di.nb_pieces_jointes})
                     </p>
                     <div className="space-y-2">
                       {pjImages.length > 0 && (
                         <div className="grid grid-cols-4 gap-2">
                           {pjImages.map((img) => (
-                            <a key={img.id} href={img.url} target="_blank" rel="noopener noreferrer" className="relative group rounded-lg overflow-hidden border border-gray-600 bg-gray-800">
+                            <a key={img.id} href={img.url} target="_blank" rel="noopener noreferrer" className="relative group rounded-lg overflow-hidden border border-border bg-surface">
                               <img src={img.url} alt={img.nomFichier} className="w-full h-16 object-cover" onError={(e) => { e.target.style.display = "none"; }} />
                             </a>
                           ))}
@@ -546,9 +538,9 @@ export default function CompteRenduOT() {
                       {pjAudio.length > 0 && (
                         <div className="space-y-1">
                           {pjAudio.map((a) => (
-                            <div key={a.id} className="flex items-center gap-2 bg-gray-900/50 rounded-lg px-2 py-1.5 text-xs border border-gray-700/30">
-                              <Music size={12} className="text-blue-400" />
-                              <span className="text-gray-300 flex-1 truncate">{a.nomFichier}</span>
+                            <div key={a.id} className="flex items-center gap-2 bg-elevated/50 rounded-lg px-2 py-1.5 text-xs border border-border/30">
+                              <Music size={12} className="text-primary" />
+                              <span className="text-text-secondary flex-1 truncate">{a.nomFichier}</span>
                               <audio src={a.url} controls className="h-6 w-32" />
                             </div>
                           ))}
@@ -557,8 +549,8 @@ export default function CompteRenduOT() {
                       {pjVideo.length > 0 && (
                         <div className="space-y-1">
                           {pjVideo.map((v) => (
-                            <div key={v.id} className="bg-gray-900/50 rounded-lg p-2 border border-gray-700/30">
-                              <p className="text-[10px] text-gray-500 mb-1 flex items-center gap-1"><Film size={10} /> {v.nomFichier}</p>
+                            <div key={v.id} className="bg-elevated/50 rounded-lg p-2 border border-border/30">
+                              <p className="text-[10px] text-text-muted mb-1 flex items-center gap-1"><Film size={10} /> {v.nomFichier}</p>
                               <video src={v.url} controls className="w-full h-24 rounded" />
                             </div>
                           ))}
@@ -567,7 +559,7 @@ export default function CompteRenduOT() {
                       {pjOther.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {pjOther.map((f) => (
-                            <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-gray-900/50 rounded-lg px-2 py-1 text-xs border border-gray-700/30 text-gray-300 hover:text-white transition">
+                            <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-elevated/50 rounded-lg px-2 py-1 text-xs border border-border/30 text-text-secondary hover:text-text transition">
                               <FileText size={12} /> {f.nomFichier}
                             </a>
                           ))}
@@ -582,28 +574,28 @@ export default function CompteRenduOT() {
         </AnimatePresence>
       </div>
 
-      {/* ── Section: Pièces utilisées ── */}
+      {/*  Section: Pièces utilisées  */}
       {pieces.length > 0 && (
         <div className="mb-4 space-y-2">
           <SectionHeader title="Pièces utilisées" icon={Package} sectionKey="pieces" count={pieces.length} />
           <AnimatePresence>
             {expandedSections.pieces && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-4 space-y-2">
+                <div className="bg-surface/50 rounded-xl border border-border/50 p-4 space-y-2">
                   {pieces.map((p, i) => (
-                    <div key={i} className="flex justify-between items-center bg-gray-900/50 rounded-lg px-3 py-2 text-sm border border-gray-700/30">
+                    <div key={i} className="flex justify-between items-center bg-elevated/50 rounded-lg px-3 py-2 text-sm border border-border/30">
                       <div>
-                        <p className="text-gray-300">{p.piece_detail?.reference || p.piece_detail?.libelle || "Pièce"}</p>
-                        {p.piece_detail?.description && <p className="text-[11px] text-gray-500">{p.piece_detail.description}</p>}
+                        <p className="text-text-secondary">{p.piece_detail?.reference || p.piece_detail?.libelle || "Pièce"}</p>
+                        {p.piece_detail?.description && <p className="text-[11px] text-text-muted">{p.piece_detail.description}</p>}
                       </div>
                       <div className="text-right">
-                        <p className="text-gray-300 font-medium">× {p.quantite}</p>
-                        {p.coutUnitaire && <p className="text-[11px] text-gray-500">{p.coutUnitaire} €/u</p>}
+                        <p className="text-text-secondary font-medium">× {p.quantite}</p>
+                        {p.coutUnitaire && <p className="text-[11px] text-text-muted">{p.coutUnitaire} €/u</p>}
                       </div>
                     </div>
                   ))}
                   {ot.cout_total > 0 && (
-                    <p className="text-right text-xs text-gray-400 pt-1">Coût total matériel : <span className="text-white font-medium">{ot.cout_total} €</span></p>
+                    <p className="text-right text-xs text-text-muted pt-1">Coût total matériel : <span className="text-text font-medium">{ot.cout_total} €</span></p>
                   )}
                 </div>
               </motion.div>
@@ -612,20 +604,20 @@ export default function CompteRenduOT() {
         </div>
       )}
 
-      {/* ── Section: Commentaires ── */}
+      {/*  Section: Commentaires  */}
       {commentaires.length > 0 && (
         <div className="mb-4 space-y-2">
           <SectionHeader title="Commentaires" icon={MessageCircle} sectionKey="commentaires" count={commentaires.length} />
           <AnimatePresence>
             {expandedSections.commentaires && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-4 space-y-2">
+                <div className="bg-surface/50 rounded-xl border border-border/50 p-4 space-y-2">
                   {commentaires.map((c, i) => (
-                    <div key={i} className={`bg-gray-900/50 rounded-lg px-3 py-2 text-sm border ${c.estInterne ? "border-purple-500/20" : "border-gray-700/30"}`}>
-                      <p className="text-gray-300 whitespace-pre-wrap">{c.commentaire}</p>
-                      <div className="flex items-center gap-3 mt-1.5 text-[11px] text-gray-500">
+                    <div key={i} className={`bg-elevated/50 rounded-lg px-3 py-2 text-sm border ${c.estInterne ? "border-primary/20" : "border-border/30"}`}>
+                      <p className="text-text-secondary whitespace-pre-wrap">{c.commentaire?.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')}</p>
+                      <div className="flex items-center gap-3 mt-1.5 text-[11px] text-text-muted">
                         <span className="flex items-center gap-1"><Clock size={10} /> {formatDate(c.dateCreation)}</span>
-                        {c.estInterne && <span className="text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded text-[10px]">Interne</span>}
+                        {c.estInterne && <span className="text-primary bg-primary-soft px-1.5 py-0.5 rounded text-[10px]">Interne</span>}
                       </div>
                     </div>
                   ))}
@@ -636,25 +628,25 @@ export default function CompteRenduOT() {
         </div>
       )}
 
-      {/* ── Section: Historique statut ── */}
+      {/*  Section: Historique statut  */}
       {historiques.length > 0 && (
         <div className="mb-4 space-y-2">
           <SectionHeader title="Historique des statuts" icon={History} sectionKey="historique" count={historiques.length} />
           <AnimatePresence>
             {expandedSections.historique && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-4 space-y-2">
+                <div className="bg-surface/50 rounded-xl border border-border/50 p-4 space-y-2">
                   {historiques.map((h, i) => (
                     <div key={i} className="flex items-start gap-3 text-sm">
                       <div className="w-2 h-2 rounded-full bg-purple-400 mt-1.5 shrink-0" />
                       <div className="flex-1">
-                        <p className="text-gray-300">
-                          <span className="text-gray-500">{h.ancienStatut || "—"}</span>
-                          <span className="mx-1 text-gray-600">→</span>
-                          <span className="text-white font-medium">{h.nouveauStatut}</span>
+                        <p className="text-text-secondary">
+                          <span className="text-text-muted">{h.ancienStatut || "—"}</span>
+                          <span className="mx-1 text-text-muted">→</span>
+                          <span className="text-text font-medium">{h.nouveauStatut}</span>
                         </p>
-                        {h.motif && <p className="text-xs text-gray-500 mt-0.5">{h.motif}</p>}
-                        <p className="text-[11px] text-gray-600 mt-0.5">{formatDate(h.dateChangement)}</p>
+                        {h.motif && <p className="text-xs text-text-muted mt-0.5">{h.motif}</p>}
+                        <p className="text-[11px] text-text-muted mt-0.5">{formatDate(h.dateChangement)}</p>
                       </div>
                     </div>
                   ))}
@@ -665,31 +657,31 @@ export default function CompteRenduOT() {
         </div>
       )}
 
-      {/* ── Section: Traçabilité ── */}
+      {/*  Section: Traçabilité  */}
       <div className="mb-6 space-y-2">
         <SectionHeader title="Traçabilité" icon={User} sectionKey="tracabilite" />
         <AnimatePresence>
           {expandedSections.tracabilite && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-              <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-4">
+              <div className="bg-surface/50 rounded-xl border border-border/50 p-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {di?.signalement_detail && (
-                    <div className="bg-blue-500/10 rounded-lg p-3 border border-blue-500/20">
-                      <p className="text-[10px] text-blue-400 uppercase tracking-wider mb-1">DI créée par</p>
-                      <p className="text-sm font-medium text-white">{di.signalement_detail.prenom} {di.signalement_detail.nom}</p>
-                      <p className="text-xs text-gray-500">{formatDate(di.dateSignalement)}</p>
+                    <div className="bg-primary-soft rounded-lg p-3 border border-primary/20">
+                      <p className="text-[10px] text-primary uppercase tracking-wider mb-1">DI créée par</p>
+                      <p className="text-sm font-medium text-text">{di.signalement_detail.prenom} {di.signalement_detail.nom}</p>
+                      <p className="text-xs text-text-muted">{formatDate(di.dateSignalement)}</p>
                     </div>
                   )}
                   {ot.createur_detail && (
-                    <div className="bg-purple-500/10 rounded-lg p-3 border border-purple-500/20">
-                      <p className="text-[10px] text-purple-400 uppercase tracking-wider mb-1">OT créé par</p>
-                      <p className="text-sm font-medium text-white">{ot.createur_detail.prenom} {ot.createur_detail.nom}</p>
+                    <div className="bg-primary-soft rounded-lg p-3 border border-primary/20">
+                      <p className="text-[10px] text-primary uppercase tracking-wider mb-1">OT créé par</p>
+                      <p className="text-sm font-medium text-text">{ot.createur_detail.prenom} {ot.createur_detail.nom}</p>
                     </div>
                   )}
                   {ot.affectations?.length > 0 && (
-                    <div className="bg-amber-500/10 rounded-lg p-3 border border-amber-500/20">
-                      <p className="text-[10px] text-amber-400 uppercase tracking-wider mb-1">Intervenant(s)</p>
-                      <p className="text-sm font-medium text-white">
+                    <div className="bg-warning/10 rounded-lg p-3 border border-warning/20">
+                      <p className="text-[10px] text-warning uppercase tracking-wider mb-1">Intervenant(s)</p>
+                      <p className="text-sm font-medium text-text">
                         {ot.affectations.map(a => a.equipe_detail?.libelle || a.soustraitant_detail?.raisonSociale).filter(Boolean).join(", ")}
                       </p>
                     </div>
@@ -701,23 +693,26 @@ export default function CompteRenduOT() {
         </AnimatePresence>
       </div>
 
-      {/* ── Formulaire de compte rendu ── */}
-      <div className="border-t border-gray-700 pt-6 mb-4">
-        <h2 className="text-lg font-semibold mb-1">Rédiger le compte rendu</h2>
-        <p className="text-gray-400 text-sm mb-5">Décrivez l'intervention réalisée pour l'historique</p>
-      </div>
+        </div>
 
-      <form onSubmit={handleSubmitRapport} className="space-y-5">
+        {/* Colonne droite : Formulaire de compte rendu */}
+        <div className="lg:col-span-2 space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold mb-1">Rédiger le compte rendu</h2>
+            <p className="text-text-muted text-sm mb-5">Décrivez l'ordre de travail réalisé pour l'historique</p>
+          </div>
+
+          <form onSubmit={handleSubmitRapport} className="space-y-5">
         {/* Actifs corrigés */}
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-5">
+        <div className="bg-surface rounded-xl border border-border p-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-teal-400 uppercase tracking-wider flex items-center gap-2">
-              <CheckCircle size={14} /> Actifs corrigés pendant l'intervention
+            <h3 className="text-sm font-semibold text-status-cyan uppercase tracking-wider flex items-center gap-2">
+              <CheckCircle size={14} /> Actifs corrigés pendant l'ordre de travail
             </h3>
             <button
               type="button"
               onClick={() => { setShowActifCorrigeSelector((s) => !s); if (!showActifCorrigeSelector) initCorrigeSelector(); }}
-              className="text-xs flex items-center gap-1 text-teal-400 hover:text-teal-300 border border-teal-500/30 bg-teal-500/10 px-3 py-1.5 rounded-lg transition">
+              className="text-xs flex items-center gap-1 text-status-cyan hover:text-status-cyan border border-status-cyan/30 bg-status-cyan/10 px-3 py-1.5 rounded-lg transition">
               <Plus size={12} />
               {showActifCorrigeSelector ? "Annuler" : "Ajouter un actif"}
             </button>
@@ -728,18 +723,18 @@ export default function CompteRenduOT() {
             <div className="flex flex-wrap gap-2 mb-3">
               {/* Actifs déjà enregistrés sur l'OT */}
               {ot?.actifs_corriges?.map((ac) => (
-                <span key={ac.id} className="text-xs bg-teal-500/10 text-teal-300 px-2.5 py-1 rounded-full border border-teal-500/20 flex items-center gap-1.5">
+                <span key={ac.id} className="text-xs bg-status-cyan/10 text-status-cyan px-2.5 py-1 rounded-full border border-status-cyan/20 flex items-center gap-1.5">
                   <CheckCircle size={10} />
                   {ac.actif_detail?.code} — {ac.actif_detail?.libelle}
                 </span>
               ))}
               {/* Actifs sélectionnés dans le formulaire */}
               {actifsCorriges.map((a) => (
-                <span key={a.id} className="text-xs bg-teal-500/10 text-teal-300 px-2.5 py-1 rounded-full border border-teal-500/20 flex items-center gap-1.5">
+                <span key={a.id} className="text-xs bg-status-cyan/10 text-status-cyan px-2.5 py-1 rounded-full border border-status-cyan/20 flex items-center gap-1.5">
                   <CheckCircle size={10} />
                   {a.code} — {a.libelle}
                   <button type="button" onClick={() => retirerActifCorrige(a.id)}
-                    className="text-teal-400 hover:text-red-400 transition ml-1">
+                    className="text-status-cyan hover:text-danger transition ml-1">
                     <Trash2 size={10} />
                   </button>
                 </span>
@@ -755,21 +750,21 @@ export default function CompteRenduOT() {
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden">
-                <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50 space-y-3">
-                  <p className="text-xs text-gray-400">Sélectionnez l'équipement qui a été réparé ou modifié :</p>
+                <div className="bg-elevated/50 rounded-lg p-4 border border-border/50 space-y-3">
+                  <p className="text-xs text-text-muted">Sélectionnez l'équipement qui a été réparé ou modifié :</p>
                   {corrigeLoading ? (
-                    <p className="text-sm text-gray-500">Chargement...</p>
+                    <p className="text-sm text-text-muted">Chargement...</p>
                   ) : (
                     <>
                       {corrigeOptionsAtLevel.map((options, levelIndex) => (
                         <div key={levelIndex}>
-                          <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                          <label className="text-[10px] text-text-muted uppercase tracking-wider block mb-1">
                             {levelIndex === 0 ? "Site / Zone" : `Niveau ${levelIndex + 1}`}
                           </label>
                           <select
                             value={corrigeSelectionPath[levelIndex]?.id || ""}
                             onChange={(e) => handleCorrigeSelectAtLevel(levelIndex, e.target.value)}
-                            className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-teal-500"
+                            className="w-full bg-hover text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-status-cyan"
                           >
                             <option value="">Sélectionner...</option>
                             {options.map((a) => (
@@ -782,8 +777,8 @@ export default function CompteRenduOT() {
                       ))}
                       {corrigeSelectionPath.length > 0 && (
                         <div className="flex items-center justify-between pt-2">
-                          <p className="text-xs text-gray-400">
-                            Sélection : <span className="text-white font-medium">{corrigeSelectionPath[corrigeSelectionPath.length - 1]?.code}</span>
+                          <p className="text-xs text-text-muted">
+                            Sélection : <span className="text-text font-medium">{corrigeSelectionPath[corrigeSelectionPath.length - 1]?.code}</span>
                           </p>
                           <button
                             type="button"
@@ -802,8 +797,8 @@ export default function CompteRenduOT() {
         </div>
 
         {/* Travaux réalisés */}
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-5">
-          <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <div className="bg-surface rounded-xl border border-border p-5">
+          <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-3 flex items-center gap-2">
             <Wrench size={14} /> Travaux réalisés
           </h3>
           <textarea
@@ -811,13 +806,13 @@ export default function CompteRenduOT() {
             onChange={(e) => setRapport((r) => ({ ...r, descriptionTravail: e.target.value }))}
             placeholder="Détaillez les actions effectuées, les pièces changées, les réglages..."
             rows={4}
-            className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-purple-500 resize-none"
+            className="w-full bg-hover text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-primary resize-none"
           />
         </div>
 
         {/* Constatations */}
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-5">
-          <h3 className="text-sm font-semibold text-blue-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <div className="bg-surface rounded-xl border border-border p-5">
+          <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-3 flex items-center gap-2">
             <AlertTriangle size={14} /> Constatations
           </h3>
           <textarea
@@ -825,14 +820,14 @@ export default function CompteRenduOT() {
             onChange={(e) => setRapport((r) => ({ ...r, constatations: e.target.value }))}
             placeholder="État de l'équipement avant/après, observations importantes..."
             rows={3}
-            className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-blue-500 resize-none"
+            className="w-full bg-hover text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-primary resize-none"
           />
         </div>
 
         {/* Cause racine */}
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-5">
-          <h3 className="text-sm font-semibold text-yellow-400 uppercase tracking-wider mb-3">
-            ⚙️ Cause racine identifiée
+        <div className="bg-surface rounded-xl border border-border p-5">
+          <h3 className="text-sm font-semibold text-warning uppercase tracking-wider mb-3">
+            Cause racine identifiée
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
             {Object.entries(CATEGORIES_CAUSE).map(([k, v]) => (
@@ -843,7 +838,7 @@ export default function CompteRenduOT() {
                 className={`py-2 px-3 rounded-lg text-xs font-medium transition border ${
                   rapport.causeRacine === k
                     ? v.color + " border-opacity-100"
-                    : "bg-gray-700 border-gray-600 text-gray-400 hover:text-gray-200"
+                    : "bg-hover border-border text-text-muted hover:text-text"
                 }`}>
                 {v.label}
               </button>
@@ -852,8 +847,8 @@ export default function CompteRenduOT() {
         </div>
 
         {/* Solution apportée */}
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-5">
-          <h3 className="text-sm font-semibold text-green-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <div className="bg-surface rounded-xl border border-border p-5">
+          <h3 className="text-sm font-semibold text-success uppercase tracking-wider mb-3 flex items-center gap-2">
             <CheckCircle size={14} /> Solution apportée
           </h3>
           <textarea
@@ -861,49 +856,13 @@ export default function CompteRenduOT() {
             onChange={(e) => setRapport((r) => ({ ...r, solutionApportee: e.target.value }))}
             placeholder="Résumé de la solution définitive. L'équipement est-il revenu à la normale ?"
             rows={3}
-            className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-green-500 resize-none"
+            className="w-full bg-hover text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-success resize-none"
           />
-        </div>
-
-        {/* État final */}
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-5">
-          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
-            🏁 État final de l'équipement
-          </h3>
-          <div className="space-y-3">
-            <label
-              className="flex items-start gap-3 p-3 rounded-lg border border-green-600/30 bg-green-600/10 cursor-pointer hover:bg-green-600/20 transition"
-              onClick={() => setRapport((r) => ({ ...r, estCloture: true, typeCloture: "corrige" }))}>
-              <input type="radio" name="etatFinal" checked={rapport.estCloture && rapport.typeCloture === "corrige"} onChange={() => {}} className="mt-1 accent-green-500" />
-              <div>
-                <p className="text-sm font-medium text-green-300"><CheckCircle className="inline mr-1" size={16} /> Réparation définitive</p>
-                <p className="text-xs text-green-400 mt-0.5">L'équipement fonctionne normalement — prêt pour la clôture</p>
-              </div>
-            </label>
-            <label
-              className="flex items-start gap-3 p-3 rounded-lg border border-orange-600/30 bg-orange-600/10 cursor-pointer hover:bg-orange-600/20 transition"
-              onClick={() => setRapport((r) => ({ ...r, estCloture: true, typeCloture: "depanne" }))}>
-              <input type="radio" name="etatFinal" checked={rapport.estCloture && rapport.typeCloture === "depanne"} onChange={() => {}} className="mt-1 accent-orange-500" />
-              <div>
-                <p className="text-sm font-medium text-orange-300"><AlertTriangle className="inline mr-1" size={16} /> Dépannage temporaire</p>
-                <p className="text-xs text-orange-400 mt-0.5">Solution temporaire — l'équipement fonctionne partiellement, intervention ultérieure nécessaire</p>
-              </div>
-            </label>
-            <label
-              className="flex items-start gap-3 p-3 rounded-lg border border-gray-600/30 bg-gray-700/30 cursor-pointer hover:bg-gray-700/50 transition"
-              onClick={() => setRapport((r) => ({ ...r, estCloture: false, typeCloture: "depanne" }))}>
-              <input type="radio" name="etatFinal" checked={!rapport.estCloture} onChange={() => {}} className="mt-1 accent-gray-500" />
-              <div>
-                <p className="text-sm font-medium text-gray-300">Ne pas clôturer — rester en cours</p>
-                <p className="text-xs text-gray-500 mt-0.5">L'intervention n'est pas terminée, enregistrer uniquement le rapport</p>
-              </div>
-            </label>
-          </div>
         </div>
 
         {/* Actions */}
         <div className="flex gap-3">
-          <button type="button" onClick={() => navigate(-1)} className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl text-sm font-semibold transition">
+          <button type="button" onClick={() => navigate(-1)} className="flex-1 py-3 bg-hover hover:bg-active rounded-xl text-sm font-semibold transition">
             Annuler
           </button>
           <button type="submit" disabled={submitting} className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-40 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2">
@@ -911,6 +870,8 @@ export default function CompteRenduOT() {
           </button>
         </div>
       </form>
+        </div>
+      </div>
     </div>
   );
 }

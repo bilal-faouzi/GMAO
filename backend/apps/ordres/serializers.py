@@ -121,8 +121,7 @@ class MembreInterventionSerializer(serializers.ModelSerializer):
 
 
 class ActifCorrigeOTSerializer(serializers.ModelSerializer):
-    actif_detail    = serializers.SerializerMethodField()
-    corrigePar_detail = serializers.SerializerMethodField()
+    actif_detail = serializers.SerializerMethodField()
 
     class Meta:
         model  = ActifCorrigeOT
@@ -138,20 +137,12 @@ class ActifCorrigeOTSerializer(serializers.ModelSerializer):
             }
         return None
 
-    def get_corrigePar_detail(self, obj):
-        if obj.corrigePar:
-            return {
-                'id':     str(obj.corrigePar.id),
-                'nom':    obj.corrigePar.nom,
-                'prenom': obj.corrigePar.prenom,
-            }
-        return None
-
 
 class AffectationEquipeSerializer(serializers.ModelSerializer):
-    equipe_detail       = serializers.SerializerMethodField()
-    soustraitant_detail = serializers.SerializerMethodField()
-    membres             = MembreInterventionSerializer(many=True, read_only=True)
+    equipe_detail         = serializers.SerializerMethodField()
+    soustraitant_detail   = serializers.SerializerMethodField()
+    chefTechnicien_detail = serializers.SerializerMethodField()
+    membres               = MembreInterventionSerializer(many=True, read_only=True)
 
     class Meta:
         model  = AffectationEquipe
@@ -165,6 +156,15 @@ class AffectationEquipeSerializer(serializers.ModelSerializer):
     def get_soustraitant_detail(self, obj):
         if obj.idSousTraitant:
             return {'id': str(obj.idSousTraitant.id), 'raisonSociale': obj.idSousTraitant.raisonSociale}
+        return None
+
+    def get_chefTechnicien_detail(self, obj):
+        if obj.idChefTechnicien:
+            return {
+                'id':     str(obj.idChefTechnicien.id),
+                'nom':    obj.idChefTechnicien.nom,
+                'prenom': obj.idChefTechnicien.prenom,
+            }
         return None
 
 
@@ -270,6 +270,7 @@ class OrdreTravailSerializer(serializers.ModelSerializer):
             'code':    obj.idActif.code,
             'libelle': obj.idActif.libelle,
             'statut':  obj.idActif.statut,
+            'idUnite': str(obj.idActif.idUnite.id) if obj.idActif.idUnite else None,
         }
 
     def get_createur_detail(self, obj):

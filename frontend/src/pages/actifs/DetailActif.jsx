@@ -8,7 +8,7 @@ import {
 } from "../../services/actifService";
 import { ArrowLeft, Pencil, ArrowRight, Calendar, User } from "lucide-react";
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+//  Config 
 
 const STATUT_CONFIG = {
   actif: {
@@ -63,7 +63,7 @@ function formatDate(iso) {
   }).format(new Date(iso));
 }
 
-// ─── Info Row ─────────────────────────────────────────────────────────────────
+//  Info Row 
 
 function InfoRow({ label, value }) {
   return (
@@ -84,7 +84,7 @@ function InfoRow({ label, value }) {
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+//  Main 
 
 export default function DetailActif() {
   const { id } = useParams();

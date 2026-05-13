@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// ─── Config statuts & types ───────────────────────────────────────────────────
+//  Config statuts & types 
 
 const STATUTS = {
   actif: {
@@ -93,9 +93,9 @@ function TypeBadge({ type, typesMap }) {
   );
 }
 
-// ─── Composant Pagination ─────────────────────────────────────────────────────
+//  Composant Pagination 
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+//  Main 
 
 export default function ListeActifs() {
   const navigate = useNavigate();
@@ -595,7 +595,7 @@ export default function ListeActifs() {
             <div className="m-hdr">
               <span className="m-title">Changer le statut</span>
               <button className="m-close" onClick={() => setModalStatut(null)}>
-                ✕
+                
               </button>
             </div>
             <div

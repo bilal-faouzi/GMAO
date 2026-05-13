@@ -165,7 +165,7 @@ export default function FormulaireDemande({
     setForm((f) => ({ ...f, [name]: value }));
   };
 
-  // ── Images ──────────────────────────────────────────────
+  //  Images 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files || []);
     const newImages = [...images, ...files];
@@ -180,8 +180,24 @@ export default function FormulaireDemande({
     setPreviewImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // ── Audio recording ──────────────────────────────────────
+  //  Audio recording 
+  const isSecureContext = () => {
+    return window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  };
+
+  const getSupportedMimeType = () => {
+    const types = ['audio/webm', 'audio/mp4', 'audio/ogg', 'audio/wav'];
+    for (const t of types) {
+      if (MediaRecorder.isTypeSupported(t)) return t;
+    }
+    return '';
+  };
+
   const startRecording = async () => {
+    if (!isSecureContext()) {
+      setErreur(' L\'enregistrement audio nécessite HTTPS. Utilisez https://192.168.2.232:9669');
+      return;
+    }
     try {
       chunksRef.current = [];
       recordingStartTimeRef.current = Date.now();
@@ -189,26 +205,27 @@ export default function FormulaireDemande({
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
-      const recorder = new MediaRecorder(stream, {
-        mimeType: "audio/webm",
-        audioBitsPerSecond: 128000,
-      });
+      const mimeType = getSupportedMimeType();
+      const options = mimeType ? { mimeType, audioBitsPerSecond: 128000 } : {};
+      const recorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = recorder;
 
-      recorder.ondataavailable = (e) => chunksRef.current.push(e.data);
+      recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
 
       recorder.onstop = () => {
         const durationSeconds = Math.floor(
           (Date.now() - recordingStartTimeRef.current) / 1000,
         );
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const finalType = mimeType || 'audio/webm';
+        const blob = new Blob(chunksRef.current, { type: finalType });
 
         if (blob.size === 0) {
           setErreur("Aucun audio enregistré. Vérifiez votre microphone.");
           return;
         }
 
-        const fileName = `recording_${Date.now()}.webm`;
+        const ext = finalType.includes('mp4') ? 'mp4' : finalType.includes('ogg') ? 'ogg' : 'webm';
+        const fileName = `recording_${Date.now()}.${ext}`;
         setRecordedAudios((prev) => [
           ...prev,
           {
@@ -218,19 +235,25 @@ export default function FormulaireDemande({
             name: fileName,
           },
         ]);
-        const file = new File([blob], fileName, { type: "audio/webm" });
+        const file = new File([blob], fileName, { type: finalType });
         setAudioFiles((prev) => [...prev, file]);
         setRecordingTime(0);
       };
 
       recorder.onerror = (e) =>
-        setErreur(`Erreur d'enregistrement: ${e.error}`);
+        setErreur(`Erreur d'enregistrement: ${e.message || e}`);
 
       recorder.start(1000);
       setIsRecording(true);
       setRecordingTime(0);
     } catch (err) {
-      setErreur(`Erreur microphone: ${err.message}`);
+      if (err.name === 'NotAllowedError') {
+        setErreur(' Microphone bloqué. Autorisez l\'accès au micro dans les paramètres du navigateur.');
+      } else if (err.name === 'NotFoundError') {
+        setErreur(' Aucun microphone détecté.');
+      } else {
+        setErreur(`Erreur microphone: ${err.message}`);
+      }
     }
   };
 
@@ -276,7 +299,7 @@ export default function FormulaireDemande({
   const formatTime = (s) =>
     `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
-  // ── Submit ───────────────────────────────────────────────
+  //  Submit 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -316,7 +339,7 @@ export default function FormulaireDemande({
     }
   };
 
-  // ── Shared form body ─────────────────────────────────────
+  //  Shared form body 
   const formBody = (
     <form
       id="demande-form"
@@ -418,7 +441,7 @@ export default function FormulaireDemande({
         {previewImages.length > 0 && (
           <div className="mt-2.5">
             <span className="text-[11px] font-semibold text-[var(--status-purple-text)] uppercase">
-              📸 Images ({previewImages.length})
+               Images ({previewImages.length})
             </span>
             <div className="grid grid-cols-3 gap-2 mt-2">
               {previewImages.map((src, i) => (
@@ -480,7 +503,7 @@ export default function FormulaireDemande({
         {recordedAudios.length > 0 && (
           <div className="mt-2.5">
             <span className="text-[11px] font-semibold text-[var(--status-blue-text)] uppercase">
-              📦 Audios ({recordedAudios.length})
+               Audios ({recordedAudios.length})
             </span>
             <div className="flex flex-col gap-1.5 mt-2">
               {recordedAudios.map((rec, i) => (
@@ -491,7 +514,7 @@ export default function FormulaireDemande({
                     type="button"
                     onClick={() => playRecordedAudio(i)}
                     className="w-8 h-8 rounded-full bg-[rgba(59,130,246,.3)] border-none text-[var(--status-blue-text)] cursor-pointer flex items-center justify-center shrink-0 text-[13px]">
-                    ▶
+                    
                   </button>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-[var(--status-blue-text)] overflow-hidden text-ellipsis whitespace-nowrap">
@@ -532,7 +555,7 @@ export default function FormulaireDemande({
     </div>
   );
 
-  // ── Dialog mode ──────────────────────────────────────────
+  //  Dialog mode 
   if (onClose) {
     return (
       <div className="flex flex-col max-h-[80vh]">
@@ -542,7 +565,7 @@ export default function FormulaireDemande({
     );
   }
 
-  // ── Page mode ────────────────────────────────────────────
+  //  Page mode 
   return (
     <div className="page max-w-[720px] mx-auto">
       <div className="flex items-center gap-3">

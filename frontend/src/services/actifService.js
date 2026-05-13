@@ -1,6 +1,6 @@
 import api from './api';
 
-// ── Actifs ──────────────────────────────────────────────
+//  Actifs 
 export const getActifs = (filters = {}) => {
     const params = new URLSearchParams(filters).toString();
     return api.get(`/v1/actifs/actifs/${params ? '?' + params : ''}`);
@@ -27,11 +27,11 @@ export const changerStatut = (id, nouveauStatut, motif = '') =>
 export const getDashboard = () =>
     api.get('/v1/actifs/actifs/dashboard/');
 
-// ── Historique statut ────────────────────────────────────
+//  Historique statut 
 export const getHistoriqueStatut = (idActif) =>
     api.get(`/v1/actifs/historiques/?idActif=${idActif}`);
 
-// ── Indisponibilités ─────────────────────────────────────
+//  Indisponibilités 
 export const getIndisponibilites = (idActif) =>
     api.get(`/v1/actifs/indisponibilites/?idActif=${idActif}`);
 
@@ -44,7 +44,7 @@ export const updateIndisponibilite = (id, data) =>
 export const deleteIndisponibilite = (id) =>
     api.delete(`/v1/actifs/indisponibilites/${id}/`);
 
-// ── Remplacements ────────────────────────────────────────
+//  Remplacements 
 export const getRemplacements = (idActif) =>
     api.get(`/v1/actifs/remplacements/?actifOriginal=${idActif}`);
 
@@ -54,7 +54,7 @@ export const createRemplacement = (data) =>
 export const deleteRemplacement = (id) =>
     api.delete(`/v1/actifs/remplacements/${id}/`);
 
-// ── Types d'actifs ──────────────────────────────────────
+//  Types d'actifs 
 export const getTypesActifs = () =>
     api.get('/v1/actifs/types-actifs/');
 

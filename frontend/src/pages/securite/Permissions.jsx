@@ -17,22 +17,22 @@ import {
 
 const actionColor = (action) => {
   if (action === "READ")
-    return "bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400";
+    return "bg-blue-100 dark:bg-primary-soft text-blue-700 dark:text-primary";
   if (action === "CREATE")
     return "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
   if (action === "UPDATE")
-    return "bg-orange-100 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400";
+    return "bg-orange-100 dark:bg-status-orange/10 text-orange-700 dark:text-status-orange";
   if (action === "DELETE")
-    return "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400";
+    return "bg-red-100 dark:bg-danger-soft text-red-700 dark:text-danger";
   return "bg-surface text-text-secondary";
 };
 
 const moduleColors = [
-  "bg-purple-100 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400",
-  "bg-pink-100 dark:bg-pink-500/10 text-pink-700 dark:text-pink-400",
-  "bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400",
-  "bg-cyan-100 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-400",
-  "bg-teal-100 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400",
+  "bg-purple-100 dark:bg-primary-soft text-purple-700 dark:text-primary",
+  "bg-pink-100 dark:bg-primary-soft text-pink-700 dark:text-primary",
+  "bg-indigo-100 dark:bg-primary-soft text-indigo-700 dark:text-primary",
+  "bg-cyan-100 dark:bg-status-cyan/10 text-cyan-700 dark:text-status-cyan",
+  "bg-teal-100 dark:bg-status-cyan/10 text-teal-700 dark:text-status-cyan",
 ];
 
 export default function Permissions() {
@@ -252,13 +252,13 @@ export default function Permissions() {
             {form.module && form.action && form.ressource && (
               <div className="p-3 bg-surface rounded-lg border border-border">
                 <p className="text-xs text-text-muted mb-1">Code généré :</p>
-                <code className="text-sm font-mono text-blue-700 dark:text-blue-400">
+                <code className="text-sm font-mono text-blue-700 dark:text-primary">
                   {form.module}.{form.action}.{form.ressource}
                 </code>
               </div>
             )}
             {error && (
-              <p className="text-red-700 dark:text-red-400 text-xs">{error}</p>
+              <p className="text-red-700 dark:text-danger text-xs">{error}</p>
             )}
             <div className="flex gap-3 pt-2">
               <Button

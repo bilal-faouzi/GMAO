@@ -1,6 +1,6 @@
 import api from './api'
 
-// ─── Societes ────────────────────────────────────────────────────────────────
+//  Societes 
 export const getSocietes = (params = {}) =>
   api.get('/v1/organisation/societes/', { params })
 
@@ -19,7 +19,7 @@ export const deleteSociete = (id) =>
 export const getArborescence = (id) =>
   api.get(`/v1/organisation/societes/${id}/arborescence/`)
 
-// ─── Sites ───────────────────────────────────────────────────────────────────
+//  Sites 
 export const getSites = (params = {}) =>
   api.get('/v1/organisation/sites/', { params })
 
@@ -32,7 +32,7 @@ export const updateSite = (id, data) =>
 export const deleteSite = (id) =>
   api.delete(`/v1/organisation/sites/${id}/`)
 
-// ─── Secteurs ────────────────────────────────────────────────────────────────
+//  Secteurs 
 export const getSecteurs = (params = {}) =>
   api.get('/v1/organisation/secteurs/', { params })
 
@@ -42,7 +42,7 @@ export const createSecteur = (data) =>
 export const updateSecteur = (id, data) =>
   api.patch(`/v1/organisation/secteurs/${id}/`, data)
 
-// ─── Unites ──────────────────────────────────────────────────────────────────
+//  Unites 
 export const getUnites = (params = {}) =>
   api.get('/v1/organisation/unites/', { params })
 
@@ -52,11 +52,11 @@ export const createUnite = (data) =>
 export const updateUnite = (id, data) =>
   api.patch(`/v1/organisation/unites/${id}/`, data)
 
-// ─── Specialites ─────────────────────────────────────────────────────────────
+//  Specialites 
 export const getSpecialites = () =>
   api.get('/v1/organisation/specialites/')
 
-// ─── Equipes ─────────────────────────────────────────────────────────────────
+//  Equipes 
 
 
 export const createEquipe = (data) =>
@@ -68,7 +68,7 @@ export const updateEquipe = (id, data) =>
 export const deleteEquipe = (id) =>
   api.delete(`/v1/organisation/equipes/${id}/`)
 
-// ─── Membres equipe ───────────────────────────────────────────────────────────
+//  Membres equipe 
 export const getMembres = (equipeId) =>
   api.get('/v1/organisation/equipe-utilisateurs/', { params: { equipe: equipeId } })
 
@@ -81,7 +81,7 @@ export const updateMembre = (id, data) =>
 export const removeMembre = (id) =>
   api.delete(`/v1/organisation/equipe-utilisateurs/${id}/`)
 
-// ─── Appartenances ───────────────────────────────────────────────────────────
+//  Appartenances 
 export const getAppartenances = (params = {}) =>
   api.get('/v1/organisation/appartenances/', { params })
 

@@ -7,8 +7,12 @@ import {
   getCommentaires,
   getHistoriqueOT,
   affecterEquipe,
+  getMembresEquipe,
+  deleteAffectation,
+  updateAffectation,
 } from "../../services/ordreService";
-import { getJournalAuditv2, getUtilisateurs } from "../../services/securiteService";
+import { getJournalAuditv2 } from "../../services/securiteService";
+import { getEquipes } from "../../services/organisationService";
 
 import {
   Dialog,
@@ -20,22 +24,30 @@ import {
 } from "@/components/ui/dialog";
 import { CheckCircle, User, Wrench, MessageSquare, AlertTriangle, Plus, X } from "lucide-react";
 
-// ─── Couleurs d'audit ─────────────────────────────────────────────────────────
+//  Statuts affectation 
+const STATUT_AFFECTATION_LABEL = {
+  en_attente: "En attente",
+  en_cours:   "En cours",
+  termine:    "Terminé",
+  rejeter:    "Rejeté",
+};
+
+//  Couleurs d'audit 
 const AUDIT_ACTION_CONFIG = {
-  CREATE: { label: "Création", cls: "bg-green-500/20 text-green-400 border-green-500/30", dot: "bg-green-400" },
-  UPDATE: { label: "Modification", cls: "bg-blue-500/20 text-blue-400 border-blue-500/30", dot: "bg-blue-400" },
-  DELETE: { label: "Suppression", cls: "bg-red-500/20 text-red-400 border-red-500/30", dot: "bg-red-400" },
-  CHANGE_STATUS: { label: "Changement de statut", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30", dot: "bg-amber-400" },
-  VALIDER: { label: "Validation", cls: "bg-purple-500/20 text-purple-400 border-purple-500/30", dot: "bg-purple-400" },
-  REJECT: { label: "Rejet", cls: "bg-red-500/20 text-red-400 border-red-500/30", dot: "bg-red-400" },
-  UPLOAD_FICHIERS: { label: "Fichiers ajoutés", cls: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30", dot: "bg-cyan-400" },
-  CLOTURER: { label: "Clôture", cls: "bg-green-500/20 text-green-400 border-green-500/30", dot: "bg-green-400" },
-  ENREGISTRER_PIECE: { label: "Pièce utilisée", cls: "bg-pink-500/20 text-pink-400 border-pink-500/30", dot: "bg-pink-400" },
-  AJOUTER_COMMENTAIRE: { label: "Commentaire", cls: "bg-indigo-500/20 text-indigo-400 border-indigo-500/30", dot: "bg-indigo-400" },
+  CREATE: { label: "Création", cls: "bg-success-soft text-success border-success/30", dot: "bg-success" },
+  UPDATE: { label: "Modification", cls: "bg-primary-soft text-primary border-primary/30", dot: "bg-primary" },
+  DELETE: { label: "Suppression", cls: "bg-danger-soft text-danger border-danger/30", dot: "bg-danger" },
+  CHANGE_STATUS: { label: "Changement de statut", cls: "bg-warning/20 text-warning border-warning/30", dot: "bg-warning" },
+  VALIDER: { label: "Validation", cls: "bg-primary-soft text-primary border-primary/30", dot: "bg-primary" },
+  REJECT: { label: "Rejet", cls: "bg-danger-soft text-danger border-danger/30", dot: "bg-danger" },
+  UPLOAD_FICHIERS: { label: "Fichiers ajoutés", cls: "bg-status-cyan/20 text-status-cyan border-status-cyan/30", dot: "bg-status-cyan" },
+  CLOTURER: { label: "Clôture", cls: "bg-success-soft text-success border-success/30", dot: "bg-success" },
+  ENREGISTRER_PIECE: { label: "Pièce utilisée", cls: "bg-primary-soft text-primary border-primary/30", dot: "bg-primary" },
+  AJOUTER_COMMENTAIRE: { label: "Commentaire", cls: "bg-primary-soft text-primary border-primary/30", dot: "bg-primary" },
 };
 
 function getAuditConfig(action) {
-  return AUDIT_ACTION_CONFIG[action] || { label: action, cls: "bg-gray-500/20 text-gray-400 border-gray-500/30", dot: "bg-gray-400" };
+  return AUDIT_ACTION_CONFIG[action] || { label: action, cls: "bg-hover text-text-muted border-border/30", dot: "bg-text-muted" };
 }
 
 function formatAuditValue(val) {
@@ -64,22 +76,22 @@ function AuditTimelineItem({ entry, isLast }) {
     <div className="flex gap-3">
       {/* Ligne timeline */}
       <div className="flex flex-col items-center">
-        <div className={`w-3 h-3 rounded-full ${cfg.dot} ring-4 ring-gray-800`} />
-        {!isLast && <div className="w-px flex-1 bg-gray-700 my-1" />}
+        <div className={`w-3 h-3 rounded-full ${cfg.dot} ring-4 ring-surface`} />
+        {!isLast && <div className="w-px flex-1 bg-hover my-1" />}
       </div>
 
       {/* Contenu */}
       <div className={`flex-1 pb-5 ${!isLast ? "" : ""}`}>
-        <div className="bg-gray-700/40 rounded-lg p-3 border border-gray-700/50 hover:border-gray-600 transition">
+        <div className="bg-hover/40 rounded-lg p-3 border border-border/50 hover:border-border transition">
           {/* Header */}
           <div className="flex items-start justify-between gap-2 mb-2">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-purple-600/20 text-purple-400 flex items-center justify-center text-[10px] font-bold border border-purple-500/30">
+              <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold border border-primary/30">
                 {initials || "?"}
               </div>
               <div>
-                <p className="text-sm font-medium text-white">{userName}</p>
-                <p className="text-[10px] text-gray-500">
+                <p className="text-sm font-medium text-text">{userName}</p>
+                <p className="text-[10px] text-text-muted">
                   {new Date(entry.horodatage).toLocaleString("fr-FR")}
                 </p>
               </div>
@@ -90,11 +102,11 @@ function AuditTimelineItem({ entry, isLast }) {
           </div>
 
           {/* Module */}
-          <p className="text-xs text-gray-400 mb-1.5">
-            Module : <span className="text-gray-300">{entry.module}</span>
+          <p className="text-xs text-text-muted mb-1.5">
+            Module : <span className="text-text-secondary">{entry.module}</span>
             {entry.type_entite && (
               <>
-                {" · "}Entité : <span className="text-gray-300">{entry.type_entite}</span>
+                {" · "}Entité : <span className="text-text-secondary">{entry.type_entite}</span>
               </>
             )}
           </p>
@@ -104,16 +116,16 @@ function AuditTimelineItem({ entry, isLast }) {
             <div className="mt-2 space-y-1.5">
               {entry.ancienne_valeur && (
                 <div className="flex items-start gap-2 text-xs">
-                  <span className="text-gray-500 shrink-0 w-14">Avant :</span>
-                  <span className="text-red-300 bg-red-500/10 rounded px-1.5 py-0.5 break-all">
+                  <span className="text-text-muted shrink-0 w-14">Avant :</span>
+                  <span className="text-danger bg-danger-soft rounded px-1.5 py-0.5 break-all">
                     {formatAuditValue(entry.ancienne_valeur)}
                   </span>
                 </div>
               )}
               {entry.nouvelle_valeur && (
                 <div className="flex items-start gap-2 text-xs">
-                  <span className="text-gray-500 shrink-0 w-14">Après :</span>
-                  <span className="text-green-300 bg-green-500/10 rounded px-1.5 py-0.5 break-all">
+                  <span className="text-text-muted shrink-0 w-14">Après :</span>
+                  <span className="text-success bg-success-soft rounded px-1.5 py-0.5 break-all">
                     {formatAuditValue(entry.nouvelle_valeur)}
                   </span>
                 </div>
@@ -123,7 +135,7 @@ function AuditTimelineItem({ entry, isLast }) {
 
           {/* Adresse IP */}
           {entry.adresse_ip && (
-            <p className="text-[10px] text-gray-600 mt-2">
+            <p className="text-[10px] text-text-muted mt-2">
               IP : {entry.adresse_ip}
             </p>
           )}
@@ -133,27 +145,27 @@ function AuditTimelineItem({ entry, isLast }) {
   );
 }
 
-// ─── Statuts ──────────────────────────────────────────────────────────────────
+//  Statuts 
 const STATUT = {
   EN_COURS: {
     label: "En cours",
-    cls: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+    cls: "bg-warning/20 text-warning border-warning/30",
   },
   DEPANNE: {
     label: "Dépanné",
-    cls: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+    cls: "bg-status-orange/20 text-status-orange border-status-orange/30",
   },
   CLOTURE: {
     label: "Clôturé",
-    cls: "bg-green-500/20 text-green-400 border-green-500/30",
+    cls: "bg-success-soft text-success border-success/30",
   },
   REJETE: {
     label: "Rejeté",
-    cls: "bg-red-500/20 text-red-400 border-red-500/30",
+    cls: "bg-danger-soft text-danger border-danger/30",
   },
 };
 
-// ─── Composant ────────────────────────────────────────────────────────────────
+//  Composant 
 export default function DetailOT() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -182,13 +194,17 @@ export default function DetailOT() {
 
   // Affectation
   const [modalAffectation, setModalAffectation] = useState(false);
-  const [users, setUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState("");
+  const [editingAffectation, setEditingAffectation] = useState(null);
+  const [equipes, setEquipes] = useState([]);
+  const [selectedEquipe, setSelectedEquipe] = useState("");
+  const [membresEquipe, setMembresEquipe] = useState([]);
+  const [selectedMembres, setSelectedMembres] = useState([]);
+  const [editStatut, setEditStatut] = useState("");
   const [loadingAffectation, setLoadingAffectation] = useState(false);
 
   const estVerrouille = ["DEPANNE", "CLOTURE", "REJETE"].includes(ot?.statut);
 
-  // ─── Chargement ─────────────────────────────────────────────────────────────
+  //  Chargement 
   const charger = async () => {
     try {
       const [o, c, h, a] = await Promise.all([
@@ -212,30 +228,77 @@ export default function DetailOT() {
     charger();
   }, [id]);
 
-  // ─── Action : Affecter une personne ──────────────────────────────────────────
-  const openAffectationModal = async () => {
+  //  Action : Affecter / Modifier 
+  const openAffectationModal = async (affectation = null) => {
+    setEditingAffectation(affectation);
     setModalAffectation(true);
-    setSelectedUser("");
+    setSelectedEquipe("");
+    setMembresEquipe([]);
+    setSelectedMembres([]);
+    setEditStatut("");
+
     try {
-      const r = await getUtilisateurs({ est_actif: true, no_page: true });
-      setUsers(r.data.results ?? r.data ?? []);
+      const r = await getEquipes({ estActif: true, no_page: true });
+      setEquipes(r.data.results ?? r.data ?? []);
+    } catch (e) {
+      console.error(e);
+    }
+
+    if (affectation) {
+      // Mode édition : pré-remplir
+      setEditStatut(affectation.statut || "");
+      const eqId = affectation.equipe_detail?.id || affectation.idEquipe;
+      if (eqId) {
+        setSelectedEquipe(eqId);
+        try {
+          const r = await getMembresEquipe(eqId);
+          const data = r.data.results ?? r.data ?? [];
+          setMembresEquipe(data);
+          // Pré-sélectionner les membres actuels
+          const currentIds = (affectation.membres || []).map((m) =>
+            m.utilisateur_detail?.id || m.idUtilisateur || m.id
+          );
+          setSelectedMembres(currentIds);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+  };
+
+  const handleSelectEquipe = async (equipeId) => {
+    setSelectedEquipe(equipeId);
+    setSelectedMembres([]);
+    if (!equipeId) {
+      setMembresEquipe([]);
+      return;
+    }
+    try {
+      const r = await getMembresEquipe(equipeId);
+      const data = r.data.results ?? r.data ?? [];
+      setMembresEquipe(data);
     } catch (e) {
       console.error(e);
     }
   };
 
+  const toggleMembre = (userId) => {
+    setSelectedMembres((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+  };
+
   const handleAffecter = async () => {
-    if (!selectedUser) return;
+    if (!selectedEquipe || selectedMembres.length === 0) return;
     setLoadingAffectation(true);
     try {
       await affecterEquipe(id, {
-        idChefTechnicien: selectedUser,
+        idEquipe: selectedEquipe,
         dateDebut: new Date().toISOString(),
-        membres: [selectedUser],
+        membres: selectedMembres,
       });
-      setModalAffectation(false);
-      setSelectedUser("");
-      charger();
+      closeAffectationModal();
+      await charger();
     } catch (e) {
       console.error(e);
       alert("Erreur lors de l'affectation");
@@ -244,7 +307,45 @@ export default function DetailOT() {
     }
   };
 
-  // ─── Action : Dépanner ──────────────────────────────────────────────────────
+  const handleUpdateAffectation = async () => {
+    if (!editingAffectation || selectedMembres.length === 0) return;
+    setLoadingAffectation(true);
+    try {
+      await updateAffectation(editingAffectation.id, {
+        statut: editStatut,
+        membres: selectedMembres,
+      });
+      closeAffectationModal();
+      await charger();
+    } catch (e) {
+      console.error(e);
+      alert("Erreur lors de la modification");
+    } finally {
+      setLoadingAffectation(false);
+    }
+  };
+
+  const handleDeleteAffectation = async (affId) => {
+    if (!confirm("Supprimer cette affectation ?")) return;
+    try {
+      await deleteAffectation(affId);
+      charger();
+    } catch (e) {
+      console.error(e);
+      alert("Erreur lors de la suppression");
+    }
+  };
+
+  const closeAffectationModal = () => {
+    setModalAffectation(false);
+    setEditingAffectation(null);
+    setSelectedEquipe("");
+    setMembresEquipe([]);
+    setSelectedMembres([]);
+    setEditStatut("");
+  };
+
+  //  Action : Dépanner 
   const handleDepanner = async () => {
     setLoadingDepanne(true);
     try {
@@ -259,7 +360,7 @@ export default function DetailOT() {
     }
   };
 
-  // ─── Action : Clôturer ──────────────────────────────────────────────────────
+  //  Action : Clôturer 
   const handleCloturer = async () => {
     setLoadingCloture(true);
     try {
@@ -275,7 +376,7 @@ export default function DetailOT() {
     }
   };
 
-  // ─── Action : Commentaire ───────────────────────────────────────────────────
+  //  Action : Commentaire 
   const handleCommentaire = async (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
@@ -285,20 +386,20 @@ export default function DetailOT() {
     charger();
   };
 
-  // ─── Render ─────────────────────────────────────────────────────────────────
-  if (loading) return <div className="p-6 text-gray-400">Chargement…</div>;
-  if (!ot) return <div className="p-6 text-red-400">OT introuvable.</div>;
+  //  Render 
+  if (loading) return <div className="p-6 text-text-muted">Chargement…</div>;
+  if (!ot) return <div className="p-6 text-danger">OT introuvable.</div>;
 
   const s = STATUT[ot.statut];
 
   return (
-    <div className="p-6 text-white">
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+    <div className="p-6">
+      {/*  Header  */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={() => navigate("/ordres/ots")}
-            className="text-gray-400 hover:text-white text-sm transition">
+            className="text-text-muted hover:text-text text-sm transition">
             ← Retour
           </button>
           <h1 className="text-2xl font-semibold font-mono">{ot.numero}</h1>
@@ -307,52 +408,61 @@ export default function DetailOT() {
             {s?.label}
           </span>
           {ot.est_en_retard && (
-            <span className="px-2 py-0.5 rounded-full text-xs bg-red-500/20 text-red-400 border border-red-500/30">
-              ⚠ Retard
+            <span className="px-2 py-0.5 rounded-full text-xs bg-danger-soft text-danger border border-danger/30">
+               Retard
             </span>
           )}
           {ot.rejetOperateur && (
-            <span className="px-2 py-0.5 rounded-full text-xs bg-red-500/30 text-red-300 border border-red-500/40 animate-pulse">
-              ❌ Rejeté opérateur
+            <span className="px-2 py-0.5 rounded-full text-xs bg-red-500/30 text-danger border border-danger/40 animate-pulse">
+               Rejeté opérateur
             </span>
           )}
         </div>
 
-        {/* Boutons d'action — cachés si l'OT est verrouillé */}
-        {!estVerrouille && (
-          <div className="flex gap-2">
-            {/* Bouton Dépanné */}
-            <button
-              onClick={() => setModalDepanne(true)}
-              className="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg text-sm font-medium transition">
-              🔧 Dépanné
-            </button>
+        {/* Boutons d'action */}
+        <div className="flex gap-2">
+          {/* Bouton Compte rendu — toujours visible */}
+          <button
+            onClick={() => navigate(`/ordres/ots/${id}/rapport`)}
+            className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
+            <MessageSquare size={16} /> Compte rendu
+          </button>
 
-            {/* Bouton Clôturer */}
-            <button
-              onClick={() => setModalCloture(true)}
-              className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-medium transition">
-              ✓ Clôturer
-            </button>
-          </div>
-        )}
+          {!estVerrouille && (
+            <>
+              {/* Bouton Dépanné */}
+              <button
+                onClick={() => setModalDepanne(true)}
+                className="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg text-sm font-medium transition">
+                 Dépanné
+              </button>
+
+              {/* Bouton Clôturer */}
+              <button
+                onClick={() => setModalCloture(true)}
+                className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-medium transition">
+                 Clôturer
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* ── Notification rejet opérateur ─────────────────────────────────── */}
+      {/*  Notification rejet opérateur  */}
       {ot.rejetOperateur && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
+        <div className="bg-danger-soft border border-danger/30 rounded-xl p-4 mb-6">
           <div className="flex items-start gap-3">
-            <AlertTriangle size={18} className="text-red-400 mt-0.5 shrink-0" />
+            <AlertTriangle size={18} className="text-danger mt-0.5 shrink-0" />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-red-300">
-                ⚠️ Cette intervention a été rejetée par l'opérateur
+              <p className="text-sm font-semibold text-danger">
+                 Cette intervention a été rejetée par l'opérateur
               </p>
               {ot.motifRejetOperateur && (
-                <p className="text-sm text-red-200/80 mt-1">
+                <p className="text-sm text-text-secondary/80 mt-1">
                   Motif : {ot.motifRejetOperateur}
                 </p>
               )}
-              <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+              <div className="flex items-center gap-2 mt-2 text-xs text-text-muted">
                 {ot.rejetOperateur_detail && (
                   <span>Par {ot.rejetOperateur_detail.prenom} {ot.rejetOperateur_detail.nom}</span>
                 )}
@@ -365,60 +475,60 @@ export default function DetailOT() {
         </div>
       )}
 
-      {/* ── Traçabilité ────────────────────────────────────────────────────── */}
+      {/*  Traçabilité  */}
       {ot.demande_detail && (
-        <div className="bg-gray-800/60 rounded-xl p-4 border border-gray-700 mb-4">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-3 flex items-center gap-1.5">
-            📋 Traçabilité
+        <div className="bg-surface/60 rounded-xl p-4 border border-border mb-4">
+          <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-1.5">
+             Traçabilité
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {/* DI créée par */}
-            <div className="bg-gray-900/40 rounded-lg p-3 border border-gray-700/50">
-              <p className="text-[10px] text-gray-500 mb-1">DI créée par</p>
-              <p className="text-sm font-medium text-white">
+            <div className="bg-elevated/40 rounded-lg p-3 border border-border/50">
+              <p className="text-[10px] text-text-muted mb-1">DI créée par</p>
+              <p className="text-sm font-medium text-text">
                 {ot.demande_detail.signalement_detail
                   ? `${ot.demande_detail.signalement_detail.prenom} ${ot.demande_detail.signalement_detail.nom}`
                   : "—"}
               </p>
-              <p className="text-[10px] text-gray-500">
+              <p className="text-[10px] text-text-muted">
                 {ot.demande_detail.dateSignalement
                   ? new Date(ot.demande_detail.dateSignalement).toLocaleString("fr-FR")
                   : "—"}
               </p>
-              <p className="text-[10px] text-gray-600 mt-1 font-mono">
+              <p className="text-[10px] text-text-muted mt-1 font-mono">
                 {ot.demande_detail.numero}
               </p>
             </div>
 
             {/* OT créé par */}
-            <div className="bg-gray-900/40 rounded-lg p-3 border border-gray-700/50">
-              <p className="text-[10px] text-gray-500 mb-1">OT créé par</p>
-              <p className="text-sm font-medium text-white">
+            <div className="bg-elevated/40 rounded-lg p-3 border border-border/50">
+              <p className="text-[10px] text-text-muted mb-1">OT créé par</p>
+              <p className="text-sm font-medium text-text">
                 {ot.createur_detail
                   ? `${ot.createur_detail.prenom} ${ot.createur_detail.nom}`
                   : "—"}
               </p>
-              <p className="text-[10px] text-gray-500">
+              <p className="text-[10px] text-text-muted">
                 {ot.created_at
                   ? new Date(ot.created_at).toLocaleString("fr-FR")
                   : "—"}
               </p>
-              <p className="text-[10px] text-gray-600 mt-1">
-                Depuis une DI {ot.demande_detail.urgence === 'critique' ? '🔴 critique' : ''}
+              <p className="text-[10px] text-text-muted mt-1">
+                Depuis une DI {ot.demande_detail.urgence === 'critique' ? ' critique' : ''}
               </p>
             </div>
 
             {/* OT validé par */}
-            <div className={`rounded-lg p-3 border ${ot.validation_detail ? 'bg-green-900/20 border-green-700/30' : 'bg-gray-900/40 border-gray-700/50'}`}>
-              <p className="text-[10px] text-gray-500 mb-1">OT validé par</p>
-              <p className={`text-sm font-medium ${ot.validation_detail ? 'text-green-300' : 'text-white'}`}>
+            <div className={`rounded-lg p-3 border ${ot.validation_detail ? 'bg-success-soft border-green-700/30' : 'bg-elevated/40 border-border/50'}`}>
+              <p className="text-[10px] text-text-muted mb-1">OT validé par</p>
+              <p className={`text-sm font-medium ${ot.validation_detail ? 'text-success' : 'text-text'}`}>
                 {ot.validation_detail
                   ? `${ot.validation_detail.prenom} ${ot.validation_detail.nom}`
                   : ot.statut === 'CLOTURE' || ot.statut === 'DEPANNE'
                     ? "En attente de validation"
                     : "—"}
               </p>
-              <p className="text-[10px] text-gray-500">
+              <p className="text-[10px] text-text-muted">
                 {ot.dateCloture
                   ? new Date(ot.dateCloture).toLocaleString("fr-FR")
                   : ot.statut === 'CLOTURE' || ot.statut === 'DEPANNE'
@@ -426,18 +536,18 @@ export default function DetailOT() {
                     : "—"}
               </p>
               {ot.validation_detail && (
-                <p className="text-[10px] text-green-500 mt-1">✅ Approuvé</p>
+                <p className="text-[10px] text-success mt-1"> Approuvé</p>
               )}
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Infos & Délais ─────────────────────────────────────────────────── */}
+      {/*  Infos & Délais  */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {/* Informations générales */}
-        <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
-          <h2 className="text-xs text-gray-500 uppercase tracking-wider mb-3">
+        <div className="bg-surface rounded-xl p-5 border border-border">
+          <h2 className="text-xs text-text-muted uppercase tracking-wider mb-3">
             Informations
           </h2>
           {[
@@ -449,9 +559,9 @@ export default function DetailOT() {
           ].map(([l, v]) => (
             <div
               key={l}
-              className="flex justify-between text-sm py-1.5 border-b border-gray-700/50 last:border-0">
-              <span className="text-gray-400">{l}</span>
-              <span className="text-white font-medium text-right max-w-[200px]">
+              className="flex justify-between text-sm py-1.5 border-b border-border/50 last:border-0">
+              <span className="text-text-muted">{l}</span>
+              <span className="text-text font-medium text-right max-w-[200px]">
                 {v}
               </span>
             </div>
@@ -459,8 +569,8 @@ export default function DetailOT() {
         </div>
 
         {/* Délais & Coûts */}
-        <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
-          <h2 className="text-xs text-gray-500 uppercase tracking-wider mb-3">
+        <div className="bg-surface rounded-xl p-5 border border-border">
+          <h2 className="text-xs text-text-muted uppercase tracking-wider mb-3">
             Délais &amp; Coûts
           </h2>
           {[
@@ -487,69 +597,82 @@ export default function DetailOT() {
           ].map(([l, v]) => (
             <div
               key={l}
-              className="flex justify-between text-sm py-1.5 border-b border-gray-700/50 last:border-0">
-              <span className="text-gray-400">{l}</span>
-              <span className="text-white font-medium">{v}</span>
+              className="flex justify-between text-sm py-1.5 border-b border-border/50 last:border-0">
+              <span className="text-text-muted">{l}</span>
+              <span className="text-text font-medium">{v}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ── Compte rendu ─────────────────────────────────────────────────── */}
+      {/*  Compte rendu  */}
       {(() => {
+        const stripEmojis = (str) => str?.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '') || '';
         const comptesRendus = commentaires.filter(
-          (c) => c.estInterne && c.commentaire?.includes("📋 COMPTE RENDU INTERVENTION")
+          (c) => c.estInterne && c.commentaire?.includes("COMPTE RENDU INTERVENTION")
         );
         return comptesRendus.length > 0 ? (
-          <div className="bg-gray-800 rounded-xl border border-gray-700 p-5 mb-6">
-            <h2 className="text-xs text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <div className="bg-surface rounded-xl border border-border p-5 mb-6">
+            <h2 className="text-xs text-primary uppercase tracking-wider mb-3 flex items-center gap-1.5">
               <MessageSquare size={14} /> Compte rendu d'intervention
             </h2>
             <div className="space-y-3">
               {comptesRendus.map((cr) => (
-                <div key={cr.id} className="bg-purple-500/10 rounded-lg p-4 border border-purple-500/20">
+                <div key={cr.id} className="bg-primary-soft rounded-lg p-4 border border-primary/20">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-7 h-7 rounded-full bg-purple-600/20 text-purple-400 flex items-center justify-center text-[10px] font-bold border border-purple-500/30">
+                    <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold border border-primary/30">
                       {cr.utilisateur_detail
                         ? `${cr.utilisateur_detail.prenom?.[0] || ""}${cr.utilisateur_detail.nom?.[0] || ""}`.toUpperCase()
                         : "?"}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-white">
+                      <p className="text-sm font-medium text-text">
                         {cr.utilisateur_detail
                           ? `${cr.utilisateur_detail.prenom} ${cr.utilisateur_detail.nom}`
                           : "Technicien"}
                       </p>
-                      <p className="text-[10px] text-gray-500">
+                      <p className="text-[10px] text-text-muted">
                         {new Date(cr.dateCreation).toLocaleString("fr-FR")}
                       </p>
                     </div>
                   </div>
-                  <div className="text-sm text-gray-300 whitespace-pre-wrap">{cr.commentaire}</div>
+                  <div className="text-sm text-text-secondary whitespace-pre-wrap">{stripEmojis(cr.commentaire)}</div>
                 </div>
               ))}
             </div>
           </div>
-        ) : null;
+        ) : (
+          <div className="bg-surface rounded-xl border border-border p-5 mb-6">
+            <h2 className="text-xs text-primary uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <MessageSquare size={14} /> Compte rendu d'intervention
+            </h2>
+            <p className="text-sm text-text-muted mb-3">Aucun compte rendu n'a été rédigé pour cet OT.</p>
+            <button
+              onClick={() => navigate(`/ordres/ots/${id}/rapport`)}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-primary-soft text-primary border border-primary/20 hover:bg-primary-soft transition flex items-center gap-1.5 w-fit">
+              <MessageSquare size={12} /> Rédiger le compte rendu
+            </button>
+          </div>
+        );
       })()}
 
-      {/* ── Actifs corrigés ──────────────────────────────────────────────── */}
+      {/*  Actifs corrigés  */}
       {ot.actifs_corriges?.length > 0 && (
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-5 mb-6">
-          <h2 className="text-xs text-teal-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-            <CheckCircle size={14} /> Actifs corrigés pendant l'intervention
+        <div className="bg-surface rounded-xl border border-border p-5 mb-6">
+          <h2 className="text-xs text-status-cyan uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <CheckCircle size={14} /> Actifs corrigés pendant l'ordre de travail
           </h2>
           <div className="flex flex-wrap gap-2">
             {ot.actifs_corriges.map((ac) => (
-              <div key={ac.id} className="bg-teal-500/10 rounded-lg px-3 py-2 border border-teal-500/20 flex items-center gap-2">
-                <CheckCircle size={12} className="text-teal-400" />
+              <div key={ac.id} className="bg-status-cyan/10 rounded-lg px-3 py-2 border border-status-cyan/20 flex items-center gap-2">
+                <CheckCircle size={12} className="text-status-cyan" />
                 <div>
-                  <p className="text-sm font-medium text-teal-300">{ac.actif_detail?.code}</p>
-                  <p className="text-[10px] text-teal-400/70">{ac.actif_detail?.libelle}</p>
+                  <p className="text-sm font-medium text-status-cyan">{ac.actif_detail?.code}</p>
+                  <p className="text-[10px] text-status-cyan/70">{ac.actif_detail?.libelle}</p>
                 </div>
-                {ac.corrigePar_detail && (
-                  <span className="text-[10px] text-gray-500 ml-2 border-l border-teal-500/20 pl-2">
-                    par {ac.corrigePar_detail.prenom} {ac.corrigePar_detail.nom}
+                {ac.dateCorrection && (
+                  <span className="text-[10px] text-text-muted ml-2 border-l border-status-cyan/20 pl-2">
+                    {new Date(ac.dateCorrection).toLocaleDateString("fr-FR")}
                   </span>
                 )}
               </div>
@@ -558,13 +681,13 @@ export default function DetailOT() {
         </div>
       )}
 
-      {/* ── Onglets ────────────────────────────────────────────────────────── */}
-      <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-        <div className="flex border-b border-gray-700">
+      {/*  Onglets  */}
+      <div className="bg-surface rounded-xl border border-border overflow-hidden">
+        <div className="flex border-b border-border">
           {[
             ["affectations", `Affectations (${ot.affectations?.length || 0})`],
             ["pieces", `Pièces (${ot.nb_pieces_utilisees || 0})`],
-            ["commentaires", `Commentaires (${commentaires.filter((c) => !(c.estInterne && c.commentaire?.includes("📋 COMPTE RENDU INTERVENTION"))).length})`],
+            ["commentaires", `Commentaires (${commentaires.filter((c) => !(c.estInterne && c.commentaire?.includes("COMPTE RENDU INTERVENTION"))).length})`],
             ["historique", `Historique (${historique.length})`],
             ["audit", `Audit complet (${audit.length})`],
           ].map(([k, l]) => (
@@ -573,8 +696,8 @@ export default function DetailOT() {
               onClick={() => setOnglet(k)}
               className={`py-3 px-4 text-sm font-medium transition border-b-2 -mb-px ${
                 onglet === k
-                  ? "text-purple-400 border-purple-400"
-                  : "text-gray-500 border-transparent hover:text-white"
+                  ? "text-primary border-purple-400"
+                  : "text-text-muted border-transparent hover:text-text"
               }`}>
               {l}
             </button>
@@ -588,15 +711,15 @@ export default function DetailOT() {
               {!estVerrouille && (
                 <div className="flex justify-end">
                   <button
-                    onClick={openAffectationModal}
-                    className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition">
+                    onClick={() => openAffectationModal()}
+                    className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-primary-soft text-primary border border-primary/20 hover:bg-primary-soft transition">
                     <Plus size={14} />
-                    Affecter une personne
+                    Affecter une équipe
                   </button>
                 </div>
               )}
               {ot.affectations?.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-8">
+                <p className="text-text-muted text-sm text-center py-8">
                   Aucune affectation
                 </p>
               ) : (
@@ -604,41 +727,74 @@ export default function DetailOT() {
                   {ot.affectations?.map((a) => (
                   <div
                     key={a.id}
-                    className="bg-gray-700/40 rounded-lg p-3 border border-gray-700/50">
-                    <div className="flex justify-between items-center mb-2">
+                    className="bg-hover/40 rounded-lg p-3 border border-border/50">
+                    <div className="flex justify-between items-start mb-2">
                       <div>
-                        <p className="text-sm font-medium text-white">
+                        <p className="text-sm font-medium text-text">
                           {a.equipe_detail?.libelle ??
                             a.soustraitant_detail?.raisonSociale ??
                             "—"}
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-text-muted">
                           {new Date(a.dateDebut).toLocaleString("fr-FR")}
                         </p>
+                        {/* Affecté par */}
+                        {a.chefTechnicien_detail && (
+                          <p className="text-[10px] text-text-muted mt-0.5">
+                            Affecté par{" "}
+                            <span className="text-text-secondary">
+                              {a.chefTechnicien_detail.prenom} {a.chefTechnicien_detail.nom}
+                            </span>
+                          </p>
+                        )}
                       </div>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${
-                          a.statut === "termine"
-                            ? "bg-green-500/20 text-green-400"
-                            : a.statut === "en_cours"
-                              ? "bg-amber-500/20 text-amber-400"
-                              : "bg-gray-500/20 text-gray-400"
-                        }`}>
-                        {a.statut}
-                      </span>
+                      <div className="flex flex-col items-end gap-1.5">
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            a.statut === "termine"
+                              ? "bg-success-soft text-success"
+                              : a.statut === "en_cours"
+                                ? "bg-warning/20 text-warning"
+                                : a.statut === "rejeter"
+                                  ? "bg-danger-soft text-danger"
+                                  : "bg-hover text-text-muted"
+                          }`}>
+                          {STATUT_AFFECTATION_LABEL[a.statut] || a.statut}
+                        </span>
+                        {!estVerrouille && (
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => openAffectationModal(a)}
+                              className="text-[10px] px-2 py-0.5 rounded bg-primary-soft text-primary border border-primary/20 hover:bg-primary-soft transition"
+                              title="Modifier">
+                              Modifier
+                            </button>
+                            <button
+                              onClick={() => handleDeleteAffectation(a.id)}
+                              className="text-[10px] px-2 py-0.5 rounded bg-danger-soft text-danger border border-danger/20 hover:bg-danger-soft transition"
+                              title="Supprimer">
+                              Supprimer
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     {/* Membres de l'affectation */}
-                    {a.membres?.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-gray-700/50">
-                        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                          <User size={10} /> Techniciens affectés
-                        </p>
+                    <div className="mt-2 pt-2 border-t border-border/50">
+                      <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                        <User size={10} />
+                        {a.membres?.length > 0
+                          ? `Techniciens affectés (${a.membres.length})`
+                          : "Aucun membre affecté"}
+                      </p>
+                      {a.membres?.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
                           {a.membres.map((m) => (
                             <span
                               key={m.id}
-                              className="text-[11px] bg-purple-500/10 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/20 flex items-center gap-1">
-                              <span className="w-4 h-4 rounded-full bg-purple-600/20 text-purple-400 flex items-center justify-center text-[8px] font-bold border border-purple-500/30">
+                              title={m.dateDebut ? `Affecté le ${new Date(m.dateDebut).toLocaleString("fr-FR")}` : ""}
+                              className="text-[11px] bg-primary-soft text-primary px-2 py-0.5 rounded-full border border-primary/20 flex items-center gap-1">
+                              <span className="w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[8px] font-bold border border-primary/30">
                                 {m.utilisateur_detail
                                   ? `${m.utilisateur_detail.prenom?.[0] || ""}${m.utilisateur_detail.nom?.[0] || ""}`.toUpperCase()
                                   : "?"}
@@ -649,8 +805,8 @@ export default function DetailOT() {
                             </span>
                           ))}
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 ))}
               </>
@@ -660,7 +816,7 @@ export default function DetailOT() {
 
           {/* Pièces */}
           {onglet === "pieces" && (
-            <p className="text-gray-500 text-sm text-center py-8">
+            <p className="text-text-muted text-sm text-center py-8">
               {ot.nb_pieces_utilisees === 0
                 ? "Aucune pièce utilisée"
                 : `${ot.nb_pieces_utilisees} pièce(s) utilisée(s)`}
@@ -673,10 +829,10 @@ export default function DetailOT() {
               <div className="space-y-3 mb-4">
                 {(() => {
                   const vraisCommentaires = commentaires.filter(
-                    (c) => !(c.estInterne && c.commentaire?.includes("📋 COMPTE RENDU INTERVENTION"))
+                    (c) => !(c.estInterne && c.commentaire?.includes("COMPTE RENDU INTERVENTION"))
                   );
                   return vraisCommentaires.length === 0 ? (
-                    <p className="text-gray-500 text-sm text-center py-4">
+                    <p className="text-text-muted text-sm text-center py-4">
                       Aucun commentaire
                     </p>
                   ) : (
@@ -685,32 +841,32 @@ export default function DetailOT() {
                         key={c.id}
                         className={`rounded-lg p-3 ${
                           c.estInterne
-                            ? "bg-amber-500/10 border border-amber-500/20"
-                            : "bg-gray-700/40 border border-gray-700/50"
+                            ? "bg-warning/10 border border-warning/20"
+                            : "bg-hover/40 border border-border/50"
                         }`}>
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-purple-600/20 text-purple-400 flex items-center justify-center text-[10px] font-bold border border-purple-500/30 shrink-0">
+                            <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold border border-primary/30 shrink-0">
                               {c.utilisateur_detail
                                 ? `${c.utilisateur_detail.prenom?.[0] || ""}${c.utilisateur_detail.nom?.[0] || ""}`.toUpperCase()
                                 : "?"}
                             </div>
                             <div>
-                              <p className="text-xs font-medium text-gray-200">
+                              <p className="text-xs font-medium text-text">
                                 {c.utilisateur_detail
                                   ? `${c.utilisateur_detail.prenom} ${c.utilisateur_detail.nom}`
                                   : "Utilisateur"}
                                 {c.estInterne && (
-                                  <span className="ml-2 text-amber-400 text-[10px]">[Interne]</span>
+                                  <span className="ml-2 text-warning text-[10px]">[Interne]</span>
                                 )}
                               </p>
-                              <p className="text-[10px] text-gray-500">
+                              <p className="text-[10px] text-text-muted">
                                 {new Date(c.dateCreation).toLocaleString("fr-FR")}
                               </p>
                             </div>
                           </div>
                         </div>
-                        <p className="text-sm text-gray-300 whitespace-pre-wrap">{c.commentaire}</p>
+                        <p className="text-sm text-text-secondary whitespace-pre-wrap">{stripEmojis(c.commentaire)}</p>
                       </div>
                     ))
                   );
@@ -721,20 +877,20 @@ export default function DetailOT() {
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Ajouter un commentaire…"
-                  className="flex-1 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-purple-500"
+                  className="flex-1 bg-hover text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-primary"
                 />
-                <label className="flex items-center gap-1 text-xs text-gray-400 cursor-pointer">
+                <label className="flex items-center gap-1 text-xs text-text-muted cursor-pointer">
                   <input
                     type="checkbox"
                     checked={estInterne}
                     onChange={(e) => setEstInterne(e.target.checked)}
-                    className="accent-amber-500"
+                    className="accent-warning"
                   />
                   Interne
                 </label>
                 <button
                   type="submit"
-                  className="bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded-lg text-sm transition text-white">
+                  className="bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded-lg text-sm transition text-text">
                   Envoyer
                 </button>
               </form>
@@ -744,7 +900,7 @@ export default function DetailOT() {
           {/* Historique */}
           {onglet === "historique" &&
             (historique.length === 0 ? (
-              <p className="text-gray-500 text-sm text-center py-8">
+              <p className="text-text-muted text-sm text-center py-8">
                 Aucun historique
               </p>
             ) : (
@@ -752,7 +908,7 @@ export default function DetailOT() {
                 {historique.map((h) => (
                   <div
                     key={h.id}
-                    className="flex items-center gap-3 p-3 bg-gray-700/40 rounded-lg">
+                    className="flex items-center gap-3 p-3 bg-hover/40 rounded-lg">
                     <div className="flex items-center gap-2">
                       {h.ancienStatut && (
                         <>
@@ -760,7 +916,7 @@ export default function DetailOT() {
                             className={`px-2 py-0.5 rounded text-xs border ${STATUT[h.ancienStatut]?.cls}`}>
                             {STATUT[h.ancienStatut]?.label}
                           </span>
-                          <span className="text-gray-500 text-xs">→</span>
+                          <span className="text-text-muted text-xs">→</span>
                         </>
                       )}
                       <span
@@ -770,10 +926,10 @@ export default function DetailOT() {
                     </div>
                     <div className="flex-1">
                       {h.motif && (
-                        <p className="text-xs text-gray-400">{h.motif}</p>
+                        <p className="text-xs text-text-muted">{h.motif}</p>
                       )}
                     </div>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-text-muted">
                       {new Date(h.dateChangement).toLocaleString("fr-FR")}
                     </span>
                   </div>
@@ -784,7 +940,7 @@ export default function DetailOT() {
           {/* Audit complet — Timeline */}
           {onglet === "audit" &&
             (audit.length === 0 ? (
-              <p className="text-gray-500 text-sm text-center py-8">
+              <p className="text-text-muted text-sm text-center py-8">
                 Aucune entrée d'audit pour cet OT
               </p>
             ) : (
@@ -801,33 +957,33 @@ export default function DetailOT() {
         </div>
       </div>
 
-      {/* ════════════════════════════════════════════════════════════════════════
+      {/* 
           Dialog — Dépanné
-      ════════════════════════════════════════════════════════════════════════ */}
+       */}
       <Dialog open={modalDepanne} onOpenChange={setModalDepanne}>
-        <DialogContent className="bg-gray-900 border border-gray-700 text-white max-w-md">
+        <DialogContent className="bg-elevated border border-border text-text max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-orange-400">
-              🔧 Marquer comme Dépanné
+            <DialogTitle className="flex items-center gap-2 text-status-orange">
+               Marquer comme Dépanné
             </DialogTitle>
-            <DialogDescription className="text-gray-400 text-sm">
-              L'OT <span className="font-mono text-white">{ot.numero}</span>{" "}
+            <DialogDescription className="text-text-muted text-sm">
+              L'OT <span className="font-mono text-text">{ot.numero}</span>{" "}
               sera marqué comme dépanné temporairement. L'actif sera rétabli.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             <div>
-              <label className="text-xs text-gray-400 mb-1.5 block">
+              <label className="text-xs text-text-muted mb-1.5 block">
                 Motif / Commentaire{" "}
-                <span className="text-gray-600">(optionnel)</span>
+                <span className="text-text-muted">(optionnel)</span>
               </label>
               <textarea
                 value={motifDepanne}
                 onChange={(e) => setMotifDepanne(e.target.value)}
                 placeholder="Décrivez l'action de dépannage effectuée…"
                 rows={4}
-                className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-orange-500 resize-none transition"
+                className="w-full bg-surface text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-warning resize-none transition"
               />
             </div>
           </div>
@@ -838,30 +994,30 @@ export default function DetailOT() {
                 setModalDepanne(false);
                 setMotifDepanne("");
               }}
-              className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition text-white">
+              className="px-4 py-2 text-sm bg-hover hover:bg-active rounded-lg transition text-text">
               Annuler
             </button>
             <button
               onClick={handleDepanner}
               disabled={loadingDepanne}
-              className="px-4 py-2 text-sm bg-orange-600 hover:bg-orange-700 disabled:opacity-50 rounded-lg transition text-white font-medium">
+              className="px-4 py-2 text-sm bg-orange-600 hover:bg-orange-700 disabled:opacity-50 rounded-lg transition text-text font-medium">
               {loadingDepanne ? "Enregistrement…" : "Confirmer le dépannage"}
             </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ════════════════════════════════════════════════════════════════════════
+      {/* 
           Dialog — Clôturer
-      ════════════════════════════════════════════════════════════════════════ */}
+       */}
       <Dialog open={modalCloture} onOpenChange={setModalCloture}>
-        <DialogContent className="bg-gray-900 border border-gray-700 text-white max-w-md">
+        <DialogContent className="bg-elevated border border-border text-text max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-green-400">
-              ✓ Clôturer l'ordre de travail
+            <DialogTitle className="flex items-center gap-2 text-success">
+               Clôturer l'ordre de travail
             </DialogTitle>
-            <DialogDescription className="text-gray-400 text-sm">
-              L'OT <span className="font-mono text-white">{ot.numero}</span>{" "}
+            <DialogDescription className="text-text-muted text-sm">
+              L'OT <span className="font-mono text-text">{ot.numero}</span>{" "}
               sera clôturé définitivement. Cette action est irréversible.
             </DialogDescription>
           </DialogHeader>
@@ -869,22 +1025,22 @@ export default function DetailOT() {
           <div className="space-y-4 py-2">
             {/* Type de clôture */}
             <div>
-              <label className="text-xs text-gray-400 mb-1.5 block">
+              <label className="text-xs text-text-muted mb-1.5 block">
                 Type de clôture
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { value: "corrige", label: "Corrigé", icon: "✅" },
-                  { value: "depanne", label: "Dépanné", icon: "🔧" },
-                  { value: "annule", label: "Annulé", icon: "❌" },
+                  { value: "corrige", label: "Corrigé", icon: "" },
+                  { value: "depanne", label: "Dépanné", icon: "" },
+                  { value: "annule", label: "Annulé", icon: "" },
                 ].map(({ value, label, icon }) => (
                   <button
                     key={value}
                     onClick={() => setTypeCloture(value)}
                     className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg border text-xs font-medium transition ${
                       typeCloture === value
-                        ? "border-green-500 bg-green-500/15 text-green-400"
-                        : "border-gray-600 bg-gray-800 text-gray-400 hover:border-gray-500"
+                        ? "border-green-500 bg-green-500/15 text-success"
+                        : "border-border bg-surface text-text-muted hover:border-border-strong"
                     }`}>
                     <span className="text-base">{icon}</span>
                     {label}
@@ -895,16 +1051,16 @@ export default function DetailOT() {
 
             {/* Motif */}
             <div>
-              <label className="text-xs text-gray-400 mb-1.5 block">
+              <label className="text-xs text-text-muted mb-1.5 block">
                 Motif / Rapport de clôture{" "}
-                <span className="text-gray-600">(optionnel)</span>
+                <span className="text-text-muted">(optionnel)</span>
               </label>
               <textarea
                 value={motifCloture}
                 onChange={(e) => setMotifCloture(e.target.value)}
                 placeholder="Décrivez les travaux effectués et le résultat final…"
                 rows={4}
-                className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-green-500 resize-none transition"
+                className="w-full bg-surface text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-success resize-none transition"
               />
             </div>
           </div>
@@ -916,69 +1072,161 @@ export default function DetailOT() {
                 setMotifCloture("");
                 setTypeCloture("corrige");
               }}
-              className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition text-white">
+              className="px-4 py-2 text-sm bg-hover hover:bg-active rounded-lg transition text-text">
               Annuler
             </button>
             <button
               onClick={handleCloturer}
               disabled={loadingCloture}
-              className="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition text-white font-medium">
+              className="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition text-text font-medium">
               {loadingCloture ? "Clôture en cours…" : "Clôturer définitivement"}
             </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ════════════════════════════════════════════════════════════════════════
-          Dialog — Affecter une personne
-      ════════════════════════════════════════════════════════════════════════ */}
+      {/* 
+          Dialog — Affecter / Modifier une équipe
+       */}
       <Dialog open={modalAffectation} onOpenChange={setModalAffectation}>
-        <DialogContent className="bg-gray-900 border border-gray-700 text-white max-w-md">
+        <DialogContent className="bg-elevated border border-border text-text max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-purple-400">
-              <User size={18} /> Affecter une personne
+            <DialogTitle className="flex items-center gap-2 text-primary">
+              <User size={18} />
+              {editingAffectation ? "Modifier l'affectation" : "Affecter une équipe"}
             </DialogTitle>
-            <DialogDescription className="text-gray-400 text-sm">
-              Sélectionnez la personne qui interviendra sur l'OT{" "}
-              <span className="font-mono text-white">{ot?.numero}</span>
+            <DialogDescription className="text-text-muted text-sm">
+              {editingAffectation
+                ? "Modifiez le statut et les membres de l'affectation"
+                : "Sélectionnez l'équipe et les membres qui interviendront sur l'OT"}{" "}
+              <span className="font-mono text-text">{ot?.numero}</span>
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-2">
-            <label className="text-xs text-gray-400 mb-1.5 block">
-              Personne <span className="text-red-400">*</span>
-            </label>
-            <select
-              value={selectedUser}
-              onChange={(e) => setSelectedUser(e.target.value)}
-              className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 outline-none focus:border-purple-500 transition">
-              <option value="">— Sélectionner une personne —</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.prenom} {u.nom} ({u.nom_utilisateur})
-                </option>
-              ))}
-            </select>
-            {users.length === 0 && (
-              <p className="text-xs text-gray-500 mt-2">Chargement des utilisateurs…</p>
+          <div className="py-2 space-y-4">
+            {/* Équipe */}
+            <div>
+              <label className="text-xs text-text-muted mb-1.5 block">
+                Équipe <span className="text-danger">*</span>
+              </label>
+              {editingAffectation ? (
+                <p className="text-sm text-text bg-surface rounded-lg px-3 py-2 border border-border">
+                  {editingAffectation.equipe_detail?.libelle ?? "—"}
+                </p>
+              ) : (
+                <select
+                  value={selectedEquipe}
+                  onChange={(e) => handleSelectEquipe(e.target.value)}
+                  className="w-full bg-surface text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-primary transition">
+                  <option value="">— Sélectionner une équipe —</option>
+                  {equipes.map((eq) => (
+                    <option key={eq.id} value={eq.id}>
+                      {eq.libelle} {eq.chef_nom ? `(${eq.chef_nom})` : ""}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {!editingAffectation && equipes.length === 0 && (
+                <p className="text-xs text-text-muted mt-2">Chargement des équipes…</p>
+              )}
+            </div>
+
+            {/* Statut (mode édition uniquement) */}
+            {editingAffectation && (
+              <div>
+                <label className="text-xs text-text-muted mb-1.5 block">
+                  Statut
+                </label>
+                <select
+                  value={editStatut}
+                  onChange={(e) => setEditStatut(e.target.value)}
+                  className="w-full bg-surface text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-primary transition">
+                  <option value="en_attente">En attente</option>
+                  <option value="en_cours">En cours</option>
+                  <option value="termine">Terminé</option>
+                  <option value="rejeter">Rejeté</option>
+                </select>
+              </div>
+            )}
+
+            {/* Membres */}
+            {(selectedEquipe || editingAffectation) && (
+              <div>
+                <label className="text-xs text-text-muted mb-1.5 block">
+                  Membres participants <span className="text-danger">*</span>
+                </label>
+                <div className="max-h-48 overflow-y-auto space-y-1 bg-surface rounded-lg border border-border p-2">
+                  {membresEquipe.length === 0 ? (
+                    <p className="text-xs text-text-muted py-2">Aucun membre dans cette équipe.</p>
+                  ) : (
+                    membresEquipe.map((m) => {
+                      const uid = typeof m.utilisateur === 'string' ? m.utilisateur : (m.utilisateur?.id || m.id);
+                      const nom = m.utilisateur_nom || (typeof m.utilisateur === 'object' ? `${m.utilisateur?.prenom || ""} ${m.utilisateur?.nom || ""}`.trim() : "") || "Membre";
+                      const checked = selectedMembres.includes(uid);
+                      const alreadyInOther = ot.affectations?.some((aff) => {
+                        if (editingAffectation && aff.id === editingAffectation.id) return false;
+                        return aff.membres?.some((mm) =>
+                          (mm.utilisateur_detail?.id || mm.idUtilisateur || mm.id) === uid
+                        );
+                      });
+                      const disabled = alreadyInOther && !checked;
+                      return (
+                        <label
+                          key={uid}
+                          className={`flex items-center gap-2 px-2 py-1.5 rounded transition ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-hover"} ${checked && !disabled ? "bg-primary-soft" : ""}`}>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => !disabled && toggleMembre(uid)}
+                            disabled={disabled}
+                            className="accent-primary w-4 h-4"
+                          />
+                          <span className={`text-sm ${disabled ? "text-text-muted" : "text-text"}`}>{nom}</span>
+                          {alreadyInOther && (
+                            <span className="text-[10px] text-warning uppercase ml-auto">
+                              Déjà affecté
+                            </span>
+                          )}
+                          {!alreadyInOther && m.niveauRole && (
+                            <span className="text-[10px] text-text-muted uppercase ml-auto">
+                              {m.niveauRole}
+                            </span>
+                          )}
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+                {selectedMembres.length > 0 && (
+                  <p className="text-[10px] text-primary mt-1">
+                    {selectedMembres.length} sélectionné(s)
+                  </p>
+                )}
+              </div>
             )}
           </div>
 
           <DialogFooter className="gap-2 mt-2">
             <button
-              onClick={() => {
-                setModalAffectation(false);
-                setSelectedUser("");
-              }}
-              className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition text-white">
+              onClick={closeAffectationModal}
+              className="px-4 py-2 text-sm bg-hover hover:bg-active rounded-lg transition text-text">
               Annuler
             </button>
-            <button
-              onClick={handleAffecter}
-              disabled={loadingAffectation || !selectedUser}
-              className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg transition text-white font-medium">
-              {loadingAffectation ? "Affectation en cours…" : "Affecter"}
-            </button>
+            {editingAffectation ? (
+              <button
+                onClick={handleUpdateAffectation}
+                disabled={loadingAffectation || selectedMembres.length === 0}
+                className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg transition text-text font-medium">
+                {loadingAffectation ? "Enregistrement…" : "Enregistrer"}
+              </button>
+            ) : (
+              <button
+                onClick={handleAffecter}
+                disabled={loadingAffectation || !selectedEquipe || selectedMembres.length === 0}
+                className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg transition text-text font-medium">
+                {loadingAffectation ? "Affectation en cours…" : "Affecter"}
+              </button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

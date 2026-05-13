@@ -31,17 +31,17 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-// ── Constants ───────────────────────────────────────
+//  Constants 
 const PRIORITE_CLS = {
-  critique: "bg-red-500/20 text-red-400 border-red-500/40",
-  haute: "bg-orange-500/20 text-orange-400 border-orange-500/40",
-  normale: "bg-blue-500/20 text-blue-400 border-blue-500/40",
-  basse: "bg-gray-500/20 text-text-secondary border-gray-500/40",
+  critique: "bg-danger-soft text-danger border-danger/40",
+  haute: "bg-status-orange/20 text-status-orange border-status-orange/40",
+  normale: "bg-primary-soft text-primary border-primary/40",
+  basse: "bg-hover text-text-secondary border-border/40",
 };
 const STATUT_CLS = {
-  EN_COURS: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  DEPANNE: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-  CLOTURE: "bg-green-500/20 text-green-400 border-green-500/30",
+  EN_COURS: "bg-warning/20 text-warning border-warning/30",
+  DEPANNE: "bg-status-orange/20 text-status-orange border-status-orange/30",
+  CLOTURE: "bg-success-soft text-success border-success/30",
 };
 const STATUT_BORDER = {
   EN_COURS: "border-l-amber-500",
@@ -57,7 +57,7 @@ const TRANSITIONS = {
   EN_COURS: ["DEPANNE", "CLOTURE"],
 };
 
-// ── Composant Affectation enrichi ───────────────────
+//  Composant Affectation enrichi 
 function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
   const [equipes, setEquipes] = useState([]);
   const [soustraitants, setST] = useState([]);
@@ -203,7 +203,7 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
           idSousTraitant: soustraitantSelectionne,
           dateDebut: dateDebut || new Date().toISOString(),
         });
-        setSucces("✅ Sous-traitant affecté");
+        setSucces(" Sous-traitant affecté");
         setSoustraitantSelectionne("");
         setDateDebut("");
         onSuccess();
@@ -230,7 +230,7 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
           membres: sel.membres,
         });
       }
-      setSucces(`✅ ${selections.length} affectation(s) enregistrée(s)`);
+      setSucces(` ${selections.length} affectation(s) enregistrée(s)`);
       setSelections([]);
       setDateDebut("");
       if (prefillData && onCancelPrefill) onCancelPrefill();
@@ -245,12 +245,12 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {erreur && (
-        <div className="text-red-400 text-xs bg-red-500/10 p-3 rounded-lg border border-red-500/20 flex items-start gap-2">
+        <div className="text-danger text-xs bg-danger-soft p-3 rounded-lg border border-red-500/20 flex items-start gap-2">
           <X size={14} className="mt-0.5 shrink-0" /> {erreur}
         </div>
       )}
       {succes && (
-        <div className="text-green-400 text-xs bg-green-500/10 p-3 rounded-lg border border-green-500/20 flex items-start gap-2">
+        <div className="text-success text-xs bg-success-soft p-3 rounded-lg border border-green-500/20 flex items-start gap-2">
           <Check size={14} className="mt-0.5 shrink-0" /> {succes}
         </div>
       )}
@@ -264,7 +264,7 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
               ? "bg-purple-600 border-purple-500 text-text"
               : "bg-elevated border-border-subtle text-text-secondary hover:text-text"
           }`}>
-          👥 Équipe interne
+           Équipe interne
         </Button>
         <Button
           type="button"
@@ -274,13 +274,13 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
               ? "bg-amber-600 border-amber-500 text-text"
               : "bg-elevated border-border-subtle text-text-secondary hover:text-text"
           }`}>
-          🏢 Sous-traitant
+           Sous-traitant
         </Button>
       </div>
 
       {type === "interne" && (
         <>
-          {/* ── Sélection d'équipe et membres ── */}
+          {/*  Sélection d'équipe et membres  */}
           <div className="bg-surface rounded-lg border border-border p-4 space-y-3">
             <p className="text-xs text-text-secondary uppercase tracking-wider font-semibold">
               Sélectionner une équipe et ses techniciens
@@ -316,16 +316,16 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
                   return (
                     <label key={uid}
                       className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition border ${
-                        checked ? "bg-purple-500/10 border-purple-500/30" : "bg-[var(--color-bg)]/30 border-border/30 hover:bg-elevated/30"
+                        checked ? "bg-primary-soft border-primary/30" : "bg-[var(--color-bg)]/30 border-border/30 hover:bg-elevated/30"
                       }`}>
                       <input
                         type="checkbox"
                         checked={checked}
                         onChange={() => toggleMembre(uid)}
-                        className="accent-purple-500 w-4 h-4 shrink-0"
+                        className="accent-primary w-4 h-4 shrink-0"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className={`text-xs font-medium truncate ${checked ? "text-purple-300" : "text-text"}`}>{nom}</p>
+                        <p className={`text-xs font-medium truncate ${checked ? "text-primary" : "text-text"}`}>{nom}</p>
                         <p className="text-[10px] text-text-muted">{role}</p>
                       </div>
                     </label>
@@ -338,20 +338,20 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
               <button
                 type="button"
                 onClick={ajouterSelection}
-                className="w-full py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 border border-purple-500/30 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5">
+                className="w-full py-2 bg-purple-600/20 hover:bg-purple-600/30 text-primary border border-primary/30 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5">
                 <Plus size={14} /> Ajouter {membresSelectionnes.length} technicien(s) à l'affectation
               </button>
             )}
           </div>
 
-          {/* ── Récapitulatif des sélections ── */}
+          {/*  Récapitulatif des sélections  */}
           {selections.length > 0 && (
             <div className="bg-surface rounded-lg border border-border p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-text-secondary uppercase tracking-wider font-semibold flex items-center gap-1.5">
                   <Users size={12} /> Affectations préparées ({selections.length})
                 </p>
-                <button type="button" onClick={() => setSelections([])} className="text-[10px] text-text-muted hover:text-red-400 transition">
+                <button type="button" onClick={() => setSelections([])} className="text-[10px] text-text-muted hover:text-danger transition">
                   Tout effacer
                 </button>
               </div>
@@ -362,13 +362,13 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-xs font-semibold text-text">{sel.equipeLibelle}</p>
                       <button type="button" onClick={() => retirerSelection(sel.equipeId)}
-                        className="text-text-muted hover:text-red-400 transition p-0.5">
+                        className="text-text-muted hover:text-danger transition p-0.5">
                         <Trash2 size={12} />
                       </button>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {sel.membresDetails.map((m) => (
-                        <span key={m.id} className="text-[10px] bg-purple-500/10 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/20">
+                        <span key={m.id} className="text-[10px] bg-primary-soft text-primary px-2 py-0.5 rounded-full border border-primary/20">
                           {m.prenom} {m.nom}
                         </span>
                       ))}
@@ -413,7 +413,7 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
           <Button
             type="button"
             onClick={onCancelPrefill}
-            className="flex-1 py-2.5 bg-elevated hover:bg-gray-600 rounded-lg text-sm font-medium transition">
+            className="flex-1 py-2.5 bg-elevated hover:bg-active rounded-lg text-sm font-medium transition">
             Annuler
           </Button>
         )}
@@ -422,7 +422,7 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
           disabled={loading || (type === "interne" && selections.length === 0 && !prefillData)}
           className={`py-2.5 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition disabled:opacity-50 flex items-center justify-center gap-2 ${prefillData ? "flex-1" : "w-full"}`}>
           {loading ? (
-            <><span className="animate-spin">⟳</span> Enregistrement...</>
+            <><span className="animate-spin"></span> Enregistrement...</>
           ) : prefillData ? (
             <><Users size={16} /> Modifier l'affectation</>
           ) : (
@@ -434,7 +434,7 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
   );
 }
 
-// ── Composant principal ────────────────────────────
+//  Composant principal 
 export default function GestionOTs() {
   const navigate = useNavigate();
   const [ots, setOTs] = useState([]);
@@ -455,7 +455,7 @@ export default function GestionOTs() {
   const [estInterne, setEstInterne] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // ── Compte rendu enrichi ──
+  //  Compte rendu enrichi 
   const [rapport, setRapport] = useState({
     descriptionTravail: "",
     constatations: "",
@@ -488,11 +488,11 @@ export default function GestionOTs() {
         getOTs(params),
         getDemandes({ statut__in: "en_attente,rejetee_apres_validation" }),
       ]);
-      console.log("📊 Ots loaded from API:", o);
-      console.log("📊 Demandes loaded from API:", d);
+      console.log(" Ots loaded from API:", o);
+      console.log(" Demandes loaded from API:", d);
       const otsData = o.data.results || o.data;
       const demandesData = d.data.results || d.data;
-      console.log("📊 Demandes loaded from API:");
+      console.log(" Demandes loaded from API:");
       demandesData.forEach((dm) => {
         console.log(`  - ${dm.numero}:`, {
           nb_pieces_jointes: dm.nb_pieces_jointes,
@@ -580,25 +580,25 @@ export default function GestionOTs() {
   };
 
   const viewDemandeDetail = (demande) => {
-    console.log("📋 Viewing demande detail:", demande);
-    console.log("📁 pieces_jointes:", demande.pieces_jointes);
-    console.log("👤 signalement_detail:", demande.signalement_detail);
-    console.log("✅ validation_detail:", demande.validation_detail);
+    console.log(" Viewing demande detail:", demande);
+    console.log(" pieces_jointes:", demande.pieces_jointes);
+    console.log(" signalement_detail:", demande.signalement_detail);
+    console.log(" validation_detail:", demande.validation_detail);
     if (demande.pieces_jointes && demande.pieces_jointes.length > 0) {
       console.log(
-        "🎙️ Audio files found:",
+        " Audio files found:",
         demande.pieces_jointes.filter((p) =>
           p.typeFichier?.startsWith("audio"),
         ),
       );
     } else {
-      console.warn("⚠️ No pieces_jointes found in demande!");
+      console.warn(" No pieces_jointes found in demande!");
     }
     setDemandeDetail(demande);
   };
 
   const playAudio = (audioUrl, audioId) => {
-    console.log("🔊 Playing audio:", { audioUrl, audioId });
+    console.log(" Playing audio:", { audioUrl, audioId });
 
     if (currentPlayingAudio) {
       currentPlayingAudio.pause();
@@ -608,7 +608,7 @@ export default function GestionOTs() {
     const fullUrl = audioUrl.startsWith("http")
       ? audioUrl
       : `${window.location.origin}${audioUrl}`;
-    console.log("🔗 Full audio URL:", fullUrl);
+    console.log(" Full audio URL:", fullUrl);
 
     const audio = new Audio(fullUrl);
     setCurrentPlayingAudio(audio);
@@ -618,7 +618,7 @@ export default function GestionOTs() {
       setPlayingAudioId(null);
     });
     audio.addEventListener("error", (e) => {
-      console.error("❌ Audio error:", e, "URL was:", fullUrl);
+      console.error(" Audio error:", e, "URL was:", fullUrl);
       console.error(
         "Audio error code:",
         audio.error?.code,
@@ -627,7 +627,7 @@ export default function GestionOTs() {
     });
 
     audio.play().catch((err) => {
-      console.error("❌ Erreur lecture:", err);
+      console.error(" Erreur lecture:", err);
       console.error("Audio element error:", audio.error);
       setPlayingAudioId(null);
     });
@@ -648,7 +648,7 @@ export default function GestionOTs() {
     }
   };
 
-  // ── Compte rendu complet (depuis GestionOTs) ──
+  //  Compte rendu complet (depuis GestionOTs) 
   const handleCompteRendu = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -663,14 +663,14 @@ export default function GestionOTs() {
 
       // 2. Construire et envoyer le commentaire / compte rendu
       const compteRendu =
-        `📋 COMPTE RENDU INTERVENTION\n\n` +
-        `📝 Travaux réalisés:\n${rapport.descriptionTravail}\n\n` +
-        `🔍 Constatations:\n${rapport.constatations || "N/A"}\n\n` +
-        `🎯 Solution apportée:\n${rapport.solutionApportee}\n\n` +
+        ` COMPTE RENDU INTERVENTION\n\n` +
+        ` Travaux réalisés:\n${rapport.descriptionTravail}\n\n` +
+        ` Constatations:\n${rapport.constatations || "N/A"}\n\n` +
+        ` Solution apportée:\n${rapport.solutionApportee}\n\n` +
         (actifsCorriges.length > 0
-          ? `🔧 Actifs corrigés: ${actifsCorriges.map((a) => a.code).join(", ")}\n\n`
+          ? ` Actifs corrigés: ${actifsCorriges.map((a) => a.code).join(", ")}\n\n`
           : "") +
-        `⚙️ Cause racine: ${CATEGORIES_CAUSE[rapport.causeRacine]?.label || "Non identifiée"}`;
+        ` Cause racine: ${CATEGORIES_CAUSE[rapport.causeRacine]?.label || "Non identifiée"}`;
 
       await ajouterCommentaire(otSelectionne.id, compteRendu, true);
 
@@ -705,7 +705,7 @@ export default function GestionOTs() {
     }
   };
 
-  // ── Gestion actifs corrigés ──
+  //  Gestion actifs corrigés 
   const initCorrigeSelector = async () => {
     setCorrigeLoading(true);
     try {
@@ -757,11 +757,11 @@ export default function GestionOTs() {
   };
 
   const CATEGORIES_CAUSE = {
-    mecanique: { label: "Mécanique", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
-    electrique: { label: "Électrique", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
-    humain: { label: "Erreur humaine", color: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
-    externe: { label: "Facteur externe", color: "bg-red-500/20 text-red-400 border-red-500/30" },
-    autre: { label: "Autre", color: "bg-gray-500/20 text-text-secondary border-gray-500/30" },
+    mecanique: { label: "Mécanique", color: "bg-primary-soft text-primary border-primary/30" },
+    electrique: { label: "Électrique", color: "bg-warning/20 text-warning border-warning/30" },
+    humain: { label: "Erreur humaine", color: "bg-status-orange/20 text-status-orange border-status-orange/30" },
+    externe: { label: "Facteur externe", color: "bg-danger-soft text-danger border-danger/30" },
+    autre: { label: "Autre", color: "bg-hover text-text-secondary border-border/30" },
   };
 
   const otsTries = [...ots].sort((a, b) => {
@@ -771,7 +771,7 @@ export default function GestionOTs() {
 
   return (
     <div className="flex h-full text-text overflow-hidden">
-      {/* ── Liste principale ───────────────────────── */}
+      {/*  Liste principale  */}
       <div
         className={`flex flex-col ${otSelectionne ? "w-1/2" : "w-full"} transition-all duration-300 min-h-0 border-r border-border`}>
         <div className="p-6 pb-0 flex-shrink-0">
@@ -791,7 +791,7 @@ export default function GestionOTs() {
             </Button>
           </div>
 
-          {/* ── Tabs ── */}
+          {/*  Tabs  */}
           <div className="flex gap-1 mb-4 bg-surface/60 p-1 rounded-md">
             <button
               onClick={() => setOnglet("ots")}
@@ -806,7 +806,7 @@ export default function GestionOTs() {
                   className={`h-5 min-w-5 px-1 rounded-full text-xs flex items-center justify-center font-bold ${
                     onglet === "ots"
                       ? "bg-purple-600 text-text"
-                      : "bg-gray-600 text-text"
+                      : "bg-active text-text"
                   }`}>
                   {ots.length}
                 </span>
@@ -833,7 +833,7 @@ export default function GestionOTs() {
             <div className="flex gap-2 mb-4 ">
               {/* Filtre Statut */}
               <Select value={filtreStatut} onValueChange={setFiltreStatut}>
-                <SelectTrigger className="bg-surface text-text text-xs  focus:border-gray-500">
+                <SelectTrigger className="bg-surface text-text text-xs  focus:border-border-strong">
                   <SelectValue placeholder="Tous statuts" />
                 </SelectTrigger>
 
@@ -849,7 +849,7 @@ export default function GestionOTs() {
 
               {/* Filtre Priorité */}
               <Select value={filtrePriorite} onValueChange={setFiltrePriorite}>
-                <SelectTrigger className="bg-surface text-text text-xs  focus:border-gray-500">
+                <SelectTrigger className="bg-surface text-text text-xs  focus:border-border-strong">
                   <SelectValue placeholder="Toutes priorités" />
                 </SelectTrigger>
 
@@ -863,7 +863,7 @@ export default function GestionOTs() {
               </Select>
               <Button
                 onClick={charger}
-                className="bg-surface hover:bg-gray-600 px-3 py-2 rounded-md text-sm transition font-medium">
+                className="bg-surface hover:bg-active px-3 py-2 rounded-md text-sm transition font-medium">
                 ↺
               </Button>
             </div>
@@ -884,7 +884,7 @@ export default function GestionOTs() {
             <div className="space-y-2 mt-2 ">
               {otsTries.length === 0 ? (
                 <div className="text-center py-12 text-text-muted">
-                  <p className="text-3xl mb-2">📋</p>
+                  <p className="text-3xl mb-2"></p>
                   <p>Aucun OT trouvé</p>
                 </div>
               ) : (
@@ -900,40 +900,40 @@ export default function GestionOTs() {
                     }}
                     className={`p-4 rounded-xl border-l-4 border border-border cursor-pointer transition-all ${STATUT_BORDER[ot.statut]} ${
                       otSelectionne?.id === ot.id
-                        ? "bg-purple-500/10 ring-1 ring-purple-500/30 border-r-purple-500/30 border-t-purple-500/30 border-b-purple-500/30"
+                        ? "bg-primary-soft ring-1 ring-purple-500/30 border-r-purple-500/30 border-t-purple-500/30 border-b-purple-500/30"
                         : "bg-surface hover:bg-surface/80 hover:border-border-subtle pop-shadow"
                     }`}>
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-sm text-purple-300 font-semibold">
+                        <span className="font-mono text-sm text-primary font-semibold">
                           {ot.numero}
                         </span>
                         {ot.est_en_retard && (
                           <span
                             title="Cette intervention a dépassé l'échéance SLA"
-                            className="text-xs bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full border border-red-500/30 cursor-help">
-                            ⚠ Retard
+                            className="text-xs bg-danger-soft text-danger px-1.5 py-0.5 rounded-full border border-danger/30 cursor-help">
+                             Retard
                           </span>
                         )}
                         {ot.estBloquant && (
                           <span
                             title="Cette intervention bloque la production"
-                            className="text-xs bg-red-500/30 text-red-300 px-1.5 py-0.5 rounded-full border border-red-500/30 cursor-help">
-                            🔴 Bloquant
+                            className="text-xs bg-red-500/30 text-danger px-1.5 py-0.5 rounded-full border border-danger/30 cursor-help">
+                             Bloquant
                           </span>
                         )}
                         {ot.estSousTraite && (
                           <span
                             title="Intervention sous-traitée"
-                            className="text-xs bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full border border-amber-500/30 cursor-help">
-                            🏢 ST
+                            className="text-xs bg-warning/20 text-warning px-1.5 py-0.5 rounded-full border border-warning/30 cursor-help">
+                             ST
                           </span>
                         )}
                         {ot.rejetOperateur && (
                           <span
                             title="Rejeté par l'opérateur"
-                            className="text-xs bg-red-500/30 text-red-300 px-1.5 py-0.5 rounded-full border border-red-500/40 cursor-help animate-pulse">
-                            ❌ Rejet opérateur
+                            className="text-xs bg-red-500/30 text-danger px-1.5 py-0.5 rounded-full border border-danger/40 cursor-help animate-pulse">
+                             Rejet opérateur
                           </span>
                         )}
                       </div>
@@ -977,7 +977,7 @@ export default function GestionOTs() {
                       </div>
                       {ot.echeanceSLA && (
                         <span
-                          className={`text-xs whitespace-nowrap ${ot.est_en_retard ? "text-red-400 font-medium" : "text-text-muted"}`}>
+                          className={`text-xs whitespace-nowrap ${ot.est_en_retard ? "text-danger font-medium" : "text-text-muted"}`}>
                           SLA:{" "}
                           {new Date(ot.echeanceSLA).toLocaleString("fr-FR", {
                             hour: "2-digit",
@@ -994,7 +994,7 @@ export default function GestionOTs() {
             <div className="space-y-3 mt-2">
               {demandes.length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-4xl mb-3">✅</p>
+                  <p className="text-4xl mb-3"></p>
                   <p className="text-text-secondary text-sm">
                     Aucune demande en attente
                   </p>
@@ -1023,11 +1023,11 @@ export default function GestionOTs() {
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       className={`bg-surface border border-border border-l-4 border-l-blue-500 rounded-xl pop-shadow transition-all ${isExpanded ? "ring-1 ring-blue-500/30" : ""}`}>
-                      {/* ── Header toujours visible ── */}
+                      {/*  Header toujours visible  */}
                       <div className="p-4">
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-mono text-sm text-purple-300 font-semibold">
+                            <span className="font-mono text-sm text-primary font-semibold">
                               {d.numero}
                             </span>
                             <span
@@ -1035,8 +1035,8 @@ export default function GestionOTs() {
                               {d.urgence}
                             </span>
                             {d.nb_pieces_jointes > 0 && (
-                              <span className="text-xs text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-full border border-blue-500/20">
-                                📎 {d.nb_pieces_jointes}
+                              <span className="text-xs text-primary bg-primary-soft px-1.5 py-0.5 rounded-full border border-primary/20">
+                                 {d.nb_pieces_jointes}
                               </span>
                             )}
                           </div>
@@ -1050,13 +1050,13 @@ export default function GestionOTs() {
 
                         {/* Bannière rejet */}
                         {d.statut === "rejetee_apres_validation" && d.rejet_info && (
-                          <div className="mt-2 bg-red-500/10 border border-red-500/30 rounded-lg p-2.5">
-                            <p className="text-xs text-red-400 font-semibold flex items-center gap-1.5">
-                              <span>⚠️</span>
+                          <div className="mt-2 bg-danger-soft border border-danger/30 rounded-lg p-2.5">
+                            <p className="text-xs text-danger font-semibold flex items-center gap-1.5">
+                              <span></span>
                               Cette DI a été rejetée par l'opérateur ({d.rejet_info.count}x)
                             </p>
                             {d.rejet_info.motif && (
-                              <p className="text-[11px] text-red-300/80 mt-1">
+                              <p className="text-[11px] text-danger/80 mt-1">
                                 Motif : {d.rejet_info.motif}
                               </p>
                             )}
@@ -1081,14 +1081,14 @@ export default function GestionOTs() {
                           <p className="text-[11px] text-text-muted mt-0.5">
                             {d.actif_detail.chemin_hierarchique.map((h, i) => (
                               <span key={h.id}>
-                                <span className="text-text-secondary">{h.code}</span>
+                                <span className="text-text-secondary">{h.libelle}</span>
                                 {i < d.actif_detail.chemin_hierarchique.length - 1 && (
                                   <span className="mx-1 text-text-muted">›</span>
                                 )}
                               </span>
                             ))}
                             <span className="mx-1 text-text-muted">›</span>
-                            <span className="text-blue-400">{d.actif_detail.code}</span>
+                            <span className="text-primary">{d.actif_detail.libelle}</span>
                           </p>
                         )}
 
@@ -1099,13 +1099,13 @@ export default function GestionOTs() {
 
                         {/* Métadonnées */}
                         <div className="flex items-center gap-3 mt-2 text-[11px] text-text-muted">
-                          <span>🕐 {new Date(d.dateSignalement).toLocaleString("fr-FR")}</span>
+                          <span> {new Date(d.dateSignalement).toLocaleString("fr-FR")}</span>
                           {d.signalement_detail && (
-                            <span>👤 {d.signalement_detail.prenom} {d.signalement_detail.nom}</span>
+                            <span> {d.signalement_detail.prenom} {d.signalement_detail.nom}</span>
                           )}
                         </div>
 
-                        {/* ── Contenu expansible ── */}
+                        {/*  Contenu expansible  */}
                         {isExpanded && (
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
@@ -1170,14 +1170,14 @@ export default function GestionOTs() {
                                   {audioPieces.map((audio) => (
                                     <div
                                       key={audio.id}
-                                      className={`bg-blue-600/10 border border-blue-500/30 rounded-lg p-2.5 flex items-center gap-3 transition ${playingAudioId === audio.id ? "ring-1 ring-blue-400" : ""}`}>
+                                      className={`bg-blue-600/10 border border-primary/30 rounded-lg p-2.5 flex items-center gap-3 transition ${playingAudioId === audio.id ? "ring-1 ring-blue-400" : ""}`}>
                                       <button
                                         onClick={() => playAudio(audio.url, audio.id)}
                                         className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-text text-xs transition ${playingAudioId === audio.id ? "bg-blue-500 animate-pulse" : "bg-blue-600 hover:bg-blue-700"}`}>
-                                        {playingAudioId === audio.id ? "⏸" : "▶"}
+                                        {playingAudioId === audio.id ? "⏸" : ""}
                                       </button>
                                       <div className="flex-1 min-w-0">
-                                        <p className="text-xs text-blue-300 truncate">{audio.nomFichier}</p>
+                                        <p className="text-xs text-primary truncate">{audio.nomFichier}</p>
                                         <p className="text-[10px] text-text-muted">
                                           {new Date(audio.dateTeleversement).toLocaleString("fr-FR")}
                                         </p>
@@ -1187,7 +1187,7 @@ export default function GestionOTs() {
                                         download
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-text-muted hover:text-blue-400 transition">
+                                        className="text-text-muted hover:text-primary transition">
                                         <Download size={14} />
                                       </a>
                                     </div>
@@ -1221,14 +1221,14 @@ export default function GestionOTs() {
                               <button
                                 onClick={() => handleValider(d.id)}
                                 className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium transition text-text">
-                                ✓ Valider → Créer OT
+                                 Valider → Créer OT
                               </button>
                               <button
                                 onClick={() => {
                                   setModalRejet(d.id);
                                   setMotifRejet("");
                                 }}
-                                className="flex-1 py-2.5 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg text-sm font-medium border border-red-500/30 transition">
+                                className="flex-1 py-2.5 bg-red-600/20 hover:bg-red-600/40 text-danger rounded-lg text-sm font-medium border border-danger/30 transition">
                                 Rejeter
                               </button>
                             </div>
@@ -1240,7 +1240,7 @@ export default function GestionOTs() {
                           <div className="flex gap-2 mt-3">
                             <button
                               onClick={() => viewDemandeDetail(d)}
-                              className="flex-1 py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-lg text-sm font-medium border border-blue-500/30 transition">
+                              className="flex-1 py-2 bg-blue-600/20 hover:bg-blue-600/40 text-primary rounded-lg text-sm font-medium border border-primary/30 transition">
                               Voir détails
                             </button>
                             <button
@@ -1253,7 +1253,7 @@ export default function GestionOTs() {
                                 setModalRejet(d.id);
                                 setMotifRejet("");
                               }}
-                              className="flex-1 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg text-sm font-medium border border-red-500/30 transition">
+                              className="flex-1 py-2 bg-red-600/20 hover:bg-red-600/40 text-danger rounded-lg text-sm font-medium border border-danger/30 transition">
                               Rejeter
                             </button>
                           </div>
@@ -1268,7 +1268,7 @@ export default function GestionOTs() {
         </div>
       </div>
 
-      {/* ── Panneau latéral ────────────────────────── */}
+      {/*  Panneau latéral  */}
       <AnimatePresence>
         {otSelectionne && (
           <motion.div
@@ -1282,7 +1282,7 @@ export default function GestionOTs() {
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="font-mono text-lg text-purple-300 font-bold">
+                    <span className="font-mono text-lg text-primary font-bold">
                       {otSelectionne.numero}
                     </span>
                     <span
@@ -1290,8 +1290,8 @@ export default function GestionOTs() {
                       {STATUT_LABEL[otSelectionne.statut]}
                     </span>
                     {otSelectionne.est_en_retard && (
-                      <span className="text-xs bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full border border-red-500/30">
-                        ⚠ Retard
+                      <span className="text-xs bg-danger-soft text-danger px-1.5 py-0.5 rounded-full border border-danger/30">
+                         Retard
                       </span>
                     )}
                   </div>
@@ -1302,7 +1302,7 @@ export default function GestionOTs() {
                 <button
                   onClick={() => setOtSelectionne(null)}
                   className="text-text-muted hover:text-text ml-2 p-1 rounded-lg hover:bg-elevated transition">
-                  ✕
+                  
                 </button>
               </div>
 
@@ -1324,7 +1324,7 @@ export default function GestionOTs() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[var(--color-bg)]/30">
-              {/* ── Actions ── */}
+              {/*  Actions  */}
               {panneauOnglet === "actions" && (
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -1397,8 +1397,8 @@ export default function GestionOTs() {
                               <div className="flex flex-wrap gap-1 mt-1 items-center">
                                 {a.membres?.length > 0 ? (
                                   a.membres.map((m) => (
-                                    <span key={m.id} className="text-[9px] bg-purple-500/10 text-purple-300 px-1.5 py-0.5 rounded border border-purple-500/20 flex items-center gap-1">
-                                      <span className="w-3 h-3 rounded-full bg-purple-600/20 text-purple-400 flex items-center justify-center text-[7px] font-bold border border-purple-500/30">
+                                    <span key={m.id} className="text-[9px] bg-primary-soft text-primary px-1.5 py-0.5 rounded border border-primary/20 flex items-center gap-1">
+                                      <span className="w-3 h-3 rounded-full bg-purple-600/20 text-primary flex items-center justify-center text-[7px] font-bold border border-primary/30">
                                         {m.utilisateur_detail
                                           ? `${m.utilisateur_detail.prenom?.[0] || ""}${m.utilisateur_detail.nom?.[0] || ""}`.toUpperCase()
                                           : "?"}
@@ -1423,7 +1423,7 @@ export default function GestionOTs() {
                                         dateDebut: a.dateDebut,
                                       });
                                     }}
-                                    className="text-[9px] bg-green-500/10 text-green-400 px-1.5 py-0.5 rounded border border-green-500/30 hover:bg-green-500/20 transition flex items-center gap-0.5"
+                                    className="text-[9px] bg-success-soft text-success px-1.5 py-0.5 rounded border border-success/30 hover:bg-success-soft transition flex items-center gap-0.5"
                                     title="Ajouter un technicien">
                                     <Plus size={8} /> Ajouter
                                   </button>
@@ -1434,10 +1434,10 @@ export default function GestionOTs() {
                               <span
                                 className={`text-xs px-2 py-0.5 rounded-full border ${
                                   a.statut === "termine"
-                                    ? "bg-green-500/20 text-green-400 border-green-500/30"
+                                    ? "bg-success-soft text-success border-success/30"
                                     : a.statut === "en_cours"
-                                      ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
-                                      : "bg-gray-500/20 text-text-secondary border-gray-500/30"
+                                      ? "bg-warning/20 text-warning border-warning/30"
+                                      : "bg-hover text-text-secondary border-border/30"
                                 }`}>
                                 {a.statut}
                               </span>
@@ -1454,7 +1454,7 @@ export default function GestionOTs() {
                                         dateDebut: a.dateDebut,
                                       });
                                     }}
-                                    className="p-1 text-text-secondary hover:text-blue-400 hover:bg-blue-500/10 rounded transition"
+                                    className="p-1 text-text-secondary hover:text-primary hover:bg-primary-soft rounded transition"
                                     title="Modifier">
                                     <Wrench size={12} />
                                   </button>
@@ -1470,7 +1470,7 @@ export default function GestionOTs() {
                                         console.error(err);
                                       }
                                     }}
-                                    className="p-1 text-text-secondary hover:text-red-400 hover:bg-red-500/10 rounded transition"
+                                    className="p-1 text-text-secondary hover:text-danger hover:bg-danger-soft rounded transition"
                                     title="Supprimer">
                                     <Trash2 size={12} />
                                   </button>
@@ -1490,21 +1490,21 @@ export default function GestionOTs() {
                     </p>
                     <Button
                       onClick={() => setModalComment(true)}
-                      className="w-full py-2 bg-elevated hover:bg-gray-600 border border-border-subtle rounded-lg text-sm transition">
-                      ✏️ Saisir compte rendu
+                      className="w-full py-2 bg-elevated hover:bg-active border border-border-subtle rounded-lg text-sm transition">
+                       Saisir compte rendu
                     </Button>
                   </div>
 
                   {/* Voir détail */}
                   <Button
                     onClick={() => navigate(`/ordres/ots/${otSelectionne.id}`)}
-                    className="w-full py-2 bg-purple-600/20 hover:bg-purple-600/40 text-purple-400 rounded-xl text-sm border border-purple-500/30 transition">
+                    className="w-full py-2 bg-purple-600/20 hover:bg-purple-600/40 text-primary rounded-xl text-sm border border-primary/30 transition">
                     Voir détail complet →
                   </Button>
                 </motion.div>
               )}
 
-              {/* ── Infos ── */}
+              {/*  Infos  */}
               {panneauOnglet === "infos" && (
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -1566,7 +1566,7 @@ export default function GestionOTs() {
                 </motion.div>
               )}
 
-              {/* ── Historique ── */}
+              {/*  Historique  */}
               {panneauOnglet === "historique" && (
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -1616,7 +1616,7 @@ export default function GestionOTs() {
         )}
       </AnimatePresence>
 
-      {/* ── Modal changer statut ── */}
+      {/*  Modal changer statut  */}
       {modalStatut && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-[var(--color-bg)] rounded-2xl border border-border p-6 w-full max-w-sm shadow-2xl">
@@ -1637,12 +1637,12 @@ export default function GestionOTs() {
               value={motifStatut}
               onChange={(e) => setMotifStatut(e.target.value)}
               placeholder="Décrivez les raisons du changement..."
-              className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none mb-4 resize-none h-24 focus:border-purple-500"
+              className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none mb-4 resize-none h-24 focus:border-primary"
             />
             <div className="flex gap-3 justify-end">
               <Button
                 onClick={() => setModalStatut(false)}
-                className="px-4 py-2 text-sm bg-elevated hover:bg-gray-600 border border-border-subtle rounded-lg transition text-text">
+                className="px-4 py-2 text-sm bg-elevated hover:bg-active border border-border-subtle rounded-lg transition text-text">
                 Annuler
               </Button>
               <Button
@@ -1656,7 +1656,7 @@ export default function GestionOTs() {
         </div>
       )}
 
-      {/* ── Modal rejet DI ── */}
+      {/*  Modal rejet DI  */}
       {modalRejet && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-[var(--color-bg)] rounded-2xl border border-border p-6 w-full max-w-sm shadow-2xl">
@@ -1666,12 +1666,12 @@ export default function GestionOTs() {
               value={motifRejet}
               onChange={(e) => setMotifRejet(e.target.value)}
               placeholder="Expliquez pourquoi cette demande est rejetée..."
-              className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none mb-4 resize-none h-24 focus:border-red-500"
+              className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none mb-4 resize-none h-24 focus:border-danger"
             />
             <div className="flex gap-3 justify-end">
               <Button
                 onClick={() => setModalRejet(null)}
-                className="px-4 py-2 text-sm bg-elevated hover:bg-gray-600 border border-border-subtle rounded-lg transition text-text">
+                className="px-4 py-2 text-sm bg-elevated hover:bg-active border border-border-subtle rounded-lg transition text-text">
                 Annuler
               </Button>
               <Button
@@ -1684,32 +1684,32 @@ export default function GestionOTs() {
         </div>
       )}
 
-      {/* ── Modal compte rendu enrichi ── */}
+      {/*  Modal compte rendu enrichi  */}
       {modalComment && (
         <div className="fixed inset-0 bg-black/60 flex items-start justify-center z-50 py-8 overflow-y-auto">
           <div className="bg-[var(--color-bg)] rounded-2xl border border-border p-6 w-full max-w-2xl shadow-2xl my-auto">
-            <h2 className="text-lg font-semibold mb-1">📋 Compte rendu d'intervention</h2>
+            <h2 className="text-lg font-semibold mb-1"> Compte rendu d'intervention</h2>
             <p className="text-text-secondary text-sm mb-4">{otSelectionne?.numero} — {otSelectionne?.actif_detail?.code}</p>
 
             <form onSubmit={handleCompteRendu} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
               {/* Actifs corrigés */}
               <div className="bg-surface rounded-xl border border-border p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-semibold text-teal-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <h3 className="text-xs font-semibold text-status-cyan uppercase tracking-wider flex items-center gap-1.5">
                     <CheckCircle size={12} /> Actifs corrigés
                   </h3>
                   <button type="button"
                     onClick={() => { setShowActifCorrigeSelector((s) => !s); if (!showActifCorrigeSelector) initCorrigeSelector(); }}
-                    className="text-[10px] flex items-center gap-1 text-teal-400 hover:text-teal-300 border border-teal-500/30 bg-teal-500/10 px-2 py-1 rounded-lg transition">
+                    className="text-[10px] flex items-center gap-1 text-status-cyan hover:text-status-cyan border border-status-cyan/30 bg-status-cyan/10 px-2 py-1 rounded-lg transition">
                     <Plus size={10} /> {showActifCorrigeSelector ? "Annuler" : "Ajouter"}
                   </button>
                 </div>
                 {actifsCorriges.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-2">
                     {actifsCorriges.map((a) => (
-                      <span key={a.id} className="text-[10px] bg-teal-500/10 text-teal-300 px-2 py-0.5 rounded-full border border-teal-500/20 flex items-center gap-1">
+                      <span key={a.id} className="text-[10px] bg-status-cyan/10 text-status-cyan px-2 py-0.5 rounded-full border border-status-cyan/20 flex items-center gap-1">
                         <CheckCircle size={8} /> {a.code}
-                        <button type="button" onClick={() => retirerActifCorrige(a.id)} className="text-teal-400 hover:text-red-400 ml-0.5"><Trash2 size={8} /></button>
+                        <button type="button" onClick={() => retirerActifCorrige(a.id)} className="text-status-cyan hover:text-danger ml-0.5"><Trash2 size={8} /></button>
                       </span>
                     ))}
                   </div>
@@ -1731,7 +1731,7 @@ export default function GestionOTs() {
                                 <select
                                   value={corrigeSelectionPath[levelIndex]?.id || ""}
                                   onChange={(e) => handleCorrigeSelectAtLevel(levelIndex, e.target.value)}
-                                  className="w-full bg-elevated text-text rounded-lg px-2 py-1.5 text-xs border border-border-subtle outline-none focus:border-teal-500"
+                                  className="w-full bg-elevated text-text rounded-lg px-2 py-1.5 text-xs border border-border-subtle outline-none focus:border-status-cyan"
                                 >
                                   <option value="">Sélectionner...</option>
                                   {options.map((a) => (
@@ -1759,32 +1759,32 @@ export default function GestionOTs() {
 
               {/* Travaux réalisés */}
               <div>
-                <Label className="text-xs text-text-secondary mb-1 flex items-center gap-1"><Wrench size={10} className="text-purple-400" /> Travaux réalisés *</Label>
+                <Label className="text-xs text-text-secondary mb-1 flex items-center gap-1"><Wrench size={10} className="text-primary" /> Travaux réalisés *</Label>
                 <Textarea
                   value={rapport.descriptionTravail}
                   onChange={(e) => setRapport((r) => ({ ...r, descriptionTravail: e.target.value }))}
                   placeholder="Détaillez les actions effectuées..."
                   rows={3}
-                  className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-purple-500 resize-none"
+                  className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-primary resize-none"
                   required
                 />
               </div>
 
               {/* Constatations */}
               <div>
-                <Label className="text-xs text-text-secondary mb-1 flex items-center gap-1"><AlertTriangle size={10} className="text-blue-400" /> Constatations</Label>
+                <Label className="text-xs text-text-secondary mb-1 flex items-center gap-1"><AlertTriangle size={10} className="text-primary" /> Constatations</Label>
                 <Textarea
                   value={rapport.constatations}
                   onChange={(e) => setRapport((r) => ({ ...r, constatations: e.target.value }))}
                   placeholder="État avant/après, observations..."
                   rows={2}
-                  className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-blue-500 resize-none"
+                  className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-primary resize-none"
                 />
               </div>
 
               {/* Cause racine */}
               <div>
-                <Label className="text-xs text-text-secondary mb-1.5">⚙️ Cause racine</Label>
+                <Label className="text-xs text-text-secondary mb-1.5"> Cause racine</Label>
                 <div className="grid grid-cols-3 md:grid-cols-5 gap-1.5">
                   {Object.entries(CATEGORIES_CAUSE).map(([k, v]) => (
                     <button
@@ -1792,7 +1792,7 @@ export default function GestionOTs() {
                       type="button"
                       onClick={() => setRapport((r) => ({ ...r, causeRacine: k }))}
                       className={`py-1.5 px-2 rounded-lg text-[10px] font-medium transition border ${
-                        rapport.causeRacine === k ? v.color + " border-opacity-100" : "bg-elevated border-border-subtle text-text-secondary hover:text-gray-200"
+                        rapport.causeRacine === k ? v.color + " border-opacity-100" : "bg-elevated border-border-subtle text-text-secondary hover:text-text"
                       }`}>
                       {v.label}
                     </button>
@@ -1802,35 +1802,35 @@ export default function GestionOTs() {
 
               {/* Solution apportée */}
               <div>
-                <Label className="text-xs text-text-secondary mb-1 flex items-center gap-1"><CheckCircle size={10} className="text-green-400" /> Solution apportée *</Label>
+                <Label className="text-xs text-text-secondary mb-1 flex items-center gap-1"><CheckCircle size={10} className="text-success" /> Solution apportée *</Label>
                 <Textarea
                   value={rapport.solutionApportee}
                   onChange={(e) => setRapport((r) => ({ ...r, solutionApportee: e.target.value }))}
                   placeholder="Résumé de la solution définitive..."
                   rows={2}
-                  className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-green-500 resize-none"
+                  className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-success resize-none"
                   required
                 />
               </div>
 
               {/* État final */}
               <div className="bg-surface rounded-xl border border-border p-3">
-                <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-2">🏁 État final</p>
+                <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-2"> État final</p>
                 <div className="space-y-2">
                   <label className="flex items-start gap-2 p-2 rounded-lg border border-green-600/30 bg-green-600/10 cursor-pointer hover:bg-green-600/20 transition"
                     onClick={() => setRapport((r) => ({ ...r, estCloture: true, typeCloture: "corrige" }))}>
                     <input type="radio" name="etatFinal" checked={rapport.estCloture && rapport.typeCloture === "corrige"} onChange={() => {}} className="mt-0.5 accent-green-500" />
                     <div>
-                      <p className="text-xs font-medium text-green-300">Réparation définitive</p>
-                      <p className="text-[10px] text-green-400/80">Clôturer l'OT — équipement réparé</p>
+                      <p className="text-xs font-medium text-success">Réparation définitive</p>
+                      <p className="text-[10px] text-success/80">Clôturer l'OT — équipement réparé</p>
                     </div>
                   </label>
                   <label className="flex items-start gap-2 p-2 rounded-lg border border-orange-600/30 bg-orange-600/10 cursor-pointer hover:bg-orange-600/20 transition"
                     onClick={() => setRapport((r) => ({ ...r, estCloture: true, typeCloture: "depanne" }))}>
                     <input type="radio" name="etatFinal" checked={rapport.estCloture && rapport.typeCloture === "depanne"} onChange={() => {}} className="mt-0.5 accent-orange-500" />
                     <div>
-                      <p className="text-xs font-medium text-orange-300">Dépannage temporaire</p>
-                      <p className="text-[10px] text-orange-400/80">Marquer dépanné — intervention ultérieure nécessaire</p>
+                      <p className="text-xs font-medium text-status-orange">Dépannage temporaire</p>
+                      <p className="text-[10px] text-status-orange/80">Marquer dépanné — intervention ultérieure nécessaire</p>
                     </div>
                   </label>
                   <label className="flex items-start gap-2 p-2 rounded-lg border border-border-subtle/30 bg-elevated/30 cursor-pointer hover:bg-elevated/50 transition"
@@ -1849,7 +1849,7 @@ export default function GestionOTs() {
                 <Button
                   type="button"
                   onClick={() => setModalComment(false)}
-                  className="px-4 py-2 text-sm bg-elevated hover:bg-gray-600 border border-border-subtle rounded-lg transition text-text">
+                  className="px-4 py-2 text-sm bg-elevated hover:bg-active border border-border-subtle rounded-lg transition text-text">
                   Annuler
                 </Button>
                 <Button
@@ -1864,13 +1864,13 @@ export default function GestionOTs() {
         </div>
       )}
 
-      {/* ── Modal Affectation Automatique (après création OT) ── */}
+      {/*  Modal Affectation Automatique (après création OT)  */}
       {modalAffectationAuto && otAffectationAuto && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-[var(--color-bg)] rounded-2xl border border-border p-6 w-full max-w-md shadow-2xl">
-            <h2 className="text-lg font-semibold mb-1">✅ Nouvel OT créé</h2>
+            <h2 className="text-lg font-semibold mb-1"> Nouvel OT créé</h2>
             <p className="text-text-secondary text-sm mb-4">
-              <span className="font-mono text-purple-300">
+              <span className="font-mono text-primary">
                 {otAffectationAuto.numero}
               </span>{" "}
               - {otAffectationAuto.actif_detail?.code}
@@ -1887,14 +1887,14 @@ export default function GestionOTs() {
             />
             <Button
               onClick={() => setModalAffectationAuto(false)}
-              className="w-full mt-3 px-4 py-2 text-sm bg-elevated hover:bg-gray-600 rounded-lg transition text-text">
+              className="w-full mt-3 px-4 py-2 text-sm bg-elevated hover:bg-active rounded-lg transition text-text">
               Ignorer pour maintenant
             </Button>
           </div>
         </div>
       )}
 
-      {/* ── Modal Détails Demande ── */}
+      {/*  Modal Détails Demande  */}
       {demandeDetail && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-surface rounded-xl border border-border max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -1904,6 +1904,11 @@ export default function GestionOTs() {
                 <h2 className="text-2xl font-bold text-text">
                   {demandeDetail.numero}
                 </h2>
+                {demandeDetail.titre && (
+                  <p className="text-base font-semibold text-text mt-1">
+                    {demandeDetail.titre}
+                  </p>
+                )}
                 <p className="text-text-secondary text-sm mt-1">
                   {demandeDetail.actif_detail?.libelle}
                 </p>
@@ -1920,7 +1925,7 @@ export default function GestionOTs() {
               {/* Historique Audit */}
               <div className="bg-elevated/30 rounded-lg p-4 border border-border-subtle">
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="text-lg">📋</span>
+                  <span className="text-lg"></span>
                   <p className="text-sm font-bold text-text uppercase tracking-wider">
                     Historique Audit
                   </p>
@@ -1929,10 +1934,10 @@ export default function GestionOTs() {
                   {demandeDetail.signalement_detail && (
                     <div className="flex items-start gap-3">
                       <span className="text-text-secondary min-w-fit">
-                        📝 Créée par:
+                         Créée par:
                       </span>
                       <div>
-                        <p className="text-gray-200 font-medium">
+                        <p className="text-text font-medium">
                           {demandeDetail.signalement_detail.prenom}{" "}
                           {demandeDetail.signalement_detail.nom}
                         </p>
@@ -1947,10 +1952,10 @@ export default function GestionOTs() {
                   {demandeDetail.validation_detail && (
                     <div className="flex items-start gap-3 pt-2 border-t border-border-subtle">
                       <span className="text-text-secondary min-w-fit">
-                        ✅ OT créé par:
+                         OT créé par:
                       </span>
                       <div>
-                        <p className="text-gray-200 font-medium">
+                        <p className="text-text font-medium">
                           {demandeDetail.validation_detail.prenom}{" "}
                           {demandeDetail.validation_detail.nom}
                         </p>
@@ -1999,11 +2004,11 @@ export default function GestionOTs() {
                   <p
                     className={`text-lg font-bold ${
                       demandeDetail.urgence === "critique"
-                        ? "text-red-400"
+                        ? "text-danger"
                         : demandeDetail.urgence === "haute"
-                          ? "text-orange-400"
+                          ? "text-status-orange"
                           : demandeDetail.urgence === "normale"
-                            ? "text-blue-400"
+                            ? "text-primary"
                             : "text-text-secondary"
                     }`}>
                     {demandeDetail.urgence?.toUpperCase()}
@@ -2022,11 +2027,11 @@ export default function GestionOTs() {
               </div>
 
               {/* Équipement */}
-              <div className="bg-blue-500/10 rounded-lg p-4 border border-blue-500/30">
-                <p className="text-xs text-blue-400 uppercase font-semibold mb-2">
+              <div className="bg-primary-soft rounded-lg p-4 border border-primary/30">
+                <p className="text-xs text-primary uppercase font-semibold mb-2">
                   Équipement
                 </p>
-                <p className="text-sm font-mono text-blue-300">
+                <p className="text-sm font-mono text-primary">
                   {demandeDetail.actif_detail?.code}
                 </p>
                 <p className="text-sm text-text">
@@ -2038,8 +2043,8 @@ export default function GestionOTs() {
               <HierarchyPath actifDetail={demandeDetail.actif_detail} />
 
               {/* Description */}
-              <div className="bg-purple-500/10 rounded-lg p-4 border border-purple-500/30">
-                <p className="text-xs text-purple-400 uppercase font-semibold mb-2">
+              <div className="bg-primary-soft rounded-lg p-4 border border-primary/30">
+                <p className="text-xs text-primary uppercase font-semibold mb-2">
                   Description du problème
                 </p>
                 <p className="text-sm text-text leading-relaxed">
@@ -2104,7 +2109,7 @@ export default function GestionOTs() {
                               <FileText size={14} className="shrink-0 text-text-muted" />
                               <span className="text-xs text-text flex-1 truncate">{f.nomFichier}</span>
                               <a href={f.url} download target="_blank" rel="noopener noreferrer"
-                                className="text-purple-400 text-xs flex items-center gap-1 shrink-0 hover:underline">
+                                className="text-primary text-xs flex items-center gap-1 shrink-0 hover:underline">
                                 <Download size={12} /> Télécharger
                               </a>
                             </div>
@@ -2120,7 +2125,7 @@ export default function GestionOTs() {
             <div className="sticky bottom-0 bg-surface border-t border-border p-6 flex gap-3">
               <Button
                 onClick={() => setDemandeDetail(null)}
-                className="flex-1 py-2 bg-elevated hover:bg-gray-600 rounded-lg text-sm font-medium transition text-text">
+                className="flex-1 py-2 bg-elevated hover:bg-active rounded-lg text-sm font-medium transition text-text">
                 Fermer
               </Button>
               <Button
@@ -2129,7 +2134,7 @@ export default function GestionOTs() {
                   setDemandeDetail(null);
                 }}
                 className="flex-1 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium transition text-text">
-                ✓ Valider
+                 Valider
               </Button>
             </div>
           </div>

@@ -39,7 +39,7 @@ import {
 function FieldError({ name, errors }) {
   if (!errors[name]) return null;
   return (
-    <p className="text-red-700 dark:text-red-400 text-xs mt-1">
+    <p className="text-red-700 dark:text-danger text-xs mt-1">
       {errors[name]}
     </p>
   );
@@ -131,8 +131,8 @@ function AddAppartenanceModal({ onClose, onSaved }) {
       <form onSubmit={handleSubmit} className="space-y-3">
         {/* Erreur globale */}
         {errors.__global__ && (
-          <div className="bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded-lg px-3 py-2">
-            <p className="text-red-700 dark:text-red-400 text-xs">
+          <div className="bg-red-100 dark:bg-danger-soft border border-red-300 dark:border-danger/30 rounded-lg px-3 py-2">
+            <p className="text-red-700 dark:text-danger text-xs">
               {errors.__global__}
             </p>
           </div>
@@ -428,7 +428,7 @@ export default function Appartenances() {
                   </td>
                   <td className="px-4 py-3">
                     {a.estPrincipale ? (
-                      <span className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/10 px-2 py-0.5 rounded-full w-fit">
+                      <span className="flex items-center gap-1 text-xs text-amber-700 dark:text-warning bg-amber-100 dark:bg-warning/10 px-2 py-0.5 rounded-full w-fit">
                         <Star size={10} fill="currentColor" /> Principale
                       </span>
                     ) : (
@@ -442,7 +442,7 @@ export default function Appartenances() {
                       <AlertDialogTrigger asChild>
                         <Button
                           variant="ghost"
-                          className="rounded hover:bg-red-100 dark:hover:bg-red-500/10 text-text-muted hover:text-danger transition-colors">
+                          className="rounded hover:bg-red-100 dark:hover:bg-danger-soft text-text-muted hover:text-danger transition-colors">
                           <Trash2 size={14} />
                         </Button>
                       </AlertDialogTrigger>

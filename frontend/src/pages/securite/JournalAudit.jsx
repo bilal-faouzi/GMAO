@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { getJournalAuditv2, getUtilisateurs } from "@/services/securiteService";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+//  Constants 
 
 const ACTION_OPTIONS = [
   {
@@ -95,7 +95,7 @@ const ALL_USERS = "__ALL_USERS__";
 const ALL_ACTIONS = "__ALL_ACTIONS__";
 const ALL_MODULES = "__ALL_MODULES__";
 
-// ─── ActionBadge ──────────────────────────────────────────────────────────────
+//  ActionBadge 
 
 function ActionBadge({ action }) {
   const opt = ACTION_OPTIONS.find((a) => a.value === action);
@@ -118,7 +118,7 @@ function ActionBadge({ action }) {
   );
 }
 
-// ─── UserCell ─────────────────────────────────────────────────────────────────
+//  UserCell 
 
 function UserCell({ entry }) {
   const display =
@@ -163,7 +163,7 @@ function UserCell({ entry }) {
   );
 }
 
-// ─── Page principale ──────────────────────────────────────────────────────────
+//  Page principale 
 
 export default function JournalAudit() {
   const [entries, setEntries] = useState([]);
@@ -181,7 +181,7 @@ export default function JournalAudit() {
   const [dateFin, setDateFin] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
-  // ── Charger la liste complète des utilisateurs pour le Select ──────────────
+  //  Charger la liste complète des utilisateurs pour le Select 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -194,7 +194,7 @@ export default function JournalAudit() {
     fetchUsers();
   }, []);
 
-  // ── Charger l'audit — filterUtilisateur est maintenant dans les deps ────────
+  //  Charger l'audit — filterUtilisateur est maintenant dans les deps 
   const fetchAudit = useCallback(async () => {
     setLoading(true);
     try {
@@ -231,7 +231,7 @@ export default function JournalAudit() {
     return () => clearTimeout(t);
   }, [fetchAudit]);
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  //  Helpers 
   const hasFilters = !!(
     filterUtilisateur ||
     filterAction ||
@@ -324,7 +324,7 @@ export default function JournalAudit() {
 
           {hasFilters && (
             <Button className="pill" onClick={resetFilters}>
-              ✕ Effacer
+               Effacer
             </Button>
           )}
 
@@ -339,7 +339,7 @@ export default function JournalAudit() {
 
         {showFilters && (
           <div className="filters-exp">
-            {/* ── Filtre Utilisateur ── */}
+            {/*  Filtre Utilisateur  */}
             <Select
               value={filterUtilisateur === "" ? ALL_USERS : filterUtilisateur}
               onValueChange={(value) => {
@@ -368,7 +368,7 @@ export default function JournalAudit() {
               </SelectContent>
             </Select>
 
-            {/* ── Filtre Action ── */}
+            {/*  Filtre Action  */}
             <Select
               value={filterAction === "" ? ALL_ACTIONS : filterAction}
               onValueChange={(value) => {
@@ -388,7 +388,7 @@ export default function JournalAudit() {
               </SelectContent>
             </Select>
 
-            {/* ── Filtre Module ── */}
+            {/*  Filtre Module  */}
             <Select
               value={filterModule === "" ? ALL_MODULES : filterModule}
               onValueChange={(value) => {
@@ -408,7 +408,7 @@ export default function JournalAudit() {
               </SelectContent>
             </Select>
 
-            {/* ── Dates ── */}
+            {/*  Dates  */}
             <Input
               type="date"
               className="sel-mini"

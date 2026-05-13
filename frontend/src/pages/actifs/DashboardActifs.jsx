@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getDashboard } from "../../services/actifService";
 import { Plus, ArrowRight, Package, BarChart2, Activity } from "lucide-react";
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+//  Config 
 
 const STATUT_CONFIG = {
   actif: {

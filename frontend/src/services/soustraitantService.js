@@ -1,6 +1,6 @@
 import api from "./api";
 
-// ─── Sous-Traitants ──────────────────────────────────────────────────────────
+//  Sous-Traitants 
 
 export const getSousTraitants = (filters = {}) => {
   const params = new URLSearchParams(filters).toString();
@@ -18,7 +18,7 @@ export const updateSousTraitant = (id, data) =>
 export const deleteSousTraitant = (id) =>
   api.delete(`/v1/soustraitants/${id}/`);
 
-// ─── Spécialités ─────────────────────────────────────────────────────────────
+//  Spécialités 
 
 export const assignerSpecialite = (id, idSpecialite) =>
   api.post(`/v1/soustraitants/${id}/specialites/`, { idSpecialite });
@@ -26,7 +26,7 @@ export const assignerSpecialite = (id, idSpecialite) =>
 export const retirerSpecialite = (id, idSpecialite) =>
   api.delete(`/v1/soustraitants/${id}/specialites/${idSpecialite}/`);
 
-// ─── Actions ─────────────────────────────────────────────────────────────────
+//  Actions 
 
 export const changerStatut = (id, statut) =>
   api.post(`/v1/soustraitants/${id}/changer_statut/`, { statut });

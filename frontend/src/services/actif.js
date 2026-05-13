@@ -1,6 +1,6 @@
 import api from "./api";
 
-// ─── Actifs ─────────────────────────────────────────────────────
+//  Actifs 
 export const getActifs = (params = {}) => api.get("/v1/actifs/", { params });
 
 export const createActif = (data) => api.post("/v1/actifs/", data);
@@ -15,7 +15,7 @@ export const patchActif = (actifId, data) =>
 
 export const deleteActif = (actifId) => api.delete(`/v1/actifs/${actifId}/`);
 
-// ─── Actions métier ─────────────────────────────────────────────
+//  Actions métier 
 export const changerStatutActif = (actifId, nouveauStatut) =>
   api.post(`/v1/actifs/${actifId}/changer-statut/`, { nouveauStatut });
 
@@ -28,7 +28,7 @@ export const getHistoriqueActif = (actifId, params = {}) =>
 export const getActifsArborescence = (params = {}) =>
   api.get("/v1/actifs/arborescence/", { params });
 
-// ─── Historique statuts ─────────────────────────────────────────
+//  Historique statuts 
 export const getHistoriqueStatuts = (params = {}) =>
   api.get("/v1/historique-statuts/", { params });
 

@@ -14,7 +14,7 @@ import {
 } from "../../services/organisationService";
 import { ArrowLeft, Save, X } from "lucide-react";
 
-// ─── Constantes ───────────────────────────────────────────────────────────────
+//  Constantes 
 
 const STATUTS = [
   { value: "actif", label: "Actif" },
@@ -40,7 +40,7 @@ const initialFormState = {
   estActif: true,
 };
 
-// ─── Field ────────────────────────────────────────────────────────────────────
+//  Field 
 
 function Field({
   label,
@@ -91,7 +91,7 @@ function Field({
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+//  Main 
 
 export default function FormulaireActif() {
   const { id } = useParams();

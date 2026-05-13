@@ -114,7 +114,7 @@ export default function ActifsRacines() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // ── État du dialogue de confirmation ──────────────────────────────────────
+  //  État du dialogue de confirmation 
   const [deleteDialog, setDeleteDialog] = useState({
     open: false,
     id: null,
@@ -369,7 +369,7 @@ export default function ActifsRacines() {
         </div>
       )}
 
-      {/* ── Dialogue de confirmation de suppression ───────────────────────── */}
+      {/*  Dialogue de confirmation de suppression  */}
       <AlertDialog
         open={deleteDialog.open}
         onOpenChange={(open) => setDeleteDialog((d) => ({ ...d, open }))}>

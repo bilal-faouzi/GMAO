@@ -124,7 +124,7 @@ export function RoleManager({ userId, onRolesChange }) {
         </div>
       )}
 
-      {/* ── Rôles assignés ── */}
+      {/*  Rôles assignés  */}
       <div>
         <p
           style={{
@@ -207,7 +207,7 @@ export function RoleManager({ userId, onRolesChange }) {
         )}
       </div>
 
-      {/* ── Rôles disponibles ── */}
+      {/*  Rôles disponibles  */}
       {availableRoles.length > 0 && (
         <div>
           <p

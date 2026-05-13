@@ -51,20 +51,20 @@ const labelCls = {
  *   onAppartenanceChange {Function}   — callback après chaque modification
  */
 export function AppartenanceManager({ userId, onAppartenanceChange }) {
-  // ── Data ──────────────────────────────────────────────────────
+  //  Data 
   const [appartenances, setAppartenances] = useState([]);
   const [societes, setSocietes] = useState([]);
   const [sites, setSites] = useState([]);
   const [secteurs, setSecteurs] = useState([]);
   const [unites, setUnites] = useState([]);
 
-  // ── UI state ──────────────────────────────────────────────────
+  //  UI state 
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
 
-  // ── Form ──────────────────────────────────────────────────────
+  //  Form 
   const [form, setForm] = useState({
     societe: "",
     site: "",
@@ -75,7 +75,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
 
   const { errors, setApiErrors, clearErrors } = useFormErrors();
 
-  // ── Load appartenances ────────────────────────────────────────
+  //  Load appartenances 
   const loadAppartenances = async () => {
     try {
       const res = await getAppartenances({ utilisateur: userId });
@@ -85,7 +85,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
     }
   };
 
-  // ── Initial load ──────────────────────────────────────────────
+  //  Initial load 
   useEffect(() => {
     if (!userId) return;
     const init = async () => {
@@ -106,7 +106,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
     init();
   }, [userId]);
 
-  // ── Cascading selects ─────────────────────────────────────────
+  //  Cascading selects 
   useEffect(() => {
     if (!form.societe) {
       setSites([]);
@@ -143,7 +143,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
     );
   }, [form.secteur]);
 
-  // ── Add ───────────────────────────────────────────────────────
+  //  Add 
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!form.societe || !form.site) return;
@@ -175,7 +175,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
     }
   };
 
-  // ── Delete ────────────────────────────────────────────────────
+  //  Delete 
   const handleDelete = async (id) => {
     setPendingDelete(id);
     try {
@@ -189,7 +189,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
     }
   };
 
-  // ── Helpers ───────────────────────────────────────────────────
+  //  Helpers 
   const resetForm = () => {
     setForm({
       societe: "",
@@ -202,7 +202,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
     setShowForm(false);
   };
 
-  // ── Render ────────────────────────────────────────────────────
+  //  Render 
   if (loading) {
     return (
       <div
@@ -232,7 +232,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
         gap: 16,
         paddingTop: 8,
       }}>
-      {/* ── Liste existante ── */}
+      {/*  Liste existante  */}
       {appartenances.length === 0 ? (
         <p
           style={{
@@ -369,7 +369,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
         </div>
       )}
 
-      {/* ── Formulaire d'ajout ── */}
+      {/*  Formulaire d'ajout  */}
       {showForm ? (
         <form
           onSubmit={handleAdd}

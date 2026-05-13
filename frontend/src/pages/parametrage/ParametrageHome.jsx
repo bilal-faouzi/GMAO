@@ -16,8 +16,8 @@ const categories = [
     title: "Actifs",
     description: "Types, statuts, catégories et classifications des actifs",
     icon: Package,
-    color: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-    border: "border-blue-200 dark:border-blue-500/20",
+    color: "bg-primary-soft text-blue-600 dark:text-primary",
+    border: "border-blue-200 dark:border-primary/20",
     hover: "hover:border-blue-400 dark:hover:border-blue-400/40",
     path: "/parametrage/actifs",
     count: 1,
@@ -27,8 +27,8 @@ const categories = [
     title: "Magasin",
     description: "Catégories de pièces, unités de mesure, emplacements",
     icon: Store,
-    color: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-    border: "border-amber-200 dark:border-amber-500/20",
+    color: "bg-warning/10 text-amber-600 dark:text-warning",
+    border: "border-amber-200 dark:border-warning/20",
     hover: "hover:border-amber-400 dark:hover:border-amber-400/40",
     path: "/parametrage/magasin",
     count: 0,
@@ -49,8 +49,8 @@ const categories = [
     title: "Organisation",
     description: "Secteurs, spécialités, types d'appartenance",
     icon: Building2,
-    color: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
-    border: "border-purple-200 dark:border-purple-500/20",
+    color: "bg-primary-soft text-purple-600 dark:text-primary",
+    border: "border-purple-200 dark:border-primary/20",
     hover: "hover:border-purple-400 dark:hover:border-purple-400/40",
     path: "/parametrage/organisation",
     count: 0,
@@ -71,7 +71,7 @@ const categories = [
     title: "Utilisateurs",
     description: "Profils, niveaux d'accès, habilitations",
     icon: Users,
-    color: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400",
+    color: "bg-status-cyan/10 text-cyan-600 dark:text-status-cyan",
     border: "border-cyan-200 dark:border-cyan-500/20",
     hover: "hover:border-cyan-400 dark:hover:border-cyan-400/40",
     path: "/parametrage/utilisateurs",
@@ -82,7 +82,7 @@ const categories = [
     title: "Sous-traitants",
     description: "Spécialités, statuts, types de contrat",
     icon: Wrench,
-    color: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
+    color: "bg-status-orange/10 text-orange-600 dark:text-status-orange",
     border: "border-orange-200 dark:border-orange-500/20",
     hover: "hover:border-orange-400 dark:hover:border-orange-400/40",
     path: "/parametrage/soustraitants",
@@ -110,7 +110,7 @@ export default function ParametrageHome() {
           <div className="text-xs text-text-secondary mt-1">Modules paramétrables</div>
         </div>
         <div className="bg-surface border border-border rounded-xl p-4">
-          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">1</div>
+          <div className="text-2xl font-bold text-blue-600 dark:text-primary">1</div>
           <div className="text-xs text-text-secondary mt-1">Module actif</div>
         </div>
         <div className="bg-surface border border-border rounded-xl p-4">

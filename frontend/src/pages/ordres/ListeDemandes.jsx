@@ -98,7 +98,7 @@ export default function ListeDemandes() {
 
       if (body.data) {
         setItems(body.data);
-        // ✅ Chercher le total dans tous les emplacements possibles
+        //  Chercher le total dans tous les emplacements possibles
         setTotal(
           body.pagination?.total ??
             body.total ??
@@ -289,7 +289,7 @@ export default function ListeDemandes() {
                         <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
                           {d.actif_detail.chemin_hierarchique.map((h, i) => (
                             <span key={h.id}>
-                              <span style={{ fontWeight: 500, color: "var(--text-secondary)" }}>{h.code}</span>
+                              <span style={{ fontWeight: 500, color: "var(--text-secondary)" }}>{h.libelle}</span>
                               {i < d.actif_detail.chemin_hierarchique.length - 1 && (
                                 <span style={{ margin: "0 3px", color: "var(--text-muted)" }}>›</span>
                               )}
@@ -314,7 +314,7 @@ export default function ListeDemandes() {
                                 color: "var(--color-primary)",
                                 padding: "1px 6px",
                               }}>
-                                {f.code}
+                                {f.libelle}
                               </span>
                             ))}
                             {d.actif_detail.fils.length > 3 && (
@@ -355,7 +355,9 @@ export default function ListeDemandes() {
                           {d.statut?.replace(/_/g, " ")}
                         </span>
                         {d.rejet_info && (
-                          <span className="text-[10px] text-red-400">
+                          <span
+                            className="text-[10px]"
+                            style={{ color: "var(--status-red-text)" }}>
                             Rejet {d.rejet_info.count}x
                           </span>
                         )}
@@ -403,7 +405,7 @@ export default function ListeDemandes() {
                               title="Voir OT"
                               onClick={() => navigate("/ordres/ots")}
                               style={{ color: "var(--status-purple-text)" }}>
-                              📋
+                              
                             </button>
                           )}
                       </div>

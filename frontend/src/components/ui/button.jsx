@@ -21,7 +21,7 @@ const buttonVariants = cva(
         custom:
           "bg-primary hover:bg-primary-dark text-white text-sm font-medium",
         customOutline:
-          "border border-primary text-primary hover:bg-primary hover:text-white text-sm font-medium",
+          "border border-primary text-primary hover:bg-primary hover:text-text text-sm font-medium",
       },
       size: {
         default: "h-10 px-4 py-2",

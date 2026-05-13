@@ -124,8 +124,8 @@ export default function Sessions() {
                 <tr key={s.id} className="hover:bg-surface transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 bg-blue-100 dark:bg-blue-500/10 rounded-full flex items-center justify-center flex-shrink-0">
-                        <Monitor size={12} className="text-blue-700 dark:text-blue-400" />
+                      <div className="w-7 h-7 bg-blue-100 dark:bg-primary-soft rounded-full flex items-center justify-center flex-shrink-0">
+                        <Monitor size={12} className="text-blue-700 dark:text-primary" />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-text">
@@ -159,7 +159,7 @@ export default function Sessions() {
                           ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
                           : "bg-surface text-text-muted"
                       }`}>
-                      {s.est_active ? "● Active" : "○ Expirée"}
+                      {s.est_active ? " Active" : " Expirée"}
                     </span>
                   </td>
 
@@ -168,7 +168,7 @@ export default function Sessions() {
                       <Button
                         onClick={() => handleForceLogout(s)}
                         disabled={forcing === s.id}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-100 dark:bg-red-500/10 hover:bg-red-200 dark:hover:bg-red-500/20 text-red-700 dark:text-red-400 text-xs font-medium transition-colors disabled:opacity-50">
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-100 dark:bg-danger-soft hover:bg-red-200 dark:hover:bg-danger-soft text-red-700 dark:text-danger text-xs font-medium transition-colors disabled:opacity-50">
                         <LogOut size={12} />
                         {forcing === s.id ? "En cours..." : "Déconnecter"}
                       </Button>

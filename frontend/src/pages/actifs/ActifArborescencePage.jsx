@@ -51,7 +51,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+//  Config 
 
 const STATUTS = {
   actif: {
@@ -183,7 +183,7 @@ function InfoRow({ label, value, icon: Icon }) {
   );
 }
 
-// ─── Tree Node ────────────────────────────────────────────────────────────────
+//  Tree Node 
 
 function TreeNode({ actif, selectedId, onSelect, level = 0 }) {
   const [expanded, setExpanded] = useState(true);
@@ -275,7 +275,7 @@ function TreeNode({ actif, selectedId, onSelect, level = 0 }) {
   );
 }
 
-// ─── Form Modal ───────────────────────────────────────────────────────────────
+//  Form Modal 
 
 const initialFormState = {
   code: "",
@@ -396,7 +396,7 @@ export function ActifFormModal({
     }
   };
 
-  // ── Options filtrées site → secteur → unité ────────────────────────────────
+  //  Options filtrées site → secteur → unité 
   const siteOpts = useMemo(
     () =>
       sites.map((s) => ({ value: s.id, label: `${s.code} — ${s.libelle}` })),
@@ -429,7 +429,7 @@ export function ActifFormModal({
             {isEdit ? "Modifier l'actif" : "Ajouter un sous-actif"}
           </span>
           <button className="m-close" onClick={onClose}>
-            ✕
+            
           </button>
         </div>
         {erreur && (
@@ -706,7 +706,7 @@ export function ActifFormModal({
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+//  Main 
 
 export default function ActifArborescencePage() {
   const { id } = useParams();
@@ -1850,7 +1850,7 @@ export default function ActifArborescencePage() {
   );
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+//  Helpers 
 
 function findInTree(node, targetId) {
   if (node.id === targetId) return node;

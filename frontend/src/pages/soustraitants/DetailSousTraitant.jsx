@@ -830,7 +830,7 @@ export default function DetailSousTraitant() {
             <div className="m-hdr">
               <span className="m-title">Changer le statut</span>
               <button className="m-close" onClick={() => setStatutModal(false)}>
-                ✕
+                
               </button>
             </div>
             <div className="m-body-plain">

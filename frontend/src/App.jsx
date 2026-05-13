@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import Login from "@/pages/auth/Login";
 import Dashboard from "@/pages/dashboard/Dashboard";
@@ -49,16 +49,17 @@ import ParametrageHome from "@/pages/parametrage/ParametrageHome";
 import ParametrageActifs from "@/pages/parametrage/ParametrageActifs";
 import TypeActifsPage from "@/pages/parametrage/TypeActifsPage";
 import useAuthStore from "@/store/authStore";
+import AccessDenied from "@/components/AccessDenied";
+import DefaultRedirect from "@/components/DefaultRedirect";
 
 function ProtectedRoute({ children, requiredInterface }) {
   const { hasInterface, user } = useAuthStore();
-  const location = useLocation();
   // If user has no interfaces yet (backward compat), allow access
   const interfaces = user?.interfaces;
   if (!interfaces || interfaces.length === 0) return children;
   if (!requiredInterface) return children;
   if (!hasInterface(requiredInterface)) {
-    return <Navigate to="/dashboard" replace state={{ from: location }} />;
+    return <AccessDenied />;
   }
   return children;
 }
@@ -71,7 +72,7 @@ export default function App() {
           <Routes>
             <Route path="login" element={<Login />} />
             <Route path="/" element={<Layout />}>
-              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route index element={<DefaultRedirect />} />
               <Route path="dashboard" element={<ProtectedRoute requiredInterface="DASHBOARD"><Dashboard /></ProtectedRoute>} />
               <Route path="utilisateurs" element={<ProtectedRoute requiredInterface="SEC_UTILISATEURS"><Utilisateurs /></ProtectedRoute>} />
               <Route path="utilisateurs/:id" element={<ProtectedRoute requiredInterface="SEC_UTILISATEURS"><UserDetail /></ProtectedRoute>} />
@@ -88,7 +89,7 @@ export default function App() {
               <Route path="equipes" element={<ProtectedRoute requiredInterface="ORG_EQUIPES"><Equipes /></ProtectedRoute>} />
               <Route path="appartenances" element={<ProtectedRoute requiredInterface="ORG_APPARTENANCES"><Appartenances /></ProtectedRoute>} />
 
-              {/* ── Routes statiques AVANT :id ── */}
+              {/*  Routes statiques AVANT :id  */}
               <Route path="actifs" element={<ProtectedRoute requiredInterface="ACTIFS_LISTE"><ListeActifs /></ProtectedRoute>} />
               <Route path="actifs/dashboard" element={<ProtectedRoute requiredInterface="ACTIFS_DASHBOARD"><DashboardActifs /></ProtectedRoute>} />
               <Route path="actifs/nouveau" element={<ProtectedRoute requiredInterface="ACTIFS_LISTE"><FormulaireActif /></ProtectedRoute>} />
@@ -96,7 +97,7 @@ export default function App() {
               <Route path="actifs-racines" element={<ProtectedRoute requiredInterface="ACTIFS_RACINES"><ActifsRacines /></ProtectedRoute>} />
               <Route path="actifs/unite" element={<ProtectedRoute requiredInterface="ACTIFS_UNITE"><ActifUnite /></ProtectedRoute>} />
 
-              {/* ── Routes dynamiques APRÈS ── */}
+              {/*  Routes dynamiques APRÈS  */}
               <Route path="actifs/:id" element={<ProtectedRoute requiredInterface="ACTIFS_LISTE"><DetailActif /></ProtectedRoute>} />
               <Route path="actifs/:id/modifier" element={<ProtectedRoute requiredInterface="ACTIFS_LISTE"><FormulaireActif /></ProtectedRoute>} />
               <Route path="actifs/:id/arborescence" element={<ProtectedRoute requiredInterface="ACTIFS_ARBORESCENCE"><ActifArborescencePage /></ProtectedRoute>} />
@@ -106,40 +107,40 @@ export default function App() {
               <Route path="magasin/:id" element={<ProtectedRoute requiredInterface="MAGASIN_CATALOGUE"><DetailPiece /></ProtectedRoute>} />
               <Route path="magasin/:id/modifier" element={<ProtectedRoute requiredInterface="MAGASIN_CATALOGUE"><FormulairePiece /></ProtectedRoute>} />
 
-              {/* ── Sous-Traitants — statiques AVANT :id ── */}
+              {/*  Sous-Traitants — statiques AVANT :id  */}
               <Route path="soustraitants" element={<ProtectedRoute requiredInterface="SOUS_TRAITANTS_LISTE"><ListeSousTraitants /></ProtectedRoute>} />
               <Route path="soustraitants/dashboard" element={<ProtectedRoute requiredInterface="SOUS_TRAITANTS_DASHBOARD"><DashboardSousTraitants /></ProtectedRoute>} />
               <Route path="soustraitants/nouveau" element={<ProtectedRoute requiredInterface="SOUS_TRAITANTS_LISTE"><FormulaireSousTraitant /></ProtectedRoute>} />
-              {/* ── Sous-Traitants — dynamiques APRÈS ── */}
+              {/*  Sous-Traitants — dynamiques APRÈS  */}
               <Route path="soustraitants/:id" element={<ProtectedRoute requiredInterface="SOUS_TRAITANTS_LISTE"><DetailSousTraitant /></ProtectedRoute>} />
               <Route path="soustraitants/:id/modifier" element={<ProtectedRoute requiredInterface="SOUS_TRAITANTS_LISTE"><FormulaireSousTraitant /></ProtectedRoute>} />
 
-              {/* ── Interventions (Ordres) — statiques AVANT :id ── */}
+              {/*  Interventions (Ordres) — statiques AVANT :id  */}
               <Route path="ordres/demandes" element={<ProtectedRoute requiredInterface="ORDRES_DEMANDES"><ListeDemandes /></ProtectedRoute>} />
               <Route path="ordres/demandes/nouveau" element={<ProtectedRoute requiredInterface="ORDRES_DEMANDES"><FormulaireDemande /></ProtectedRoute>} />
               <Route path="ordres/ots/dashboard" element={<ProtectedRoute requiredInterface="ORDRES_DASHBOARD_OT"><DashboardOTs /></ProtectedRoute>} />
               <Route path="ordres/ots/nouveau" element={<ProtectedRoute requiredInterface="ORDRES_OTS"><FormulaireOT /></ProtectedRoute>} />
               <Route path="ordres/ots" element={<ProtectedRoute requiredInterface="ORDRES_OTS"><ListeOTs /></ProtectedRoute>} />
-              {/* ── Interventions — dynamiques APRÈS ── */}
+              {/*  Interventions — dynamiques APRÈS  */}
               <Route path="ordres/ots/:id" element={<ProtectedRoute requiredInterface="ORDRES_OTS"><DetailOT /></ProtectedRoute>} />
               <Route path="ordres/ots/:id/modifier" element={<ProtectedRoute requiredInterface="ORDRES_OTS"><FormulaireOT /></ProtectedRoute>} />
               <Route path="ordres/ots/:id/rapport" element={<ProtectedRoute requiredInterface="ORDRES_OTS"><CompteRenduOT /></ProtectedRoute>} />
 
-              {/* ── Interventions supplémentaires ── */}
+              {/*  Interventions supplémentaires  */}
               <Route path="ordres/declarer" element={<ProtectedRoute requiredInterface="ORDRES_DECLARER"><DeclarerPanne /></ProtectedRoute>} />
               <Route path="ordres/gestion" element={<ProtectedRoute requiredInterface="ORDRES_GESTION"><GestionOTs /></ProtectedRoute>} />
               <Route path="ordres/validation" element={<ProtectedRoute requiredInterface="ORDRES_VALIDATION"><ValidationOperateur /></ProtectedRoute>} />
 
-              {/* ── Magasin supplémentaire ── */}
+              {/*  Magasin supplémentaire  */}
               <Route path="magasin/sortie" element={<ProtectedRoute requiredInterface="MAGASIN_SORTIE"><InterfaceMagasinier /></ProtectedRoute>} />
 
-              {/* ── Paramétrage ── */}
+              {/*  Paramétrage  */}
               <Route path="parametrage" element={<ProtectedRoute requiredInterface="PARAMETRAGE"><ParametrageHome /></ProtectedRoute>} />
               <Route path="parametrage/actifs" element={<ProtectedRoute requiredInterface="PARAMETRAGE"><ParametrageActifs /></ProtectedRoute>} />
               <Route path="parametrage/actifs/types" element={<ProtectedRoute requiredInterface="PARAMETRAGE"><TypeActifsPage /></ProtectedRoute>} />
             </Route>
 
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>

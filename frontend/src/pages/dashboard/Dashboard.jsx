@@ -43,8 +43,8 @@ export default function Dashboard() {
       title: "Utilisateurs",
       value: stats.utilisateurs,
       icon: Users,
-      color: "text-blue-700 dark:text-blue-400",
-      bg: "bg-blue-100 dark:bg-blue-500/10",
+      color: "text-blue-700 dark:text-primary",
+      bg: "bg-blue-100 dark:bg-primary-soft",
     },
     {
       title: "Rôles",
@@ -57,15 +57,15 @@ export default function Dashboard() {
       title: "Permissions",
       value: stats.permissions,
       icon: Key,
-      color: "text-purple-700 dark:text-purple-400",
-      bg: "bg-purple-100 dark:bg-purple-500/10",
+      color: "text-purple-700 dark:text-primary",
+      bg: "bg-purple-100 dark:bg-primary-soft",
     },
     {
       title: "Statut API",
       value: "En ligne",
       icon: Activity,
-      color: "text-orange-700 dark:text-orange-400",
-      bg: "bg-orange-100 dark:bg-orange-500/10",
+      color: "text-orange-700 dark:text-status-orange",
+      bg: "bg-orange-100 dark:bg-status-orange/10",
     },
   ];
 
@@ -74,7 +74,7 @@ export default function Dashboard() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-text">
-          Bonjour, {user?.prenom} 👋
+          Bonjour, {user?.prenom} 
         </h1>
         <p className="text-text-secondary mt-1">
           Bienvenue sur le tableau de bord GMAO

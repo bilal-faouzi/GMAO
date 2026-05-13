@@ -30,24 +30,24 @@ import { Input } from "@/components/ui/input";
 import { FieldError, GlobalError } from "@/components/FieldError";
 import { useFormErrors } from "@/hooks/useFormErrors";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+//  Helpers 
 
 const niveauStyles = {
   1: {
-    bg: "bg-red-100 dark:bg-red-500/10",
-    text: "text-red-700 dark:text-red-400",
+    bg: "bg-red-100 dark:bg-danger-soft",
+    text: "text-red-700 dark:text-danger",
     border: "border-red-300 dark:border-red-500",
     shadow: "shadow-red-300/30 dark:shadow-red-500/30",
   },
   2: {
-    bg: "bg-orange-100 dark:bg-orange-500/10",
-    text: "text-orange-700 dark:text-orange-400",
+    bg: "bg-orange-100 dark:bg-status-orange/10",
+    text: "text-orange-700 dark:text-status-orange",
     border: "border-orange-300 dark:border-orange-500",
     shadow: "shadow-orange-300/30 dark:shadow-orange-500/30",
   },
   3: {
-    bg: "bg-blue-100 dark:bg-blue-500/10",
-    text: "text-blue-700 dark:text-blue-400",
+    bg: "bg-blue-100 dark:bg-primary-soft",
+    text: "text-blue-700 dark:text-primary",
     border: "border-blue-300 dark:border-blue-500",
     shadow: "shadow-blue-300/30 dark:shadow-blue-500/30",
   },
@@ -58,8 +58,8 @@ const niveauStyles = {
     shadow: "shadow-emerald-300/30 dark:shadow-emerald-500/30",
   },
   5: {
-    bg: "bg-cyan-100 dark:bg-cyan-500/10",
-    text: "text-cyan-700 dark:text-cyan-400",
+    bg: "bg-cyan-100 dark:bg-status-cyan/10",
+    text: "text-cyan-700 dark:text-status-cyan",
     border: "border-cyan-300 dark:border-cyan-500",
     shadow: "shadow-cyan-300/30 dark:shadow-cyan-500/30",
   },
@@ -67,19 +67,19 @@ const niveauStyles = {
 
 const actionColor = (action) => {
   if (action === "READ")
-    return "bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400";
+    return "bg-blue-100 dark:bg-primary-soft text-blue-700 dark:text-primary";
   if (action === "CREATE")
     return "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
   if (action === "UPDATE")
-    return "bg-orange-100 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400";
+    return "bg-orange-100 dark:bg-status-orange/10 text-orange-700 dark:text-status-orange";
   if (action === "DELETE")
-    return "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400";
+    return "bg-red-100 dark:bg-danger-soft text-red-700 dark:text-danger";
   return "bg-surface text-text-secondary";
 };
 
 const niveaux = [1, 2, 3, 4, 5];
 
-// ─── Component ────────────────────────────────────────────────────────────────
+//  Component 
 
 export default function Roles() {
   const [roles, setRoles] = useState([]);
@@ -100,7 +100,7 @@ export default function Roles() {
 
   const { errors, setApiErrors, clearErrors, inputCls } = useFormErrors();
 
-  // ── Fetch ──────────────────────────────────────────────────────────────────
+  //  Fetch 
 
   const fetchRoles = async () => {
     try {
@@ -131,7 +131,7 @@ export default function Roles() {
     fetchRoles();
   }, []);
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
+  //  Handlers 
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -246,7 +246,7 @@ export default function Roles() {
       r.libelle.toLowerCase().includes(search.toLowerCase()),
   );
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  //  Render 
 
   return (
     <div className="p-6 space-y-6">
@@ -301,12 +301,12 @@ export default function Roles() {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${role.est_actif !== false ? "bg-blue-100 dark:bg-blue-500/10" : "bg-gray-100 dark:bg-gray-500/10"}`}>
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${role.est_actif !== false ? "bg-blue-100 dark:bg-primary-soft" : "bg-gray-100 dark:bg-gray-500/10"}`}>
                     <Key
                       size={18}
                       className={
                         role.est_actif !== false
-                          ? "text-blue-700 dark:text-blue-400"
+                          ? "text-blue-700 dark:text-primary"
                           : "text-text-muted"
                       }
                     />
@@ -330,7 +330,7 @@ export default function Roles() {
                     onClick={() => openInterfacesModal(role)}
                     title="Interfaces"
                     variant="ghost"
-                    className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-500/10 text-text-muted hover:text-blue-700 dark:hover:text-blue-400 transition-colors">
+                    className="p-2 rounded hover:bg-blue-100 dark:hover:bg-primary-soft text-text-muted hover:text-blue-700 dark:hover:text-primary transition-colors">
                     <LayoutDashboard size={13} />
                   </Button>
                   <Button
@@ -346,7 +346,7 @@ export default function Roles() {
                       role.est_actif !== false ? "Désactiver" : "Réactiver"
                     }
                     variant="ghost"
-                    className="p-2 rounded hover:bg-orange-100 dark:hover:bg-orange-500/10 text-text-muted hover:text-orange-700 dark:hover:text-orange-400 transition-colors">
+                    className="p-2 rounded hover:bg-orange-100 dark:hover:bg-status-orange/10 text-text-muted hover:text-orange-700 dark:hover:text-status-orange transition-colors">
                     {role.est_actif !== false ? (
                       <PowerOff size={13} />
                     ) : (
@@ -413,7 +413,7 @@ export default function Roles() {
         </div>
       )}
 
-      {/* ── Modal Création ── */}
+      {/*  Modal Création  */}
       {openCreate && (
         <Modal title="Nouveau rôle" onClose={() => setOpenCreate(false)}>
           <form onSubmit={handleCreate} className="space-y-4">
@@ -487,7 +487,7 @@ export default function Roles() {
         </Modal>
       )}
 
-      {/* ── Modal Permissions ── */}
+      {/*  Modal Permissions  */}
       {openPerms && (
         <Modal
           title={`Permissions — ${selectedRole?.code}`}
@@ -574,7 +574,7 @@ export default function Roles() {
         </Modal>
       )}
 
-      {/* ── Modal Interfaces ── */}
+      {/*  Modal Interfaces  */}
       {openInterfaces && (
         <Modal
           title={`Interfaces — ${selectedRole?.code}`}

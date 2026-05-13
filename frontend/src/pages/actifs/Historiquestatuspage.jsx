@@ -24,7 +24,7 @@ import {
   X,
 } from "lucide-react";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+//  Constants 
 
 const STATUT_OPTIONS = [
   {
@@ -71,7 +71,7 @@ const STATUT_OPTIONS = [
 
 const ALL = "__all__";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+//  Helpers 
 
 function StatutBadge({ statut }) {
   const opt = STATUT_OPTIONS.find((s) => s.value === statut);
@@ -128,7 +128,7 @@ function formatDate(iso) {
   }).format(new Date(iso));
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+//  Main Page 
 
 export default function HistoriqueStatutsPage() {
   const [historique, setHistorique] = useState([]);

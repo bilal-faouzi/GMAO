@@ -23,7 +23,7 @@ import {
   Hash,
 } from "lucide-react";
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+//  Config 
 
 const STATUT_CONFIG = {
   actif: {
@@ -59,7 +59,7 @@ const TYPE_ICONS = {
   autre: <Package size={12} />,
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+//  Helpers 
 
 function StatutBadge({ statut }) {
   const cfg = STATUT_CONFIG[statut] || {
@@ -96,7 +96,7 @@ function TypeBadge({ type }) {
   );
 }
 
-// ─── Tree Node ────────────────────────────────────────────────────────────────
+//  Tree Node 
 
 function ActifNode({ actif, niveau = 0, navigate }) {
   const [ouvert, setOuvert] = useState(true);
@@ -360,7 +360,7 @@ function ActifNode({ actif, niveau = 0, navigate }) {
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+//  Main 
 
 export default function ArborescenceActifs() {
   const navigate = useNavigate();

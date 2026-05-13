@@ -30,23 +30,23 @@ const labelCls = "text-xs text-text-secondary mb-1 block";
 export default function Utilisateurs() {
   const navigate = useNavigate();
 
-  // ── Data state ──
+  //  Data state 
   const [utilisateurs, setUtilisateurs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
 
-  // ── Modal state ──
+  //  Modal state 
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [openRoles, setOpenRoles] = useState(false);
 
-  // ── Selection ──
+  //  Selection 
   const [selected, setSelected] = useState(null); // for edit
   const [roleTarget, setRoleTarget] = useState(null); // for role modal
 
-  // ── Form ──
+  //  Form 
   const [form, setForm] = useState({
     nom_utilisateur: "",
     email: "",
@@ -57,9 +57,9 @@ export default function Utilisateurs() {
 
   const { errors, setApiErrors, clearErrors, inputCls } = useFormErrors();
 
-  // ─────────────────────────────────────────────────────────────
+  // 
   // Fetch
-  // ─────────────────────────────────────────────────────────────
+  // 
   const fetchUtilisateurs = async (currentPage = page) => {
     try {
       const res = await getUtilisateurs({ page: currentPage });
@@ -77,9 +77,9 @@ export default function Utilisateurs() {
     fetchUtilisateurs();
   }, [page]);
 
-  // ─────────────────────────────────────────────────────────────
+  // 
   // Handlers
-  // ─────────────────────────────────────────────────────────────
+  // 
   const handleCreate = async (e) => {
     e.preventDefault();
     clearErrors();
@@ -147,9 +147,9 @@ export default function Utilisateurs() {
     );
   };
 
-  // ─────────────────────────────────────────────────────────────
+  // 
   // Filtered list
-  // ─────────────────────────────────────────────────────────────
+  // 
   const filtered = utilisateurs.filter(
     (u) =>
       u.nom_utilisateur.toLowerCase().includes(search.toLowerCase()) ||
@@ -157,12 +157,12 @@ export default function Utilisateurs() {
       u.prenom.toLowerCase().includes(search.toLowerCase()),
   );
 
-  // ─────────────────────────────────────────────────────────────
+  // 
   // Render
-  // ─────────────────────────────────────────────────────────────
+  // 
   return (
     <div className="p-6 space-y-6">
-      {/* ── Header ── */}
+      {/*  Header  */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-text">Utilisateurs</h1>
@@ -180,7 +180,7 @@ export default function Utilisateurs() {
         </Button>
       </div>
 
-      {/* ── Search ── */}
+      {/*  Search  */}
       <div className="relative">
         <Search
           size={15}
@@ -197,7 +197,7 @@ export default function Utilisateurs() {
         />
       </div>
 
-      {/* ── Table ── */}
+      {/*  Table  */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
@@ -245,8 +245,8 @@ export default function Utilisateurs() {
                   {/* Utilisateur */}
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-100 dark:bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-blue-700 dark:text-blue-400 text-xs font-bold">
+                      <div className="w-8 h-8 bg-blue-100 dark:bg-primary-soft rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="text-blue-700 dark:text-primary text-xs font-bold">
                           {u.prenom[0]}
                           {u.nom[0]}
                         </span>
@@ -274,7 +274,7 @@ export default function Utilisateurs() {
                         u.roles.map((r) => (
                           <span
                             key={r.id}
-                            className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">
+                            className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-primary-soft text-blue-700 dark:text-primary font-medium">
                             {r.code}
                           </span>
                         ))
@@ -292,7 +292,7 @@ export default function Utilisateurs() {
                       className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                         u.est_actif
                           ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                          : "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400"
+                          : "bg-red-100 dark:bg-danger-soft text-red-700 dark:text-danger"
                       }`}>
                       {u.est_actif ? "Actif" : "Inactif"}
                     </span>
@@ -318,7 +318,7 @@ export default function Utilisateurs() {
                           openEditModal(u);
                         }}
                         title="Modifier"
-                        className="rounded hover:bg-blue-100 dark:hover:bg-blue-500/10 text-text-secondary hover:text-blue-700 dark:hover:text-blue-400 transition-colors">
+                        className="rounded hover:bg-blue-100 dark:hover:bg-primary-soft text-text-secondary hover:text-blue-700 dark:hover:text-primary transition-colors">
                         <Pencil size={13} />
                       </Button>
                       <Button
@@ -328,7 +328,7 @@ export default function Utilisateurs() {
                           handleToggleActive(u.id, u.est_actif);
                         }}
                         title={u.est_actif ? "Désactiver" : "Activer"}
-                        className="rounded hover:bg-red-100 dark:hover:bg-red-500/10 text-text-secondary hover:text-danger transition-colors">
+                        className="rounded hover:bg-red-100 dark:hover:bg-danger-soft text-text-secondary hover:text-danger transition-colors">
                         {u.est_actif ? (
                           <Power size={13} />
                         ) : (
@@ -344,7 +344,7 @@ export default function Utilisateurs() {
         </table>
       </div>
 
-      {/* ── Pagination ── */}
+      {/*  Pagination  */}
       {totalPages > 1 && (
         <div className="flex justify-end items-center gap-2">
           <Button
@@ -365,9 +365,9 @@ export default function Utilisateurs() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════
+      {/* 
           Modal — Création
-      ══════════════════════════════════════════════ */}
+       */}
       {openCreate && (
         <Modal title="Nouvel utilisateur" onClose={() => setOpenCreate(false)}>
           <form onSubmit={handleCreate} className="space-y-4">
@@ -454,9 +454,9 @@ export default function Utilisateurs() {
         </Modal>
       )}
 
-      {/* ══════════════════════════════════════════════
+      {/* 
           Modal — Modification
-      ══════════════════════════════════════════════ */}
+       */}
       {openEdit && (
         <Modal
           title="Modifier l'utilisateur"
@@ -530,9 +530,9 @@ export default function Utilisateurs() {
         </Modal>
       )}
 
-      {/* ══════════════════════════════════════════════
+      {/* 
           Modal — Gestion des rôles (via RoleManager)
-      ══════════════════════════════════════════════ */}
+       */}
       {openRoles && roleTarget && (
         <Modal
           title={`Rôles — ${roleTarget.prenom} ${roleTarget.nom}`}

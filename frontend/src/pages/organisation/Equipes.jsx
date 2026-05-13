@@ -64,12 +64,12 @@ import { FieldError, GlobalError } from "@/components/FieldError";
 import { useFormErrors } from "@/hooks/useFormErrors";
 import { cn } from "@/lib/utils";
 
-// ─── RoleBadge ────────────────────────────────────────────────────────────────
+//  RoleBadge 
 
 function RoleBadge({ role }) {
   const styles = {
-    CHEF: "bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400",
-    MEMBRE: "bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400",
+    CHEF: "bg-amber-100 dark:bg-warning/10 text-amber-700 dark:text-warning",
+    MEMBRE: "bg-blue-100 dark:bg-primary-soft text-blue-700 dark:text-primary",
     REMPLACANT: "bg-gray-100 dark:bg-gray-500/10 text-text-secondary",
   };
   return (
@@ -80,7 +80,7 @@ function RoleBadge({ role }) {
   );
 }
 
-// ─── MembresPanel ─────────────────────────────────────────────────────────────
+//  MembresPanel 
 
 function MembresPanel({ equipe, onClose }) {
   const [membres, setMembres] = useState([]);
@@ -163,7 +163,7 @@ function MembresPanel({ equipe, onClose }) {
 
   return (
     <Modal title={`Membres — ${equipe.libelle}`} onClose={onClose}>
-      {/* ── Liste membres actuels ── */}
+      {/*  Liste membres actuels  */}
       <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
         {loading ? (
           <p className="text-text-secondary text-sm text-center py-4">
@@ -186,7 +186,7 @@ function MembresPanel({ equipe, onClose }) {
                 <AlertDialogTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="rounded hover:bg-red-100 dark:hover:bg-red-500/10 text-text-muted hover:text-danger transition-colors">
+                    className="rounded hover:bg-red-100 dark:hover:bg-danger-soft text-text-muted hover:text-danger transition-colors">
                     <UserMinus size={14} />
                   </Button>
                 </AlertDialogTrigger>
@@ -217,7 +217,7 @@ function MembresPanel({ equipe, onClose }) {
         )}
       </div>
 
-      {/* ── Formulaire ajout ── */}
+      {/*  Formulaire ajout  */}
       {showAdd ? (
         <div className="space-y-3 border-t border-border pt-4">
           <GlobalError errors={errors} />
@@ -334,7 +334,7 @@ function MembresPanel({ equipe, onClose }) {
   );
 }
 
-// ─── EquipeModal ──────────────────────────────────────────────────────────────
+//  EquipeModal 
 
 function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
   const [form, setForm] = useState({
@@ -465,7 +465,7 @@ function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
   );
 }
 
-// ─── Page principale ──────────────────────────────────────────────────────────
+//  Page principale 
 
 export default function Equipes() {
   const [equipes, setEquipes] = useState([]);
@@ -596,14 +596,14 @@ export default function Equipes() {
                     <Button
                       onClick={() => setPanelMembres(eq)}
                       variant="ghost"
-                      className="flex items-center gap-1.5 text-blue-700 dark:text-blue-400 dark:hover:bg-blue-300/10 hover:bg-blue-600/10 transition-colors">
+                      className="flex items-center gap-1.5 text-blue-700 dark:text-primary dark:hover:bg-blue-300/10 hover:bg-blue-600/10 transition-colors">
                       <Users size={13} />
                       <span>{eq.membres_count ?? 0}</span>
                     </Button>
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${eq.estActif ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400"}`}>
+                      className={`text-xs px-2 py-0.5 rounded-full ${eq.estActif ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-red-100 dark:bg-danger-soft text-red-700 dark:text-danger"}`}>
                       {eq.estActif ? "Actif" : "Inactif"}
                     </span>
                   </td>
@@ -619,7 +619,7 @@ export default function Equipes() {
                         <AlertDialogTrigger asChild>
                           <Button
                             variant="ghost"
-                            className="rounded hover:bg-red-100 dark:hover:bg-red-500/10 text-text-secondary hover:text-danger transition-colors">
+                            className="rounded hover:bg-red-100 dark:hover:bg-danger-soft text-text-secondary hover:text-danger transition-colors">
                             <Trash2 size={13} />
                           </Button>
                         </AlertDialogTrigger>

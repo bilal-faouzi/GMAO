@@ -29,7 +29,7 @@ export default function Societes() {
 
   const rows = data.map(s => ({
     id:          s.id,
-    code:        <span className="font-mono text-blue-700 dark:text-blue-400 text-xs font-bold">{s.code}</span>,
+    code:        <span className="font-mono text-blue-700 dark:text-primary text-xs font-bold">{s.code}</span>,
     raisonSociale: <span className="font-medium text-text">{s.raisonSociale}</span>,
     statut:      <Badge active={s.estActif} />,
     _raw:        s,

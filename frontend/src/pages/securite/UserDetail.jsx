@@ -41,7 +41,7 @@ import { AppartenanceManager } from "@/components/AppartenanceManager";
 import DIDetailDialog from "@/components/DIDetailDialog";
 import { hover } from "framer-motion";
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+//  Config 
 
 // Adaptez cette constante à votre environnement
 const BASE_URL = import.meta.env.VITE_API_URL || "";
@@ -82,7 +82,7 @@ const ROLE_COLORS = [
   },
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+//  Helpers 
 
 function formatDate(iso) {
   if (!iso) return "—";
@@ -114,7 +114,7 @@ function getFileUrl(url) {
   return `${BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
-// ─── InfoRow ──────────────────────────────────────────────────────────────────
+//  InfoRow 
 
 function InfoRow({ label, value, icon: Icon, children, mono }) {
   return (
@@ -133,7 +133,7 @@ function InfoRow({ label, value, icon: Icon, children, mono }) {
   );
 }
 
-// ─── SectionCard ──────────────────────────────────────────────────────────────
+//  SectionCard 
 
 function SectionCard({ icon: Icon, title, children, fullWidth, action }) {
   return (
@@ -152,12 +152,12 @@ function SectionCard({ icon: Icon, title, children, fullWidth, action }) {
   );
 }
 
-// ─── AudioPlayer ──────────────────────────────────────────────────────────────
+//  AudioPlayer 
 /**
  * Composant audio autonome avec play/pause et barre de progression native.
  * Chaque instance gère son propre <audio> via un ref — pas de conflit entre players.
  */
-// ─── AudioPlayer ──────────────────────────────────────────────────────────────
+//  AudioPlayer 
 function AudioPlayer({ file }) {
   const audioRef = useRef(null);
   const [playing, setPlaying] = useState(false);
@@ -354,7 +354,7 @@ function AudioPlayer({ file }) {
   );
 }
 
-// ─── ImageViewer ──────────────────────────────────────────────────────────────
+//  ImageViewer 
 
 function ImageViewer({ file }) {
   const url = getFileUrl(file.url);
@@ -415,7 +415,7 @@ function ImageViewer({ file }) {
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+//  Main 
 
 export default function UserDetail() {
   const { id } = useParams();
@@ -441,7 +441,7 @@ export default function UserDetail() {
   const [selectedDI, setSelectedDI] = useState(null);
   const [showDIDialog, setShowDIDialog] = useState(false);
 
-  // ── Chargement initial ─────────────────────────────────────────────────────
+  //  Chargement initial 
 
   const loadData = async () => {
     setLoading(true);
@@ -489,12 +489,12 @@ export default function UserDetail() {
     }
   };
 
-  // ── BUG 2 CORRIGÉ — affRes était hors scope dans la version originale ──────
+  //  BUG 2 CORRIGÉ — affRes était hors scope dans la version originale 
 
   const handleValiderDI = async (di) => {
     setValidatingDI(di.id);
 
-    // ✅ Retrait optimiste immédiat
+    //  Retrait optimiste immédiat
     setDemandesIntervention((prev) => prev.filter((d) => d.id !== di.id));
 
     try {
@@ -513,7 +513,7 @@ export default function UserDetail() {
     } catch (err) {
       console.error("Erreur validation DI :", err.response?.data || err);
 
-      // ❌ En cas d'erreur, on remet la DI dans la liste
+      //  En cas d'erreur, on remet la DI dans la liste
       setDemandesIntervention((prev) => [...prev, di]);
     } finally {
       setValidatingDI(null);
@@ -524,7 +524,7 @@ export default function UserDetail() {
     loadData();
   }, [id]);
 
-  // ── Handlers managers ─────────────────────────────────────────────────────
+  //  Handlers managers 
 
   const handleRolesChange = async () => {
     try {
@@ -554,7 +554,7 @@ export default function UserDetail() {
     }
   };
 
-  // ── Rendu chargement ──────────────────────────────────────────────────────
+  //  Rendu chargement 
 
   if (loading) {
     return (
@@ -680,7 +680,7 @@ export default function UserDetail() {
         </div>
       )}
 
-      {/* ═══════════════════════ HERO CARD ═══════════════════════ */}
+      {/*  HERO CARD  */}
       <div className="tbl-card p-7 flex gap-6 items-center relative overflow-hidden">
         <div
           className={`absolute top-0 left-0 right-0 h-[3px] rounded-t-[var(--r)] ${
@@ -788,7 +788,7 @@ export default function UserDetail() {
         </div>
       </div>
 
-      {/* ═══════════════════ SECTION B — Sécurité & Accès ═══════════════════ */}
+      {/*  SECTION B — Sécurité & Accès  */}
       <div className="grid grid-cols-2 gap-4">
         <SectionCard
           icon={Shield}
@@ -892,7 +892,7 @@ export default function UserDetail() {
         </SectionCard>
       </div>
 
-      {/* ═══════════════════ SECTION C — Organisation & Équipe ═══════════════════ */}
+      {/*  SECTION C — Organisation & Équipe  */}
       <div className="grid grid-cols-2 gap-4">
         <SectionCard
           icon={Users}
@@ -1097,7 +1097,7 @@ export default function UserDetail() {
         </SectionCard>
       </div>
 
-      {/* ═══════════════════ SECTION D — Activité ═══════════════════ */}
+      {/*  SECTION D — Activité  */}
       <div className="grid grid-cols-2 gap-4">
         {/* DIs en attente */}
         <SectionCard

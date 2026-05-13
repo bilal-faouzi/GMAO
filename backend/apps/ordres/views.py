@@ -40,7 +40,9 @@ class DemandeInterventionPagination(PageNumberPagination):
 
 class DemandeInterventionViewSet(viewsets.ModelViewSet):
     queryset = DemandeIntervention.objects.select_related(
-        'idActif', 'idUtilisateurSignalement'
+        'idActif', 'idUtilisateurSignalement', 'idUtilisateurValidation'
+    ).prefetch_related(
+        'pieces_jointes'
     ).all()
     serializer_class = DemandeInterventionSerializer
     permission_classes = [IsAuthenticated]
@@ -104,7 +106,7 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
                 ancienStatut=ancien_statut_parent,
                 nouveauStatut='en_panne',
                 motif=f"Demande d'intervention #{instance.numero} créée — Actif parent ({actif_parent.code})",
-                modifiePar=getattr(self.request.user, 'utilisateur', None)
+                modifiePar=self.request.user
             )
 
         # --- Créer une indisponibilité pour l'actif parent ---
@@ -179,7 +181,7 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
             statut='EN_COURS',
             isvalide=True,
             description=di.description,
-            idUtilisateurCreateur=getattr(request.user, 'utilisateur', None),
+            idUtilisateurCreateur=request.user,
         )
 
         # --- Changer le statut de l'actif parent (pas l'actif sélectionné) ---
@@ -194,7 +196,7 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
                 ancienStatut=ancien_statut_parent,
                 nouveauStatut='en_maintenance',
                 motif=f'OT #{ot.numero} créé - Demande Intervention #{di.numero} — Actif parent ({actif_parent.code})',
-                modifiePar=getattr(request.user, 'utilisateur', None)
+                modifiePar=request.user
             )
 
         config = ConfigurationSLA.objects.filter(
@@ -211,7 +213,7 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
             idOrdreTravail=ot,
             ancienStatut='',
             nouveauStatut='EN_COURS',
-            idUtilisateur=getattr(request.user, 'utilisateur', None),
+            idUtilisateur=request.user,
             motif='Créé depuis DI validée'
         )
 
@@ -236,7 +238,7 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
 
         di.statut = 'rejetee'
         di.motifRejet = request.data.get('motif', '')
-        di.idUtilisateurValidation = getattr(request.user, 'utilisateur', None)
+        di.idUtilisateurValidation = request.user
         di.dateValidation = timezone.now()
         di.isencours = False
         di.save()
@@ -292,7 +294,7 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
             ancienStatut=ancien_statut_actif,
             nouveauStatut='actif',
             motif=f"Rejet DI #{di.numero} — aucune intervention active sur l'actif parent ({actif_parent.code})",
-            modifiePar=getattr(request.user, 'utilisateur', None)
+            modifiePar=request.user
         )
 
         log_audit(request, 'UPDATE', 'ACTIFS', 'Actif', actif_parent.id,
@@ -419,14 +421,14 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
 
 class OrdreTravailViewSet(viewsets.ModelViewSet):
     queryset = OrdreTravail.objects.select_related(
-        'idActif', 'idDemandeIntervention'
+        'idActif', 'idDemandeIntervention',
+        'idUtilisateurCreateur', 'idUtilisateurValidation'
     ).prefetch_related(
         'affectations__membres__idUtilisateur',
         'commentaires',
         'historiques_statut',
         'pieces_utilisees',
         'actifs_corriges__idActif',
-        'actifs_corriges__corrigePar',
     ).all()
     serializer_class = OrdreTravailSerializer
     permission_classes = [IsAuthenticated]
@@ -439,7 +441,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         ot = serializer.save()
         ot.isvalide = True
-        ot.idUtilisateurCreateur = getattr(self.request.user, 'utilisateur', None)
+        ot.idUtilisateurCreateur = self.request.user
         ot.save(update_fields=['isvalide', 'idUtilisateurCreateur'])
 
         log_audit(self.request, 'CREATE', 'ORDRES', 'OrdreTravail', ot.id,
@@ -461,7 +463,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                 ancienStatut=ancien_statut_parent,
                 nouveauStatut='en_maintenance',
                 motif=f'OT #{ot.numero} créé — Actif parent ({actif_parent.code})',
-                modifiePar=getattr(self.request.user, 'utilisateur', None)
+                modifiePar=self.request.user
             )
 
     def perform_update(self, serializer):
@@ -525,7 +527,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                     ancienStatut=ancien_statut_parent,
                     nouveauStatut='actif',
                     motif=f'OT #{ot.numero} {nouveau.lower()} - Actif parent ({actif_parent.code}) rétabli',
-                    modifiePar=getattr(request.user, 'utilisateur', None)
+                    modifiePar=request.user
                 )
                 unite = actif_parent.idUnite
                 if unite and not unite.estProductive:
@@ -568,7 +570,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
             ancienStatut=ancien,
             nouveauStatut=nouveau,
             motif=motif,
-            idUtilisateur=getattr(request.user, 'utilisateur', None)
+            idUtilisateur=request.user
         )
 
         log_audit(self.request, 'CHANGE_STATUS', 'ORDRES', 'OrdreTravail', ot.id,
@@ -580,17 +582,47 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def affecter_equipe(self, request, pk=None):
         ot = self.get_object()
+        equipe_id = request.data.get('idEquipe')
+        membres_ids = request.data.get('membres', [])
+
+        if not equipe_id:
+            return Response(
+                {'detail': "L'équipe est obligatoire."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # --- Vérifier que l'équipe n'est pas déjà affectée à cet OT ---
+        if AffectationEquipe.objects.filter(idOrdreTravail=ot, idEquipe_id=equipe_id).exists():
+            return Response(
+                {'detail': "Cette équipe est déjà affectée à cet OT."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # --- Vérifier que les membres ne sont pas déjà affectés à cet OT ---
+        if isinstance(membres_ids, list) and len(membres_ids) > 0:
+            existing = MembreIntervention.objects.filter(
+                idAffectationEquipe__idOrdreTravail=ot,
+                idUtilisateur_id__in=membres_ids
+            ).select_related('idUtilisateur')
+            if existing.exists():
+                noms = [f"{e.idUtilisateur.prenom} {e.idUtilisateur.nom}".strip() for e in existing]
+                return Response(
+                    {'detail': f"Utilisateur(s) déjà affecté(s) : {', '.join(noms)}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        chef_id = request.data.get('idChefTechnicien') or str(request.user.id)
         aff = AffectationEquipe.objects.create(
             idOrdreTravail=ot,
-            idEquipe_id=request.data.get('idEquipe'),
+            idEquipe_id=equipe_id,
             idSousTraitant_id=request.data.get('idSousTraitant'),
-            idChefTechnicien_id=request.data.get('idChefTechnicien'),
+            idChefTechnicien_id=chef_id,
             dateDebut=request.data.get('dateDebut', timezone.now()),
             statut='en_attente'
         )
 
         # --- Créer les MembreIntervention pour chaque utilisateur sélectionné ---
-        membres_ids = request.data.get('membres', [])
+        created_count = 0
         if isinstance(membres_ids, list) and len(membres_ids) > 0:
             from apps.securite.models import Utilisateur
             for uid in membres_ids:
@@ -601,14 +633,22 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                         idUtilisateur=user,
                         dateDebut=aff.dateDebut,
                     )
+                    created_count += 1
                 except Utilisateur.DoesNotExist:
                     pass  # Ignorer les IDs invalides
+
+        if created_count == 0:
+            aff.delete()
+            return Response(
+                {'detail': "Aucun membre valide n'a été trouvé. Vérifiez les identifiants."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         log_audit(request, 'CREATE', 'ORDRES', 'AffectationEquipe', aff.id,
                   nouvelle_valeur={
                       'equipe': str(aff.idEquipe_id) if aff.idEquipe_id else None,
                       'soustraitant': str(aff.idSousTraitant_id) if aff.idSousTraitant_id else None,
-                      'membres': len(membres_ids)
+                      'membres': created_count
                   })
 
         return Response(AffectationEquipeSerializer(aff).data, status=status.HTTP_201_CREATED)
@@ -639,7 +679,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
             stockAvant=stock_avant,
             stockApres=piece.quantiteStock,
             idOrdreTravail=str(ot.numero),
-            idUtilisateurMagasinier=getattr(request.user, 'utilisateur', None),
+            idUtilisateurMagasinier=request.user,
         )
         PieceUtiliseeOT.objects.create(
             idOrdreTravail=ot,
@@ -701,7 +741,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                     stockAvant=stock_avant,
                     stockApres=piece.quantiteStock,
                     idOrdreTravail=str(ot.numero),
-                    idUtilisateurMagasinier=getattr(request.user, 'utilisateur', None),
+                    idUtilisateurMagasinier=request.user,
                 )
                 PieceUtiliseeOT.objects.create(
                     idOrdreTravail=ot,
@@ -759,7 +799,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
         ot = self.get_object()
         commentaire = CommentaireOT.objects.create(
             idOrdreTravail=ot,
-            idUtilisateur=getattr(request.user, 'utilisateur', None),
+            idUtilisateur=request.user,
             commentaire=request.data.get('commentaire', ''),
             estInterne=request.data.get('estInterne', False)
         )
@@ -793,7 +833,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
     #         idOrdreTravail=ot,
     #         ancienStatut=ancien,
     #         nouveauStatut='CLOTURE',
-    #         idUtilisateur=getattr(request.user, 'utilisateur', None),
+    #         idUtilisateur=request.user,
     #         motif=request.data.get('motif', '')
     #     )
 
@@ -822,7 +862,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
     #             ancienStatut=ancien_statut_actif,
     #             nouveauStatut='actif',
     #             motif=f'OT #{ot.numero} clôturé — aucune intervention en cours',
-    #             modifiePar=getattr(request.user, 'utilisateur', None)
+    #             modifiePar=request.user
     #         )
 
     #         log_audit(request, 'UPDATE', 'ACTIFS', 'Actif', actif.id,
@@ -884,7 +924,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
             ot.isvalide = True
             ot.statut    = 'CLOTURE'
             ot.typeCloture = type_cloture
-            ot.idUtilisateurValidation = getattr(request.user, 'utilisateur', None)
+            ot.idUtilisateurValidation = request.user
             print('test validation', ot.typeCloture)
             ot.dateCloture = timezone.now()
 
@@ -909,7 +949,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                 idOrdreTravail=ot,
                 ancienStatut=ancien_statut,
                 nouveauStatut=ot.statut,
-                idUtilisateur=getattr(request.user, 'utilisateur', None),
+                idUtilisateur=request.user,
                 motif=motif or 'Validation opérateur approuvée'
                 )
             if not autres_ots_ouverts and not autres_di_en_attente:
@@ -951,7 +991,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
             ot.rejetOperateur = True
             ot.motifRejetOperateur = motif
             ot.dateRejetOperateur = timezone.now()
-            ot.idUtilisateurRejetOperateur = getattr(request.user, 'utilisateur', None)
+            ot.idUtilisateurRejetOperateur = request.user
             print('test validation rejet', ot.isvalide, ot.statut)
             ot.save()
             
@@ -977,7 +1017,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                     ancienStatut=ancien_statut_parent,
                     nouveauStatut='en_panne',
                     motif=f'Validation OT #{ot.numero} rejetée — Actif parent ({actif_parent.code})',
-                    modifiePar=getattr(request.user, 'utilisateur', None)
+                    modifiePar=request.user
                 )
 
                 log_audit(request, 'UPDATE', 'ACTIFS', 'Actif', actif_parent.id,
@@ -988,7 +1028,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                 idOrdreTravail=ot,
                 ancienStatut=ancien_statut,
                 nouveauStatut=ancien_statut,
-                idUtilisateur=getattr(request.user, 'utilisateur', None),
+                idUtilisateur=request.user,
                 motif=motif or 'Validation opérateur rejetée — statut OT conservé'
             )
 
@@ -1014,7 +1054,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                     ancienStatut=ancien_statut_parent,
                     nouveauStatut='en_panne',
                     motif=f'Validation OT #{ot.numero} rejetée — DI #{di.numero} — Actif parent ({actif_parent.code})',
-                    modifiePar=getattr(request.user, 'utilisateur', None)
+                    modifiePar=request.user
                 )
 
                 log_audit(request, 'UPDATE', 'ACTIFS', 'Actif', actif_parent.id,
@@ -1085,7 +1125,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                     ancienStatut='en_maintenance',
                     nouveauStatut='actif',
                     motif=f'Changement actif OT #{ot.numero} — ancien parent libéré',
-                    modifiePar=getattr(request.user, 'utilisateur', None)
+                    modifiePar=request.user
                 )
 
             # Mettre le nouveau parent en maintenance
@@ -1099,7 +1139,7 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                     ancienStatut=ancien_statut_np,
                     nouveauStatut='en_maintenance',
                     motif=f'Changement actif OT #{ot.numero} — nouveau parent ({nouveau_actif.code})',
-                    modifiePar=getattr(request.user, 'utilisateur', None)
+                    modifiePar=request.user
                 )
 
         log_audit(request, 'UPDATE', 'ORDRES', 'OrdreTravail', ot.id,
@@ -1134,8 +1174,8 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
 
 class AffectationEquipeViewSet(viewsets.ModelViewSet):
     queryset = AffectationEquipe.objects.select_related(
-        'idOrdreTravail', 'idEquipe', 'idSousTraitant'
-    ).all()
+        'idOrdreTravail', 'idEquipe', 'idSousTraitant', 'idChefTechnicien'
+    ).prefetch_related('membres__idUtilisateur').all()
     serializer_class = AffectationEquipeSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
@@ -1158,6 +1198,48 @@ class AffectationEquipeViewSet(viewsets.ModelViewSet):
         log_audit(self.request, 'DELETE', 'ORDRES', 'AffectationEquipe', instance.id,
                   ancienne_valeur={'statut': instance.statut})
         instance.delete()
+
+    @action(detail=True, methods=['post'])
+    def modifier(self, request, pk=None):
+        affectation = self.get_object()
+
+        # Mise à jour du statut
+        statut = request.data.get('statut')
+        if statut in [c[0] for c in AffectationEquipe.STATUT_CHOICES]:
+            affectation.statut = statut
+
+        # Mise à jour des membres
+        membres_ids = request.data.get('membres', [])
+        if isinstance(membres_ids, list) and len(membres_ids) > 0:
+            # Vérifier les doublons dans une autre affectation du même OT
+            existing = MembreIntervention.objects.filter(
+                idAffectationEquipe__idOrdreTravail=affectation.idOrdreTravail,
+                idUtilisateur_id__in=membres_ids
+            ).exclude(idAffectationEquipe=affectation).select_related('idUtilisateur')
+            if existing.exists():
+                noms = [f"{e.idUtilisateur.prenom} {e.idUtilisateur.nom}".strip() for e in existing]
+                return Response(
+                    {'detail': f"Utilisateur(s) déjà affecté(s) dans une autre équipe : {', '.join(noms)}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            affectation.membres.all().delete()
+            from apps.securite.models import Utilisateur
+            for uid in membres_ids:
+                try:
+                    user = Utilisateur.objects.get(id=uid)
+                    MembreIntervention.objects.create(
+                        idAffectationEquipe=affectation,
+                        idUtilisateur=user,
+                        dateDebut=affectation.dateDebut,
+                    )
+                except Utilisateur.DoesNotExist:
+                    pass
+        elif isinstance(membres_ids, list) and len(membres_ids) == 0:
+            affectation.membres.all().delete()
+
+        affectation.save()
+        return Response(AffectationEquipeSerializer(affectation).data)
 
 
 class SuiviTempsViewSet(viewsets.ModelViewSet):

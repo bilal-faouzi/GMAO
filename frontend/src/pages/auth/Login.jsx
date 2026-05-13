@@ -20,7 +20,7 @@ export default function Login() {
     try {
       const res = await api.post("/auth/login/", form);
       login(res.data.utilisateur, res.data.access, res.data.refresh);
-      navigate("/dashboard");
+      navigate("/");
     } catch {
       setError("Identifiants incorrects. Veuillez réessayer.");
     } finally {

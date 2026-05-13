@@ -91,7 +91,7 @@ export function TeamManager({ userId, onTeamChange }) {
 
   const { errors, setApiErrors, clearErrors } = useFormErrors();
 
-  // ── Load ──────────────────────────────────────────────────────────────────
+  //  Load 
   const loadData = async () => {
     setLoading(true);
     try {
@@ -112,7 +112,7 @@ export function TeamManager({ userId, onTeamChange }) {
     if (userId) loadData();
   }, [userId]);
 
-  // ── Add ───────────────────────────────────────────────────────────────────
+  //  Add 
   const handleAdd = async () => {
     if (!form.equipe) return;
     clearErrors();
@@ -134,7 +134,7 @@ export function TeamManager({ userId, onTeamChange }) {
     }
   };
 
-  // ── Remove ────────────────────────────────────────────────────────────────
+  //  Remove 
   const handleRemove = async (membershipId) => {
     setPendingRemove(membershipId);
     try {
@@ -148,7 +148,7 @@ export function TeamManager({ userId, onTeamChange }) {
     }
   };
 
-  // ── Equipes disponibles (non déjà rejointes) ──────────────────────────────
+  //  Equipes disponibles (non déjà rejointes) 
   const assignedEquipeIds = memberships
     .filter((m) => m.estActif)
     .map((m) => m.equipe || m.equipe_id);
@@ -157,7 +157,7 @@ export function TeamManager({ userId, onTeamChange }) {
     (e) => e.estActif && !assignedEquipeIds.includes(e.id),
   );
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  //  Render 
   if (loading) {
     return (
       <div
@@ -187,7 +187,7 @@ export function TeamManager({ userId, onTeamChange }) {
         gap: 16,
         paddingTop: 8,
       }}>
-      {/* ── Équipes actives ── */}
+      {/*  Équipes actives  */}
       {activeTeams.length === 0 ? (
         <p
           style={{
@@ -285,7 +285,7 @@ export function TeamManager({ userId, onTeamChange }) {
         </div>
       )}
 
-      {/* ── Formulaire d'affectation ── */}
+      {/*  Formulaire d'affectation  */}
       {showForm ? (
         <div
           style={{
@@ -428,7 +428,7 @@ export function TeamManager({ userId, onTeamChange }) {
         )
       )}
 
-      {/* ── Historique ── */}
+      {/*  Historique  */}
       {historyTeams.length > 0 && (
         <div style={{ marginTop: 4 }}>
           <p

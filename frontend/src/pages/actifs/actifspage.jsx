@@ -14,7 +14,7 @@ import { getActifsArborescence } from "@/services/actif";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-// ─── Config badges ────────────────────────────────────────────────────────────
+//  Config badges 
 
 const STATUT_CONFIG = {
   EN_SERVICE: {
@@ -64,7 +64,7 @@ const TYPE_ICONS = {
   AUTOMATISME: <Cpu size={12} />,
 };
 
-// ─── Utilities ────────────────────────────────────────────────────────────────
+//  Utilities 
 
 function matchSearch(node, q) {
   if (!q) return true;
@@ -87,7 +87,7 @@ function filterTree(nodes, q) {
     }));
 }
 
-// ─── Badge Statut ─────────────────────────────────────────────────────────────
+//  Badge Statut 
 
 function StatutBadge({ statut }) {
   const cfg = STATUT_CONFIG[statut] || {
@@ -124,7 +124,7 @@ function StatutBadge({ statut }) {
   );
 }
 
-// ─── Badge Criticité ──────────────────────────────────────────────────────────
+//  Badge Criticité 
 
 function CriticiteBadge({ criticite }) {
   const cfg = CRITICITE_CONFIG[criticite];
@@ -147,7 +147,7 @@ function CriticiteBadge({ criticite }) {
   );
 }
 
-// ─── Badge Type ───────────────────────────────────────────────────────────────
+//  Badge Type 
 
 function TypeBadge({ type }) {
   const icon = TYPE_ICONS[type];
@@ -170,7 +170,7 @@ function TypeBadge({ type }) {
   );
 }
 
-// ─── Tree Node ────────────────────────────────────────────────────────────────
+//  Tree Node 
 
 function TreeNode({ node, depth = 0, searchQuery }) {
   const hasChildren = node.enfants && node.enfants.length > 0;
@@ -359,7 +359,7 @@ function TreeNode({ node, depth = 0, searchQuery }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+//  Main Component 
 
 export default function Actifspage() {
   const [tree, setTree] = useState([]);

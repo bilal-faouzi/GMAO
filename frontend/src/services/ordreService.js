@@ -1,6 +1,6 @@
 import api from "./api";
 
-// ── Demandes d'Intervention ──────────────────────────
+//  Demandes d'Intervention 
 export const getDemandes = (filters = {}) => {
   const params = new URLSearchParams(filters).toString();
   return api.get(`/v1/ordres/demandes/${params ? "?" + params : ""}`);
@@ -16,7 +16,7 @@ export const validerDemande = (id) =>
 export const rejeterDemande = (id, motif) =>
   api.post(`/v1/ordres/demandes/${id}/rejeter/`, { motif });
 
-// ── Ordres de Travail ────────────────────────────────
+//  Ordres de Travail 
 export const getOTs = (filters = {}) => {
   const params = new URLSearchParams(filters).toString();
   return api.get(`/v1/ordres/ots/${params ? "?" + params : ""}`);
@@ -68,12 +68,15 @@ export const enregistrerActifsCorriges = (id, actifs) =>
 
 export const getDashboardOT = () => api.get("/v1/ordres/ots/dashboard/");
 
-// ── Données secondaires ──────────────────────────────
+//  Données secondaires 
 export const getAffectations = (idOT) =>
   api.get(`/v1/ordres/affectations/?idOrdreTravail=${idOT}`);
 
 export const deleteAffectation = (id) =>
   api.delete(`/v1/ordres/affectations/${id}/`);
+
+export const updateAffectation = (id, data) =>
+  api.post(`/v1/ordres/affectations/${id}/modifier/`, data);
 
 export const getSuiviTemps = (idOT) =>
   api.get(`/v1/ordres/suivitemps/?idOrdreTravail=${idOT}`);

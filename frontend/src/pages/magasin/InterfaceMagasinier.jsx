@@ -156,7 +156,7 @@ export default function InterfaceMagasinier() {
         quantite: l.quantite,
       }));
       const res = await enregistrerPieces(otSelectionne, piecesPayload);
-      setSucces(`✅ ${res.data.message || "Sorties enregistrées"} → ${otCourant?.numero}`);
+      setSucces(` ${res.data.message || "Sorties enregistrées"} → ${otCourant?.numero}`);
       setPanier([]);
       setTechnicien("");
       await chargerDonnees();
@@ -192,7 +192,7 @@ export default function InterfaceMagasinier() {
             disabled={importLoading}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 rounded-lg text-sm font-semibold transition text-white">
             {importLoading ? (
-              <><span className="animate-spin">⟳</span> Import en cours...</>
+              <><span className="animate-spin"></span> Import en cours...</>
             ) : (
               <><Upload size={16} /> Importer CSV SAGE X3</>
             )}
@@ -212,7 +212,7 @@ export default function InterfaceMagasinier() {
               try {
                 const res = await importerPiecesCSV(file);
                 setImportResult(res.data);
-                setSucces(`✅ Import terminé : ${res.data.creees} créées, ${res.data.mises_a_jour} mises à jour${res.data.erreurs?.length ? `, ${res.data.erreurs.length} erreurs` : ""}`);
+                setSucces(` Import terminé : ${res.data.creees} créées, ${res.data.mises_a_jour} mises à jour${res.data.erreurs?.length ? `, ${res.data.erreurs.length} erreurs` : ""}`);
                 await chargerDonnees();
               } catch (err) {
                 const msg = err.response?.data?.error || "Erreur lors de l'import CSV.";
@@ -226,9 +226,9 @@ export default function InterfaceMagasinier() {
           {importResult && (
             <div className="text-xs text-text-secondary text-right">
               <p>Fichier : <span className="text-text">{importResult.fichier}</span></p>
-              <p>Lignes : <span className="text-text">{importResult.total_lignes}</span> | Créées : <span className="text-green-500 dark:text-green-400">{importResult.creees}</span> | MàJ : <span className="text-blue-500 dark:text-blue-400">{importResult.mises_a_jour}</span></p>
+              <p>Lignes : <span className="text-text">{importResult.total_lignes}</span> | Créées : <span className="text-success dark:text-success">{importResult.creees}</span> | MàJ : <span className="text-blue-500 dark:text-primary">{importResult.mises_a_jour}</span></p>
               {importResult.erreurs?.length > 0 && (
-                <p className="text-red-400">Erreurs : {importResult.erreurs.length}</p>
+                <p className="text-danger">Erreurs : {importResult.erreurs.length}</p>
               )}
             </div>
           )}
@@ -237,13 +237,13 @@ export default function InterfaceMagasinier() {
 
       {/* Alertes stock */}
       {alertes.length > 0 && (
-        <div className="bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded-xl p-4 mb-6">
-          <p className="text-red-700 dark:text-red-400 font-medium text-sm mb-2 flex items-center gap-2">
+        <div className="bg-red-100 dark:bg-danger-soft border border-red-300 dark:border-danger/30 rounded-xl p-4 mb-6">
+          <p className="text-red-700 dark:text-danger font-medium text-sm mb-2 flex items-center gap-2">
             <AlertTriangle size={14} /> {alertes.length} pièce(s) sous le seuil minimum
           </p>
           <div className="flex flex-wrap gap-2">
             {alertes.slice(0, 5).map((a) => (
-              <span key={a.id} className="text-xs bg-red-200 dark:bg-red-500/20 text-red-700 dark:text-red-300 px-2 py-1 rounded-full font-mono">
+              <span key={a.id} className="text-xs bg-red-200 dark:bg-danger-soft text-red-700 dark:text-danger px-2 py-1 rounded-full font-mono">
                 {a.reference} — {a.quantiteStock} {a.unite} (min: {a.seuilMinimum})
               </span>
             ))}
@@ -252,17 +252,17 @@ export default function InterfaceMagasinier() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* ── Colonne gauche : formulaire + panier ── */}
+        {/*  Colonne gauche : formulaire + panier  */}
         <div className="space-y-5">
           {/* Messages */}
           {erreur && (
-            <div className="bg-red-100 dark:bg-red-500/20 border border-red-300 dark:border-red-500/40 text-red-700 dark:text-red-400 rounded-lg p-3 text-sm flex items-start gap-2">
+            <div className="bg-red-100 dark:bg-danger-soft border border-red-300 dark:border-danger/40 text-red-700 dark:text-danger rounded-lg p-3 text-sm flex items-start gap-2">
               <AlertTriangle size={16} className="mt-0.5 shrink-0" />
               {erreur}
             </div>
           )}
           {succes && (
-            <div className="bg-green-100 dark:bg-green-500/20 border border-green-300 dark:border-green-500/40 text-green-700 dark:text-green-400 rounded-lg p-3 text-sm flex items-start gap-2">
+            <div className="bg-green-100 dark:bg-success-soft border border-green-300 dark:border-success/40 text-green-700 dark:text-success rounded-lg p-3 text-sm flex items-start gap-2">
               <CheckCircle size={16} className="mt-0.5 shrink-0" />
               {succes}
             </div>
@@ -270,7 +270,7 @@ export default function InterfaceMagasinier() {
 
           {/* Sélection OT */}
           <div className="bg-surface rounded-xl border border-border p-5">
-            <h2 className="text-sm font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-4">
+            <h2 className="text-sm font-semibold text-purple-600 dark:text-primary uppercase tracking-wider mb-4">
               1. Sélectionner l'intervention (OT)
             </h2>
             <input
@@ -278,12 +278,12 @@ export default function InterfaceMagasinier() {
               placeholder="Rechercher OT par numéro ou actif..."
               value={otSearch}
               onChange={(e) => setOtSearch(e.target.value)}
-              className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-purple-500 mb-2"
+              className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-primary mb-2"
             />
             <select
               value={otSelectionne}
               onChange={(e) => { setOtSelectionne(e.target.value); setPanier([]); }}
-              className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-purple-500"
+              className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-primary"
               size={Math.min(otsFiltres.length + 1, 4)}>
               <option value="">— Sélectionner l'OT —</option>
               {otsFiltres.map((o) => (
@@ -293,16 +293,16 @@ export default function InterfaceMagasinier() {
               ))}
             </select>
             {otCourant && (
-              <div className="mt-3 p-3 bg-purple-100 dark:bg-purple-500/10 border border-purple-300 dark:border-purple-500/20 rounded-lg">
+              <div className="mt-3 p-3 bg-purple-100 dark:bg-primary-soft border border-purple-300 dark:border-primary/20 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-mono text-sm text-purple-700 dark:text-purple-300">{otCourant.numero}</p>
+                    <p className="font-mono text-sm text-purple-700 dark:text-primary">{otCourant.numero}</p>
                     <p className="text-xs text-text-secondary">{otCourant.actif_detail?.libelle}</p>
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    otCourant.priorite === "critique" ? "bg-red-200 dark:bg-red-500/20 text-red-700 dark:text-red-400" :
-                    otCourant.priorite === "haute" ? "bg-orange-200 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400" :
-                    "bg-blue-200 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400"
+                    otCourant.priorite === "critique" ? "bg-red-200 dark:bg-danger-soft text-red-700 dark:text-danger" :
+                    otCourant.priorite === "haute" ? "bg-orange-200 dark:bg-status-orange/20 text-orange-700 dark:text-status-orange" :
+                    "bg-blue-200 dark:bg-primary-soft text-blue-700 dark:text-primary"
                   }`}>{otCourant.priorite}</span>
                 </div>
               </div>
@@ -311,7 +311,7 @@ export default function InterfaceMagasinier() {
 
           {/* Ajout pièce */}
           <div className="bg-surface rounded-xl border border-border p-5">
-            <h2 className="text-sm font-semibold text-teal-600 dark:text-teal-400 uppercase tracking-wider mb-4">
+            <h2 className="text-sm font-semibold text-teal-600 dark:text-status-cyan uppercase tracking-wider mb-4">
               2. Ajouter des pièces au panier
             </h2>
 
@@ -325,7 +325,7 @@ export default function InterfaceMagasinier() {
                 value={pieceSearch}
                 onChange={(e) => { setPieceSearch(e.target.value); setSelectedPiece(null); }}
                 disabled={!otSelectionne}
-                className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-teal-500 disabled:opacity-40"
+                className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-status-cyan disabled:opacity-40"
               />
               {pieceSearch && (
                 <div className="bg-elevated border border-border rounded-lg max-h-40 overflow-y-auto mt-1">
@@ -342,13 +342,13 @@ export default function InterfaceMagasinier() {
                           setSelectedPiece(p);
                         }}
                         className={`flex items-center justify-between px-3 py-2 hover:bg-surface cursor-pointer border-b border-border/50 last:border-0 ${
-                          selectedPiece?.id === p.id ? "bg-teal-100 dark:bg-teal-500/20" : ""
+                          selectedPiece?.id === p.id ? "bg-teal-100 dark:bg-status-cyan/20" : ""
                         }`}>
                         <div>
-                          <span className="font-mono text-sm text-purple-700 dark:text-purple-300">{p.reference}</span>
+                          <span className="font-mono text-sm text-purple-700 dark:text-primary">{p.reference}</span>
                           <span className="text-xs text-text-secondary ml-2">{p.designation}</span>
                         </div>
-                        <span className={`text-xs font-bold ml-2 ${p.est_sous_seuil ? "text-red-700 dark:text-red-400" : "text-green-700 dark:text-green-400"}`}>
+                        <span className={`text-xs font-bold ml-2 ${p.est_sous_seuil ? "text-red-700 dark:text-danger" : "text-green-700 dark:text-success"}`}>
                           {p.quantiteStock} {p.unite}
                         </span>
                       </div>
@@ -370,7 +370,7 @@ export default function InterfaceMagasinier() {
                   onChange={(e) => setQuantite(e.target.value)}
                   disabled={!otSelectionne}
                   placeholder="0"
-                  className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-teal-500 disabled:opacity-40"
+                  className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-status-cyan disabled:opacity-40"
                 />
               </div>
               <button
@@ -399,7 +399,7 @@ export default function InterfaceMagasinier() {
                 onChange={(e) => setTechnicien(e.target.value)}
                 disabled={!otSelectionne}
                 placeholder="Nom du technicien bénéficiaire"
-                className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-teal-500 disabled:opacity-40"
+                className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-status-cyan disabled:opacity-40"
               />
             </div>
           </div>
@@ -413,13 +413,13 @@ export default function InterfaceMagasinier() {
                 exit={{ opacity: 0, y: 10 }}
                 className="bg-surface rounded-xl border border-border p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                  <h2 className="text-sm font-semibold text-amber-600 dark:text-warning uppercase tracking-wider flex items-center gap-2">
                     <ShoppingCart size={14} /> Panier ({panier.length})
                   </h2>
                   <button
                     type="button"
                     onClick={() => setPanier([])}
-                    className="text-xs text-text-muted hover:text-red-600 dark:hover:text-red-400 transition">
+                    className="text-xs text-text-muted hover:text-red-600 dark:hover:text-danger transition">
                     Vider
                   </button>
                 </div>
@@ -446,7 +446,7 @@ export default function InterfaceMagasinier() {
                       <button
                         type="button"
                         onClick={() => retirerDuPanier(ligne.piece.id)}
-                        className="text-gray-500 hover:text-red-400 p-1 transition">
+                        className="text-text-muted hover:text-danger p-1 transition">
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -462,7 +462,7 @@ export default function InterfaceMagasinier() {
                     disabled={submitting}
                     className="w-full py-3 bg-teal-600 hover:bg-teal-700 dark:bg-teal-600 dark:hover:bg-teal-700 disabled:opacity-40 rounded-xl text-sm font-semibold transition text-white flex items-center justify-center gap-2">
                     {submitting ? (
-                      <><span className="animate-spin">⟳</span> Enregistrement...</>
+                      <><span className="animate-spin"></span> Enregistrement...</>
                     ) : (
                       <><Package size={16} /> Confirmer les {panier.length} sortie(s)</>
                     )}
@@ -473,7 +473,7 @@ export default function InterfaceMagasinier() {
           </AnimatePresence>
         </div>
 
-        {/* ── Colonne droite : stock et OT ── */}
+        {/*  Colonne droite : stock et OT  */}
         <div className="space-y-4">
           {/* Résumé stock */}
           <div className="bg-surface rounded-xl border border-border p-5">
@@ -485,8 +485,8 @@ export default function InterfaceMagasinier() {
                 <p className="text-2xl font-bold text-text">{totalPieces}</p>
                 <p className="text-xs text-text-secondary mt-1">Références</p>
               </div>
-              <div className={`rounded-lg p-3 text-center ${alertes.length > 0 ? "bg-red-100 dark:bg-red-500/20" : "bg-elevated"}`}>
-                <p className={`text-2xl font-bold ${alertes.length > 0 ? "text-red-700 dark:text-red-400" : "text-text"}`}>{alertes.length}</p>
+              <div className={`rounded-lg p-3 text-center ${alertes.length > 0 ? "bg-red-100 dark:bg-danger-soft" : "bg-elevated"}`}>
+                <p className={`text-2xl font-bold ${alertes.length > 0 ? "text-red-700 dark:text-danger" : "text-text"}`}>{alertes.length}</p>
                 <p className="text-xs text-text-secondary mt-1">Alertes</p>
               </div>
               <div className="bg-elevated rounded-lg p-3 text-center">
@@ -497,13 +497,13 @@ export default function InterfaceMagasinier() {
 
             {alertes.length > 0 && (
               <div>
-                <p className="text-xs text-red-700 dark:text-red-400 font-medium mb-2">Pièces à réapprovisionner :</p>
+                <p className="text-xs text-red-700 dark:text-danger font-medium mb-2">Pièces à réapprovisionner :</p>
                 <div className="space-y-1 max-h-32 overflow-y-auto">
                   {alertes.map((a) => (
-                    <div key={a.id} className="flex justify-between items-center text-xs p-2 bg-red-100 dark:bg-red-500/10 rounded-lg">
-                      <span className="font-mono text-red-700 dark:text-red-300">{a.reference}</span>
+                    <div key={a.id} className="flex justify-between items-center text-xs p-2 bg-red-100 dark:bg-danger-soft rounded-lg">
+                      <span className="font-mono text-red-700 dark:text-danger">{a.reference}</span>
                       <span className="text-text-secondary truncate mx-2">{a.designation?.slice(0, 25)}</span>
-                      <span className="text-red-700 dark:text-red-400 font-bold whitespace-nowrap">{a.quantiteStock} / {a.seuilMinimum}</span>
+                      <span className="text-red-700 dark:text-danger font-bold whitespace-nowrap">{a.quantiteStock} / {a.seuilMinimum}</span>
                     </div>
                   ))}
                 </div>
@@ -543,11 +543,11 @@ export default function InterfaceMagasinier() {
                       className={`cursor-pointer transition hover:bg-elevated ${
                         p.est_sous_seuil ? "bg-red-100 dark:bg-red-500/5" : ""
                       }`}>
-                      <td className="py-2 font-mono text-purple-700 dark:text-purple-300">{p.reference}</td>
+                      <td className="py-2 font-mono text-purple-700 dark:text-primary">{p.reference}</td>
                       <td className="py-2 text-text truncate max-w-[120px]">{p.designation}</td>
                       <td className="py-2 text-text-secondary">{p.categorie || "—"}</td>
                       <td className="py-2 text-text-secondary">{p.emplacement || "—"}</td>
-                      <td className={`py-2 text-right font-bold ${p.est_sous_seuil ? "text-red-700 dark:text-red-400" : "text-green-700 dark:text-green-400"}`}>
+                      <td className={`py-2 text-right font-bold ${p.est_sous_seuil ? "text-red-700 dark:text-danger" : "text-green-700 dark:text-success"}`}>
                         {p.quantiteStock}
                       </td>
                       <td className="py-2 text-text-secondary">{p.unite}</td>
@@ -593,18 +593,18 @@ export default function InterfaceMagasinier() {
                     onClick={() => { setOtSelectionne(o.id); setOtSearch(""); setPanier([]); }}
                     className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition ${
                       otSelectionne === o.id
-                        ? "bg-purple-100 dark:bg-purple-500/20 border border-purple-300 dark:border-purple-500/40"
+                        ? "bg-purple-100 dark:bg-primary-soft border border-purple-300 dark:border-purple-500/40"
                         : "bg-elevated hover:bg-surface"
                     }`}>
                     <div>
-                      <p className="font-mono text-sm text-purple-700 dark:text-purple-300">{o.numero}</p>
+                      <p className="font-mono text-sm text-purple-700 dark:text-primary">{o.numero}</p>
                       <p className="text-xs text-text-secondary">{o.actif_detail?.libelle?.slice(0, 35)}</p>
                     </div>
                     <div className="text-right">
                       <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        o.priorite === "critique" ? "bg-red-200 dark:bg-red-500/20 text-red-700 dark:text-red-400" :
-                        o.priorite === "haute" ? "bg-orange-200 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400" :
-                        "bg-blue-200 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400"
+                        o.priorite === "critique" ? "bg-red-200 dark:bg-danger-soft text-red-700 dark:text-danger" :
+                        o.priorite === "haute" ? "bg-orange-200 dark:bg-status-orange/20 text-orange-700 dark:text-status-orange" :
+                        "bg-blue-200 dark:bg-primary-soft text-blue-700 dark:text-primary"
                       }`}>{o.priorite}</span>
                     </div>
                   </div>

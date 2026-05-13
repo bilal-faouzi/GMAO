@@ -36,7 +36,58 @@ module.exports = {
           soft: "var(--color-success-soft)",
         },
 
-        warning: "var(--color-warning)",
+        warning: {
+          DEFAULT: "var(--color-warning)",
+          soft: "var(--color-warning-soft)",
+        },
+
+        status: {
+          green: {
+            DEFAULT: "var(--status-green-text)",
+            bg: "var(--status-green-bg)",
+            dot: "var(--status-green-dot)",
+          },
+          orange: {
+            DEFAULT: "var(--status-orange-text)",
+            bg: "var(--status-orange-bg)",
+            dot: "var(--status-orange-dot)",
+          },
+          red: {
+            DEFAULT: "var(--status-red-text)",
+            bg: "var(--status-red-bg)",
+            dot: "var(--status-red-dot)",
+          },
+          blue: {
+            DEFAULT: "var(--status-blue-text)",
+            bg: "var(--status-blue-bg)",
+            dot: "var(--status-blue-dot)",
+          },
+          gray: {
+            DEFAULT: "var(--status-gray-text)",
+            bg: "var(--status-gray-bg)",
+            dot: "var(--status-gray-dot)",
+          },
+          stone: {
+            DEFAULT: "var(--status-stone-text)",
+            bg: "var(--status-stone-bg)",
+            dot: "var(--status-stone-dot)",
+          },
+          purple: {
+            DEFAULT: "var(--status-purple-text)",
+            bg: "var(--status-purple-bg)",
+            dot: "var(--status-purple-dot)",
+          },
+          cyan: {
+            DEFAULT: "var(--status-cyan-text)",
+            bg: "var(--status-cyan-bg)",
+            dot: "var(--status-cyan-dot)",
+          },
+          yellow: {
+            DEFAULT: "var(--status-yellow-text)",
+            bg: "var(--status-yellow-bg)",
+            dot: "var(--status-yellow-dot)",
+          },
+        },
 
         danger: {
           DEFAULT: "var(--color-danger)",
