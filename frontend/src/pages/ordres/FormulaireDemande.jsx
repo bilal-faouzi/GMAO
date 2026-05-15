@@ -1,84 +1,78 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { createDemande } from "../../services/ordreService";
+import { createDemande, getDemandes } from "../../services/ordreService";
 import { getActifs, getActif } from "../../services/actifService";
 import { updateUnite } from "../../services/organisationService";
-import { ArrowLeft, Upload, X, Image, Mic } from "lucide-react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+  Upload, X, Image, Mic, Video, AlertTriangle, Building2,
+  Clock, Wrench, ChevronRight, ChevronDown, ChevronUp,
+} from "lucide-react";
 import api from "../../services/api";
-import { Input } from "@/components/ui/input";
+import useAuthStore from "@/store/authStore";
 
-const URGENCES = [
-  {
-    value: "basse",
-    label: "Basse",
-    description: "Pas urgent, peut attendre quelques jours",
-    color: "var(--status-gray-dot)",
-  },
-  {
-    value: "normale",
-    label: "Normale",
-    description: "À traiter dans les 24-48 heures",
-    color: "var(--status-blue-dot)",
-  },
-  {
-    value: "haute",
-    label: "Haute",
-    description: "À traiter en priorité, impact modéré",
-    color: "var(--status-orange-dot)",
-  },
-  {
-    value: "critique",
+const URGENCE_INFO = {
+  critique: {
     label: "Critique",
-    description: "Urgence absolue, arrêt de production",
-    color: "var(--status-red-dot)",
+    desc: "Production arrêtée — intervention immédiate requise",
+    style: {
+      borderColor: "var(--status-red-dot)",
+      background: "var(--status-red-bg)",
+      color: "var(--status-red-text)",
+    },
+    dot: "var(--status-red-dot)",
   },
-];
+  haute: {
+    label: "Haute",
+    desc: "Impact fort sur la production — traiter dans la journée",
+    style: {
+      borderColor: "var(--status-orange-dot)",
+      background: "var(--status-orange-bg)",
+      color: "var(--status-orange-text)",
+    },
+    dot: "var(--status-orange-dot)",
+  },
+  normale: {
+    label: "Normale",
+    desc: "Gêne partielle — peut attendre quelques jours",
+    style: {
+      borderColor: "var(--status-blue-dot)",
+      background: "var(--status-blue-bg)",
+      color: "var(--status-blue-text)",
+    },
+    dot: "var(--status-blue-dot)",
+  },
+  basse: {
+    label: "Basse",
+    desc: "Non urgent — à traiter selon disponibilité",
+    style: {
+      borderColor: "var(--status-gray-dot)",
+      background: "var(--status-gray-bg)",
+      color: "var(--status-gray-text)",
+    },
+    dot: "var(--status-gray-dot)",
+  },
+};
 
-function UrgenceSelector({ value, onChange }) {
-  return (
-    <div className="flex flex-col gap-2">
-      {URGENCES.map((urgence) => (
-        <button
-          key={urgence.value}
-          type="button"
-          onClick={() => onChange(urgence.value)}
-          className="flex items-start gap-3 p-3 rounded-[var(--r-sm)] cursor-pointer transition-all duration-150"
-          style={{
-            border:
-              value === urgence.value
-                ? `2px solid ${urgence.color}`
-                : "1px solid var(--border-default)",
-            background:
-              value === urgence.value
-                ? `${urgence.color}15`
-                : "var(--bg-elevated)",
-          }}>
-          <div
-            className="w-3 h-3 rounded-full mt-1 shrink-0"
-            style={{ background: urgence.color }}
-          />
-          <div className="text-left flex-1">
-            <div className="text-[13px] font-semibold text-[var(--text-primary)]">
-              {urgence.label}
-            </div>
-            <div className="text-xs text-[var(--text-muted)] mt-0.5">
-              {urgence.description}
-            </div>
-          </div>
-        </button>
-      ))}
-    </div>
-  );
-}
+const STATUT_STYLES = {
+  en_attente: {
+    label: "Nouvelle déclaration",
+    bg: "var(--status-yellow-bg)",
+    text: "var(--status-yellow-text)",
+    border: "var(--status-yellow-dot)",
+  },
+  validee: {
+    label: "Validée → OT créé",
+    bg: "var(--status-green-bg)",
+    text: "var(--status-green-text)",
+    border: "var(--status-green-dot)",
+  },
+  rejetee: {
+    label: "Rejetée",
+    bg: "var(--status-red-bg)",
+    text: "var(--status-red-text)",
+    border: "var(--status-red-dot)",
+  },
+};
 
 export default function FormulaireDemande({
   defaultActifId,
@@ -86,28 +80,35 @@ export default function FormulaireDemande({
   onSuccess,
 }) {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const uniteUser = user?.unite_principale;
+
+  const [mesDemandes, setMesDemandes] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Cascade selector
+  const [selectionPath, setSelectionPath] = useState([]);
+  const [optionsAtLevel, setOptionsAtLevel] = useState([]);
+  const [loadingActifs, setLoadingActifs] = useState(false);
+  const [actifDetails, setActifDetails] = useState(null);
 
   const [form, setForm] = useState({
     idActif: defaultActifId ?? "",
     titre: "",
-    description: "",
     urgence: "normale",
+    description: "",
   });
 
-  const [actifs, setActifs] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [erreur, setErreur] = useState(null);
-  const [actifDetails, setActifDetails] = useState(null);
-
-  // Images
   const [images, setImages] = useState([]);
   const [previewImages, setPreviewImages] = useState([]);
+  const [videos, setVideos] = useState([]);
+  const [previewVideos, setPreviewVideos] = useState([]);
+  const [audioFiles, setAudioFiles] = useState([]);
 
   // Audio recording
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [recordedAudios, setRecordedAudios] = useState([]);
-  const [audioFiles, setAudioFiles] = useState([]);
   const [currentPlayingAudio, setCurrentPlayingAudio] = useState(null);
 
   const chunksRef = useRef([]);
@@ -115,17 +116,34 @@ export default function FormulaireDemande({
   const streamRef = useRef(null);
   const recordingStartTimeRef = useRef(null);
 
-  useEffect(() => {
-    getActifs({ estActif: true, my_unite: true }).then((r) =>
-      setActifs(r.data.results || r.data),
-    );
-  }, []);
+  const [erreur, setErreur] = useState("");
+  const [succes, setSucces] = useState("");
+  const [showRecents, setShowRecents] = useState(false);
 
+  /*  Initial load  */
   useEffect(() => {
+    setLoadingActifs(true);
+    getActifs({ estActif: true, is_parent: true, my_unite: true })
+      .then((r) => {
+        const roots = r.data.results || r.data;
+        setOptionsAtLevel([roots]);
+      })
+      .catch((err) => console.error("Erreur chargement actifs racines:", err))
+      .finally(() => setLoadingActifs(false));
+
+    getDemandes({ my_unite: true }).then((r) =>
+      setMesDemandes((r.data.results || r.data).slice(0, 6)),
+    );
+
     if (defaultActifId) {
       getActif(defaultActifId).then((r) => {
         setActifDetails(r.data);
         setForm((f) => ({ ...f, idActif: String(defaultActifId) }));
+        // Pre-fill cascade if the asset has a parent chain
+        if (r.data?.idParent) {
+          // We only have direct parent info; pre-select at one level
+          setSelectionPath([r.data]);
+        }
       });
     }
   }, [defaultActifId]);
@@ -149,23 +167,69 @@ export default function FormulaireDemande({
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
-      if (currentPlayingAudio) currentPlayingAudio.pause();
-      recordedAudios.forEach((r) => r.url && URL.revokeObjectURL(r.url));
+      if (currentPlayingAudio) {
+        currentPlayingAudio.pause();
+      }
+      recordedAudios.forEach((rec) => rec.url && URL.revokeObjectURL(rec.url));
       previewImages.forEach((url) => URL.revokeObjectURL(url));
+      previewVideos.forEach((url) => URL.revokeObjectURL(url));
     };
   }, []);
 
-  const handleClose = () => {
-    if (onClose) onClose();
-    else navigate("/ordres/demandes");
+  /*  Cascade  */
+  const actifParent = selectionPath.length > 0 ? selectionPath[0] : null;
+  const actifSelectionne =
+    selectionPath.length > 0
+      ? selectionPath[selectionPath.length - 1]
+      : null;
+
+  const handleSelectAtLevel = async (levelIndex, assetId) => {
+    if (!assetId) {
+      setSelectionPath((prev) => prev.slice(0, levelIndex));
+      setOptionsAtLevel((prev) => prev.slice(0, levelIndex + 1));
+      setForm((f) => ({ ...f, idActif: "" }));
+      return;
+    }
+    const selectedAsset = optionsAtLevel[levelIndex].find(
+      (a) => a.id === assetId,
+    );
+    if (!selectedAsset) return;
+
+    const newPath = selectionPath.slice(0, levelIndex);
+    newPath[levelIndex] = selectedAsset;
+    setSelectionPath(newPath);
+    setForm((f) => ({ ...f, idActif: selectedAsset.id }));
+    setOptionsAtLevel((prev) => prev.slice(0, levelIndex + 1));
+
+    setLoadingActifs(true);
+    try {
+      const r = await getActifs({
+        estActif: true,
+        idParent: selectedAsset.id,
+        my_unite: true,
+      });
+      const children = r.data.results || r.data;
+      if (children.length > 0) {
+        setOptionsAtLevel((prev) => {
+          const updated = [...prev.slice(0, levelIndex + 1)];
+          updated[levelIndex + 1] = children;
+          return updated;
+        });
+      }
+    } catch (err) {
+      console.error("Erreur chargement enfants:", err);
+    } finally {
+      setLoadingActifs(false);
+    }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
+  const clearSelection = () => {
+    setSelectionPath([]);
+    setOptionsAtLevel((prev) => prev.slice(0, 1));
+    setForm((f) => ({ ...f, idActif: "" }));
   };
 
-  //  Images 
+  /*  Images  */
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files || []);
     const newImages = [...images, ...files];
@@ -173,58 +237,83 @@ export default function FormulaireDemande({
     setPreviewImages(newImages.map((f) => URL.createObjectURL(f)));
     e.target.value = "";
   };
-
   const removeImage = (index) => {
     URL.revokeObjectURL(previewImages[index]);
-    setImages((prev) => prev.filter((_, i) => i !== index));
-    setPreviewImages((prev) => prev.filter((_, i) => i !== index));
+    const newImages = images.filter((_, i) => i !== index);
+    setImages(newImages);
+    setPreviewImages(newImages.map((f) => URL.createObjectURL(f)));
   };
 
-  //  Audio recording 
+  /*  Vidéos  */
+  const handleVideoChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    const newVideos = [...videos, ...files];
+    setVideos(newVideos);
+    setPreviewVideos(newVideos.map((f) => URL.createObjectURL(f)));
+    e.target.value = "";
+  };
+  const removeVideo = (index) => {
+    URL.revokeObjectURL(previewVideos[index]);
+    const newVideos = videos.filter((_, i) => i !== index);
+    setVideos(newVideos);
+    setPreviewVideos(newVideos.map((f) => URL.createObjectURL(f)));
+  };
+
+  /*  Audio  */
   const isSecureContext = () => {
-    return window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    return (
+      window.isSecureContext ||
+      location.protocol === "https:" ||
+      location.hostname === "localhost" ||
+      location.hostname === "127.0.0.1"
+    );
   };
 
   const getSupportedMimeType = () => {
-    const types = ['audio/webm', 'audio/mp4', 'audio/ogg', 'audio/wav'];
+    const types = ["audio/webm", "audio/mp4", "audio/ogg", "audio/wav"];
     for (const t of types) {
       if (MediaRecorder.isTypeSupported(t)) return t;
     }
-    return '';
+    return "";
   };
 
   const startRecording = async () => {
     if (!isSecureContext()) {
-      setErreur(' L\'enregistrement audio nécessite HTTPS. Utilisez https://192.168.2.232:9669');
+      setErreur(
+        "L'enregistrement audio nécessite HTTPS. Utilisez https://192.168.2.232:9669",
+      );
       return;
     }
     try {
       chunksRef.current = [];
       recordingStartTimeRef.current = Date.now();
-
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-
       const mimeType = getSupportedMimeType();
-      const options = mimeType ? { mimeType, audioBitsPerSecond: 128000 } : {};
+      const options = mimeType
+        ? { mimeType, audioBitsPerSecond: 128000 }
+        : {};
       const recorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = recorder;
 
-      recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
-
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
+      };
       recorder.onstop = () => {
         const durationSeconds = Math.floor(
           (Date.now() - recordingStartTimeRef.current) / 1000,
         );
-        const finalType = mimeType || 'audio/webm';
+        const finalType = mimeType || "audio/webm";
         const blob = new Blob(chunksRef.current, { type: finalType });
-
         if (blob.size === 0) {
-          setErreur("Aucun audio enregistré. Vérifiez votre microphone.");
+          setErreur("Aucun audio enregistré.");
           return;
         }
-
-        const ext = finalType.includes('mp4') ? 'mp4' : finalType.includes('ogg') ? 'ogg' : 'webm';
+        const ext = finalType.includes("mp4")
+          ? "mp4"
+          : finalType.includes("ogg")
+            ? "ogg"
+            : "webm";
         const fileName = `recording_${Date.now()}.${ext}`;
         setRecordedAudios((prev) => [
           ...prev,
@@ -235,22 +324,24 @@ export default function FormulaireDemande({
             name: fileName,
           },
         ]);
-        const file = new File([blob], fileName, { type: finalType });
-        setAudioFiles((prev) => [...prev, file]);
+        setAudioFiles((prev) => [
+          ...prev,
+          new File([blob], fileName, { type: finalType }),
+        ]);
         setRecordingTime(0);
       };
-
-      recorder.onerror = (e) =>
-        setErreur(`Erreur d'enregistrement: ${e.message || e}`);
-
+      recorder.onerror = (e) => {
+        setErreur(`Erreur enregistrement: ${e.message || e}`);
+      };
       recorder.start(1000);
       setIsRecording(true);
-      setRecordingTime(0);
     } catch (err) {
-      if (err.name === 'NotAllowedError') {
-        setErreur(' Microphone bloqué. Autorisez l\'accès au micro dans les paramètres du navigateur.');
-      } else if (err.name === 'NotFoundError') {
-        setErreur(' Aucun microphone détecté.');
+      if (err.name === "NotAllowedError") {
+        setErreur(
+          "Microphone bloqué. Autorisez l'accès au micro dans les paramètres du navigateur.",
+        );
+      } else if (err.name === "NotFoundError") {
+        setErreur("Aucun microphone détecté.");
       } else {
         setErreur(`Erreur microphone: ${err.message}`);
       }
@@ -263,7 +354,8 @@ export default function FormulaireDemande({
       mediaRecorderRef.current.state !== "inactive"
     ) {
       mediaRecorderRef.current.stop();
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+      if (streamRef.current)
+        streamRef.current.getTracks().forEach((t) => t.stop());
       setIsRecording(false);
     }
   };
@@ -283,27 +375,36 @@ export default function FormulaireDemande({
     }
     const recorded = recordedAudios[index];
     if (!recorded?.blob?.size) {
-      setErreur("Le fichier audio est vide.");
+      setErreur("Fichier audio vide");
       return;
     }
-    const audio = new Audio(recorded.url);
+    const audio = new Audio(
+      recorded.url || URL.createObjectURL(recorded.blob),
+    );
     setCurrentPlayingAudio(audio);
     audio.onended = () => setCurrentPlayingAudio(null);
     audio.onerror = () => {
-      setErreur("Impossible de lire le fichier audio.");
+      setErreur("Impossible de lire le fichier");
       setCurrentPlayingAudio(null);
     };
-    audio.play().catch((err) => setErreur(`Erreur lecture: ${err.message}`));
+    audio.play().catch((err) => {
+      setErreur(err.message);
+      setCurrentPlayingAudio(null);
+    });
   };
 
-  const formatTime = (s) =>
-    `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-
-  //  Submit 
+  /*  Submit  */
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErreur("");
+    setSucces("");
+    if (!form.idActif) return setErreur("Sélectionnez l'équipement en panne.");
+    if (!form.titre.trim())
+      return setErreur("Saisissez un titre pour la demande d'intervention.");
+    if (!form.description.trim())
+      return setErreur("Décrivez le problème observé.");
+
     setLoading(true);
-    setErreur(null);
     try {
       const res = await createDemande(form);
       const demandeId = res.data.id;
@@ -316,7 +417,7 @@ export default function FormulaireDemande({
         }
       }
 
-      const tousLesFichiers = [...images, ...audioFiles];
+      const tousLesFichiers = [...images, ...videos, ...audioFiles];
       if (tousLesFichiers.length > 0) {
         const formData = new FormData();
         tousLesFichiers.forEach((f) => formData.append("fichiers", f));
@@ -326,264 +427,810 @@ export default function FormulaireDemande({
             formData,
             { headers: { "Content-Type": "multipart/form-data" } },
           );
-        } catch (err) {
-          console.warn("Erreur upload fichiers (non-bloquant):", err.message);
+        } catch (e) {
+          console.warn("Upload non-bloquant:", e.message);
         }
       }
+
+      setSucces(`Demande ${res.data.numero} enregistrée avec succès.`);
+      setForm({ idActif: "", titre: "", urgence: "normale", description: "" });
+      setImages([]);
+      setPreviewImages([]);
+      setVideos([]);
+      setPreviewVideos([]);
+      setAudioFiles([]);
+      setRecordedAudios([]);
+      setSelectionPath([]);
+      setOptionsAtLevel((prev) => prev.slice(0, 1));
+
+      getDemandes({ my_unite: true }).then((r) =>
+        setMesDemandes((r.data.results || r.data).slice(0, 6)),
+      );
+
       if (onSuccess) onSuccess();
-      else handleClose();
     } catch (e) {
-      setErreur(e.response?.data || "Erreur lors de l'envoi.");
+      setErreur(
+        e.response?.data?.description?.[0] ||
+          e.response?.data?.error ||
+          "Erreur lors de la déclaration.",
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  //  Shared form body 
-  const formBody = (
-    <form
-      id="demande-form"
-      onSubmit={handleSubmit}
-      className="flex flex-col gap-4">
+  const handleClose = () => {
+    if (onClose) onClose();
+    else navigate("/ordres/demandes");
+  };
+
+  const formatDate = (d) =>
+    new Date(d).toLocaleString("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+  const formatTime = (s) =>
+    `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+
+  /* ── Form body (shared between page & dialog) ── */
+  const formCard = (
+    <div className="bg-surface rounded-xl border border-border p-6 shadow-card">
+      <div className="flex items-center gap-2 mb-5 pb-4 border-b border-border-subtle">
+        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+          <Wrench size={16} style={{ color: "var(--color-primary)" }} />
+        </div>
+        <h2 className="text-sm font-semibold text-text uppercase tracking-wider">
+          Nouvelle déclaration
+        </h2>
+      </div>
+
+      {uniteUser && (
+        <div
+          className="mb-4 flex items-center gap-2 text-xs rounded-lg px-3 py-2.5 border"
+          style={{
+            background: "var(--status-blue-bg)",
+            borderColor: "rgba(37,99,235,0.18)",
+            color: "var(--status-blue-text)",
+          }}>
+          <Building2 size={14} />
+          <span>
+            <strong>Unité :</strong> {uniteUser.libelle} — Seuls les actifs de
+            cette unité sont affichés
+          </span>
+        </div>
+      )}
+      {!uniteUser && (
+        <div
+          className="mb-4 flex items-center gap-2 text-xs rounded-lg px-3 py-2.5 border"
+          style={{
+            background: "var(--status-yellow-bg)",
+            borderColor: "rgba(234,179,8,0.18)",
+            color: "var(--status-yellow-text)",
+          }}>
+          <AlertTriangle size={14} />
+          <span>
+            Aucune unité principale assignée. Contactez un administrateur.
+          </span>
+        </div>
+      )}
+
       {erreur && (
-        <div className="alert-warn">
-          {typeof erreur === "object" ? JSON.stringify(erreur) : erreur}
+        <div
+          className="mb-4 flex items-start gap-2 text-sm rounded-lg px-3 py-2.5 border"
+          style={{
+            background: "var(--status-red-bg)",
+            borderColor: "rgba(220,38,38,0.2)",
+            color: "var(--status-red-text)",
+          }}>
+          <AlertTriangle size={16} className="shrink-0 mt-0.5" /> {erreur}
+        </div>
+      )}
+      {succes && (
+        <div
+          className="mb-4 flex items-start gap-2 text-sm rounded-lg px-3 py-2.5 border"
+          style={{
+            background: "var(--status-green-bg)",
+            borderColor: "rgba(22,163,74,0.2)",
+            color: "var(--status-green-text)",
+          }}>
+          <span className="shrink-0 mt-0.5"></span> {succes}
         </div>
       )}
 
-      {/* Actif selector — only in page mode */}
-      {!defaultActifId && !onClose && (
-        <div className="fg">
-          <label className="flabel">
-            Actif concerné <span className="req">*</span>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Équipement */}
+        <div>
+          <label className="block text-xs font-medium text-text-secondary mb-1.5">
+            Équipement en panne{" "}
+            <span style={{ color: "var(--status-red-dot)" }}>*</span>
           </label>
-          <Select
-            value={form.idActif}
-            onValueChange={(value) =>
-              setForm((f) => ({ ...f, idActif: value }))
-            }>
-            <SelectTrigger className="fsel">
-              <SelectValue placeholder="— Sélectionner l'équipement en panne —" />
-            </SelectTrigger>
-            <SelectContent>
-              {actifs.map((a) => (
-                <SelectItem key={a.id} value={String(a.id)}>
-                  {a.code} — {a.libelle}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {/* Urgence */}
-      <div className="fg">
-        <label className="flabel">
-          Urgence <span className="req">*</span>
-        </label>
-        <UrgenceSelector
-          value={form.urgence}
-          onChange={(v) => setForm((f) => ({ ...f, urgence: v }))}
-        />
-      </div>
-
-      {/* titre */}
-      <div className="fg">
-        <Label className="flabel">titre</Label>
-        <Input
-          name="titre"
-          value={form.titre}
-          onChange={handleChange}
-          placeholder="Titre Sinificative..."
-        />
-      </div>
-      {/* Description */}
-      <div className="fg">
-        <Label className="flabel">Description</Label>
-        <textarea
-          name="description"
-          value={form.description}
-          onChange={handleChange}
-          rows="3"
-          className="finput resize-none"
-          placeholder="Décrivez le problème rencontré..."
-        />
-      </div>
-
-      {/* Upload images */}
-      <div className="bg-[var(--status-purple-bg,rgba(139,92,246,.08))] border border-[rgba(139,92,246,.25)] rounded-[var(--r-sm)] p-3.5">
-        <div className="flex items-center gap-2 mb-2.5">
-          <Image size={15} className="text-[var(--status-purple-text)]" />
-          <span className="text-[11px] font-semibold uppercase tracking-[.05em] text-[var(--status-purple-text)]">
-            Photos (optionnel)
-          </span>
-        </div>
-
-        <label className="flex flex-col items-center justify-center p-[14px_12px] border-2 border-dashed border-[rgba(139,92,246,.35)] rounded-[var(--r-sm)] cursor-pointer transition-[border-color] duration-150">
-          <Upload
-            size={20}
-            className="text-[var(--status-purple-text)] mb-1.5"
-          />
-          <span className="text-xs text-[var(--status-purple-text)] text-center">
-            Cliquez pour ajouter des images
-            <br />
-            <span className="opacity-60">JPG, PNG — max 5 MB</span>
-          </span>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleImageChange}
-            className="hidden"
-          />
-        </label>
-
-        {previewImages.length > 0 && (
-          <div className="mt-2.5">
-            <span className="text-[11px] font-semibold text-[var(--status-purple-text)] uppercase">
-               Images ({previewImages.length})
-            </span>
-            <div className="grid grid-cols-3 gap-2 mt-2">
-              {previewImages.map((src, i) => (
-                <div
-                  key={i}
-                  className="relative rounded-[var(--r-sm)] overflow-hidden border border-[rgba(139,92,246,.3)]">
-                  <img src={src} alt="" className="w-full h-20 object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(i)}
-                    className="absolute top-1 right-1 bg-[var(--status-red-bg)] border-none rounded-full p-1 cursor-pointer text-[var(--status-red-text)] flex">
-                    <X size={12} />
-                  </button>
-                </div>
-              ))}
-            </div>
+          {loadingActifs && optionsAtLevel.length === 0 && (
+            <p className="text-xs text-text-muted py-2">
+              Chargement des équipements…
+            </p>
+          )}
+          <div className="space-y-2">
+            {optionsAtLevel.map((options, levelIndex) => (
+              <div key={levelIndex}>
+                <label className="block text-[10px] text-text-muted mb-0.5 uppercase tracking-wider">
+                  {levelIndex === 0
+                    ? "Actif parent"
+                    : `Sous-actif niveau ${levelIndex}`}
+                </label>
+                <select
+                  value={selectionPath[levelIndex]?.id || ""}
+                  onChange={(e) =>
+                    handleSelectAtLevel(levelIndex, e.target.value)
+                  }
+                  className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-primary appearance-none cursor-pointer"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 0.5rem center",
+                    backgroundSize: "1rem",
+                  }}>
+                  <option value="">-- Sélectionner --</option>
+                  {options.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.code} — {a.libelle}{" "}
+                      {a.statut === "en_panne" ? "(EN PANNE)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ))}
           </div>
-        )}
-      </div>
 
-      {/* Audio recording */}
-      <div className="bg-[var(--status-blue-bg,rgba(59,130,246,.08))] border border-[rgba(59,130,246,.25)] rounded-[var(--r-sm)] p-3.5">
-        <div className="flex items-center gap-2 mb-2.5">
-          <Mic size={15} className="text-[var(--status-blue-text)]" />
-          <span className="text-[11px] font-semibold uppercase tracking-[.05em] text-[var(--status-blue-text)]">
-            Enregistrement audio (optionnel)
-          </span>
+          {actifSelectionne && (
+            <div className="mt-3 space-y-2">
+              <div
+                className="p-3 rounded-lg border"
+                style={{
+                  background: "var(--status-blue-bg)",
+                  borderColor: "rgba(37,99,235,0.15)",
+                }}>
+                <p
+                  className="text-[10px] uppercase tracking-wider mb-1 font-semibold"
+                  style={{ color: "var(--status-blue-text)" }}>
+                  Actif sélectionné
+                </p>
+                <div className="flex items-center gap-1 flex-wrap">
+                  {selectionPath.map((a, i) => (
+                    <span key={a.id} className="text-sm flex items-center">
+                      <span
+                        className="font-mibold"
+                        style={{ color: "var(--status-blue-text)" }}>
+                        {a.code}
+                      </span>
+                      <span className="text-text"> — {a.libelle}</span>
+                      {i < selectionPath.length - 1 && (
+                        <ChevronRight
+                          size={14}
+                          className="text-text-muted mx-0.5"
+                        />
+                      )}
+                    </span>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={clearSelection}
+                  className="mt-2 text-xs underline"
+                  style={{ color: "var(--status-red-text)" }}>
+                  Réinitialiser la sélection
+                </button>
+              </div>
+
+              {actifParent && actifParent.id !== actifSelectionne.id && (
+                <div
+                  className="p-3 rounded-lg border flex items-start gap-2"
+                  style={{
+                    background: "var(--status-yellow-bg)",
+                    borderColor: "rgba(234,179,8,0.15)",
+                  }}>
+                  <AlertTriangle
+                    size={16}
+                    className="shrink-0 mt-0.5"
+                    style={{ color: "var(--status-yellow-text)" }}
+                  />
+                  <div>
+                    <p
+                      className="text-xs font-semibold"
+                      style={{ color: "var(--status-yellow-text)" }}>
+                      Actif parent concerné
+                    </p>
+                    <p className="text-xs text-text-secondary">
+                      Le statut de{" "}
+                      <span
+                        className="font-mono font-medium"
+                        style={{ color: "var(--status-yellow-text)" }}>
+                        {actifParent.code}
+                      </span>{" "}
+                      — {actifParent.libelle} sera mis en panne
+                    </p>
+                  </div>
+                </div>
+              )}
+              {actifParent && actifParent.id === actifSelectionne.id && (
+                <div
+                  className="p-3 rounded-lg border flex items-start gap-2"
+                  style={{
+                    background: "var(--status-yellow-bg)",
+                    borderColor: "rgba(234,179,8,0.15)",
+                  }}>
+                  <AlertTriangle
+                    size={16}
+                    className="shrink-0 mt-0.5"
+                    style={{ color: "var(--status-yellow-text)" }}
+                  />
+                  <div>
+                    <p
+                      className="text-xs font-semibold"
+                      style={{ color: "var(--status-yellow-text)" }}>
+                      Cet actif est l'actif parent racine
+                    </p>
+                    <p className="text-xs text-text-secondary">
+                      Son statut sera mis en panne directement
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {!isRecording ? (
-          <button
-            type="button"
-            onClick={startRecording}
-            className="w-full py-2.5 px-3.5 bg-[rgba(59,130,246,.15)] border border-[rgba(59,130,246,.4)] rounded-[var(--r-sm)] text-[var(--status-blue-text)] text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-2 transition-[background] duration-150">
-            <Mic size={16} /> Démarrer l'enregistrement
-          </button>
-        ) : (
-          <div className="bg-[var(--status-red-bg)] border border-[rgba(239,68,68,.25)] rounded-[var(--r-sm)] p-[10px_14px] flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[var(--status-red-dot)] animate-pulse shrink-0" />
-              <div>
-                <p className="text-[13px] font-semibold text-[var(--status-red-text)]">
-                  Enregistrement en cours…
-                </p>
-                <p className="text-xs font-mono text-[var(--status-red-text)] opacity-80">
-                  {formatTime(recordingTime)}
-                </p>
+        {/* Titre */}
+        <div>
+          <label className="block text-xs font-medium text-text-secondary mb-1.5">
+            Titre de la demande{" "}
+            <span style={{ color: "var(--status-red-dot)" }}>*</span>
+          </label>
+          <input
+            type="text"
+            value={form.titre}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, titre: e.target.value }))
+            }
+            placeholder="Ex: Arrêt moteur principal, Fuite hydraulique…"
+            className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-primary"
+          />
+          <p className="text-xs text-text-muted mt-1">
+            Un titre clair permet au responsable de comprendre rapidement la
+            panne
+          </p>
+        </div>
+
+        {/* Urgence */}
+        <div>
+          <label className="block text-xs font-medium text-text-secondary mb-2">
+            Niveau d'urgence{" "}
+            <span style={{ color: "var(--status-red-dot)" }}>*</span>
+          </label>
+          <div className="space-y-2">
+            {Object.entries(URGENCE_INFO).map(([k, v]) => (
+              <label
+                key={k}
+                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition ${
+                  form.urgence === k
+                    ? "border-opacity-100"
+                    : "border-border bg-elevated/40 hover:bg-elevated"
+                }`}
+                style={
+                  form.urgence === k
+                    ? { ...v.style, borderWidth: "1.5px" }
+                    : {}
+                }>
+                <input
+                  type="radio"
+                  name="urgence"
+                  value={k}
+                  checked={form.urgence === k}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, urgence: e.target.value }))
+                  }
+                  className="mt-1 accent-primary"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm" style={{ color: v.dot }}></span>
+                    <p className="text-sm font-semibold text-text">{v.label}</p>
+                  </div>
+                  <p className="text-xs text-text-secondary mt-0.5">{v.desc}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Description */}
+        <div>
+          <label className="block text-xs font-medium text-text-secondary mb-1.5">
+            Description du problème{" "}
+            <span style={{ color: "var(--status-red-dot)" }}>*</span>
+          </label>
+          <textarea
+            value={form.description}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, description: e.target.value }))
+            }
+            rows={5}
+            placeholder={`Décrivez précisément ce que vous observez :\n• Quel est le symptôme ? (bruit, fuite, arrêt, surchauffe…)\n• Depuis quand ?\n• Dans quelles conditions cela se produit-il ?`}
+            className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-primary resize-none"
+          />
+          <p className="text-xs text-text-muted mt-1">
+            {form.description.length} caractères — plus vous êtes précis, plus
+            vite l'intervention sera réalisée
+          </p>
+        </div>
+
+        {/* Images */}
+        <div
+          className="rounded-xl border p-4"
+          style={{
+            background: "var(--color-primary-soft)",
+            borderColor: "rgba(79,70,229,0.15)",
+          }}>
+          <div className="flex items-center gap-2 mb-3">
+            <Image size={16} style={{ color: "var(--color-primary)" }} />
+            <span
+              className="text-xs font-semibold uppercase tracking-wider"
+              style={{ color: "var(--color-primary)" }}>
+              Photos (optionnel)
+            </span>
+          </div>
+          <label
+            className="flex flex-col items-center justify-center w-full p-4 border-2 border-dashed rounded-lg cursor-pointer transition hover:opacity-80"
+            style={{
+              borderColor: "rgba(79,70,229,0.25)",
+              background: "rgba(79,70,229,0.03)",
+            }}>
+            <Upload
+              size={22}
+              style={{ color: "var(--color-primary)" }}
+              className="mb-2"
+            />
+            <p
+              className="text-xs font-medium text-center"
+              style={{ color: "var(--color-primary)" }}>
+              Cliquez pour ajouter des images
+            </p>
+            <p className="text-[11px] text-center text-text-muted">
+              JPG, PNG max 5MB
+            </p>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleImageChange}
+              className="hidden"
+            />
+          </label>
+          {previewImages.length > 0 && (
+            <div className="mt-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wider mb-2 text-text-secondary">
+                Images ({previewImages.length})
+              </p>
+              <div className="grid grid-cols-4 gap-2">
+                {previewImages.map((preview, i) => (
+                  <div
+                    key={i}
+                    className="relative group rounded-lg overflow-hidden border border-border-subtle bg-elevated">
+                    <img
+                      src={preview}
+                      alt={`preview-${i}`}
+                      className="w-full h-20 object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(i)}
+                      className="absolute top-1 right-1 p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
+                      style={{
+                        background: "var(--status-red-bg)",
+                        color: "var(--status-red-text)",
+                      }}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
+          )}
+        </div>
+
+        {/* Vidéos */}
+        <div
+          className="rounded-xl border p-4"
+          style={{
+            background: "rgba(236,72,153,0.06)",
+            borderColor: "rgba(236,72,153,0.15)",
+          }}>
+          <div className="flex items-center gap-2 mb-3">
+            <Video size={16} style={{ color: "#db2777" }} />
+            <span
+              className="text-xs font-semibold uppercase tracking-wider"
+              style={{ color: "#db2777" }}>
+              Vidéos (optionnel)
+            </span>
+          </div>
+          <label
+            className="flex flex-col items-center justify-center w-full p-4 border-2 border-dashed rounded-lg cursor-pointer transition hover:opacity-80"
+            style={{
+              borderColor: "rgba(236,72,153,0.25)",
+              background: "rgba(236,72,153,0.03)",
+            }}>
+            <Upload size={22} style={{ color: "#db2777" }} className="mb-2" />
+            <p
+              className="text-xs font-medium text-center"
+              style={{ color: "#db2777" }}>
+              Cliquez pour ajouter des vidéos
+            </p>
+            <p className="text-[11px] text-center text-text-muted">
+              MP4, MOV max 20MB
+            </p>
+            <input
+              type="file"
+              multiple
+              accept="video/*"
+              onChange={handleVideoChange}
+              className="hidden"
+            />
+          </label>
+          {previewVideos.length > 0 && (
+            <div className="mt-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wider mb-2 text-text-secondary">
+                Vidéos ({previewVideos.length})
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {previewVideos.map((preview, i) => (
+                  <div
+                    key={i}
+                    className="relative group rounded-lg overflow-hidden border border-border-subtle bg-elevated">
+                    <video
+                      src={preview}
+                      className="w-full h-28 object-cover"
+                      controls
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeVideo(i)}
+                      className="absolute top-1 right-1 p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
+                      style={{
+                        background: "var(--status-red-bg)",
+                        color: "var(--status-red-text)",
+                      }}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Audio */}
+        <div
+          className="rounded-xl border p-4"
+          style={{
+            background: "rgba(14,165,233,0.06)",
+            borderColor: "rgba(14,165,233,0.15)",
+          }}>
+          <div className="flex items-center gap-2 mb-3">
+            <Mic size={16} style={{ color: "#0ea5e9" }} />
+            <span
+              className="text-xs font-semibold uppercase tracking-wider"
+              style={{ color: "#0ea5e9" }}>
+              Audio (optionnel)
+            </span>
+          </div>
+          {!isRecording ? (
             <button
               type="button"
-              onClick={stopRecording}
-              className="py-1.5 px-3 bg-[var(--status-red-dot)] border-none rounded-[var(--r-sm)] text-white text-xs font-semibold cursor-pointer">
-              Arrêter
+              onClick={startRecording}
+              className="w-full py-3 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2 text-white"
+              style={{ background: "#0ea5e9" }}>
+              <Mic size={16} /> Démarrer l'enregistrement
             </button>
-          </div>
-        )}
-
-        {recordedAudios.length > 0 && (
-          <div className="mt-2.5">
-            <span className="text-[11px] font-semibold text-[var(--status-blue-text)] uppercase">
-               Audios ({recordedAudios.length})
-            </span>
-            <div className="flex flex-col gap-1.5 mt-2">
+          ) : (
+            <div
+              className="flex items-center justify-between p-4 rounded-lg border"
+              style={{
+                background: "var(--status-red-bg)",
+                borderColor: "rgba(220,38,38,0.2)",
+              }}>
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-3 h-3 rounded-full animate-pulse"
+                  style={{ background: "var(--status-red-dot)" }}
+                />
+                <div>
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--status-red-text)" }}>
+                    Enregistrement en cours…
+                  </p>
+                  <p className="text-xs font-mono text-text-secondary">
+                    {formatTime(recordingTime)}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={stopRecording}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition"
+                style={{ background: "var(--status-red-dot)" }}>
+                Arrêter
+              </button>
+            </div>
+          )}
+          {recordedAudios.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                Audios ({recordedAudios.length})
+              </p>
               {recordedAudios.map((rec, i) => (
                 <div
                   key={i}
-                  className="bg-[rgba(59,130,246,.1)] border border-[rgba(59,130,246,.3)] rounded-[var(--r-sm)] p-[8px_12px] flex items-center gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => playRecordedAudio(i)}
-                    className="w-8 h-8 rounded-full bg-[rgba(59,130,246,.3)] border-none text-[var(--status-blue-text)] cursor-pointer flex items-center justify-center shrink-0 text-[13px]">
-                    
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-[var(--status-blue-text)] overflow-hidden text-ellipsis whitespace-nowrap">
-                      {rec.name}
-                    </p>
-                    <p className="text-[11px] font-mono text-[var(--color-text-muted)]">
-                      ⏱ {formatTime(rec.duration)}
-                    </p>
+                  className="flex items-center justify-between p-3 rounded-lg border transition group hover:opacity-90"
+                  style={{
+                    background: "rgba(14,165,233,0.08)",
+                    borderColor: "rgba(14,165,233,0.18)",
+                  }}>
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => playRecordedAudio(i)}
+                      className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white transition"
+                      style={{ background: "#0ea5e9" }}></button>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-text truncate">
+                        {rec.name}
+                      </p>
+                      <p className="text-[11px] text-text-muted font-mono">
+                        {formatTime(rec.duration)}
+                      </p>
+                    </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => removeRecordedAudio(i)}
-                    className="bg-transparent border-none text-[var(--color-text-muted)] cursor-pointer flex p-1">
-                    <X size={14} />
+                    className="shrink-0 p-1.5 rounded-md opacity-0 group-hover:opacity-100 transition text-text-muted hover:text-red-500">
+                    <X size={16} />
                   </button>
                 </div>
               ))}
             </div>
-          </div>
-        )}
-      </div>
-    </form>
-  );
+          )}
+        </div>
 
-  const formActions = (
-    <div className="flex gap-2 justify-end shrink-0 pt-3 border-t border-[var(--border-subtle)]">
-      <Button type="button" onClick={handleClose} className="btn btn-outline">
-        Annuler
-      </Button>
-      <Button
-        type="submit"
-        form="demande-form"
-        disabled={loading}
-        className="btn btn-primary"
-        style={{ opacity: loading ? 0.6 : 1 }}>
-        {loading ? "Envoi…" : "Déclarer la panne"}
-      </Button>
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3 rounded-xl text-sm font-semibold transition text-white flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{
+            background: "var(--color-primary)",
+            boxShadow: "0 2px 12px rgba(79,70,229,0.25)",
+          }}>
+          {loading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
+              Envoi en cours…
+            </>
+          ) : (
+            <>Déclarer la panne</>
+          )}
+        </button>
+      </form>
     </div>
   );
 
-  //  Dialog mode 
+  /* ── Recent declarations sidebar ── */
+  const recentsSidebar = showRecents && (
+    <div className="bg-surface rounded-xl border border-border p-6 shadow-card flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
+      <div className="flex items-center gap-2 mb-5 pb-4 border-b border-border-subtle">
+        <div
+          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+          style={{ background: "var(--status-purple-bg)" }}>
+          <Clock size={16} style={{ color: "var(--status-purple-text)" }} />
+        </div>
+        <h2 className="text-sm font-semibold text-text uppercase tracking-wider">
+          Mes déclarations récentes
+        </h2>
+        <span
+          className="ml-auto text-[11px] px-2 py-0.5 rounded-full font-medium"
+          style={{
+            background: "var(--bg-active)",
+            color: "var(--text-muted)",
+          }}>
+          {mesDemandes.length}
+        </span>
+      </div>
+
+      {mesDemandes.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center text-center py-16">
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+            style={{ background: "var(--bg-active)" }}>
+            <AlertTriangle size={24} className="text-text-muted" />
+          </div>
+          <p className="text-text-secondary text-sm font-medium">
+            Aucune déclaration
+          </p>
+          <p className="text-text-muted text-xs mt-1">
+            Vos déclarations apparaîtront ici
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3 flex-1">
+          {mesDemandes.map((d) => {
+            const st = STATUT_STYLES[d.statut] || STATUT_STYLES.en_attente;
+            const ur = URGENCE_INFO[d.urgence] || URGENCE_INFO.normale;
+            return (
+              <div
+                key={d.id}
+                className="rounded-xl border p-4 transition hover:shadow-sm"
+                style={{
+                  background: "var(--bg-elevated)",
+                  borderColor: "var(--color-border-subtle)",
+                }}>
+                <div className="flex justify-between items-start mb-2">
+                  <span
+                    className="font-mono text-sm font-semibold"
+                    style={{ color: "var(--color-primary)" }}>
+                    {d.numero}
+                  </span>
+                  <span
+                    className="text-[11px] px-2 py-1 rounded-lg font-medium border"
+                    style={{
+                      background: st.bg,
+                      color: st.text,
+                      borderColor: st.border + "40",
+                    }}>
+                    {st.label}
+                  </span>
+                </div>
+                <p className="text-sm font-semibold text-text truncate">
+                  {d.titre || "(Sans titre)"}
+                </p>
+                <p
+                  className="text-xs font-medium truncate mt-0.5"
+                  style={{ color: "var(--status-blue-text)" }}>
+                  {d.actif_detail?.code} — {d.actif_detail?.libelle}
+                </p>
+                {d.description && (
+                  <p className="text-xs text-text-secondary mt-1.5 line-clamp-2">
+                    {d.description}
+                  </p>
+                )}
+                <div
+                  className="flex justify-between items-center mt-3 pt-2.5"
+                  style={{
+                    borderTop: "1px solid var(--color-border-subtle)",
+                  }}>
+                  <span
+                    className="flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-full border font-medium"
+                    style={{
+                      background: ur.style.background,
+                      color: ur.style.color,
+                      borderColor: ur.dot + "35",
+                    }}>
+                    <span style={{ color: ur.dot }}></span> {ur.label}
+                  </span>
+                  <span className="text-[11px] text-text-muted font-mono flex items-center gap-1">
+                    <Clock size={11} /> {formatDate(d.dateSignalement)}
+                  </span>
+                </div>
+                {d.statut === "rejetee" && d.motifRejet && (
+                  <div
+                    className="mt-2.5 p-2.5 rounded-lg border text-xs"
+                    style={{
+                      background: "var(--status-red-bg)",
+                      borderColor: "rgba(220,38,38,0.12)",
+                      color: "var(--status-red-text)",
+                    }}>
+                    <span className="font-semibold">Motif de rejet :</span>{" "}
+                    {d.motifRejet}
+                  </div>
+                )}
+                {d.statut === "validee" && (
+                  <div
+                    className="mt-2.5 p-2.5 rounded-lg border text-xs flex items-center gap-1.5"
+                    style={{
+                      background: "var(--status-green-bg)",
+                      borderColor: "rgba(22,163,74,0.12)",
+                      color: "var(--status-green-text)",
+                    }}>
+                    <span></span>{" "}
+                    <span className="font-semibold">OT créé</span> —
+                    intervention en cours de traitement
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div
+        className="mt-4 pt-4"
+        style={{ borderTop: "1px solid var(--color-border-subtle)" }}>
+        <button
+          onClick={() => navigate("/ordres/demandes")}
+          className="w-full py-2.5 text-sm font-semibold rounded-lg transition border"
+          style={{
+            color: "var(--color-primary)",
+            borderColor: "rgba(79,70,229,0.25)",
+            background: "var(--color-primary-soft)",
+          }}>
+          Voir toutes les demandes →
+        </button>
+      </div>
+    </div>
+  );
+
+  /* ── Dialog mode ── */
   if (onClose) {
     return (
       <div className="flex flex-col max-h-[80vh]">
-        <div className="overflow-y-auto flex-1 min-h-0">{formBody}</div>
-        {formActions}
+        <div className="overflow-y-auto flex-1 min-h-0">{formCard}</div>
       </div>
     );
   }
 
-  //  Page mode 
+  /* ── Page mode ── */
   return (
-    <div className="page max-w-[720px] mx-auto">
-      <div className="flex items-center gap-3">
-        <button className="btn btn-ghost" onClick={handleClose}>
-          <ArrowLeft size={14} /> Retour
+    <div className="page">
+      {/* Header */}
+      <div className="mb-2 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-text tracking-tight">
+            Déclarer une panne
+          </h1>
+          <p className="text-text-muted text-sm mt-1">
+            Signalez un dysfonctionnement sur un équipement. L'actif parent sera
+            automatiquement mis en panne.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowRecents((v) => !v)}
+          className="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-lg border shadow-sm transition hover:brightness-110"
+          style={{
+            background: "var(--bg-surface)",
+            borderColor: "var(--color-border)",
+            color: "var(--color-primary)",
+          }}
+          title={
+            showRecents
+              ? "Masquer les déclarations récentes"
+              : "Afficher les déclarations récentes"
+          }>
+          <Clock size={16} />
+          <span className="text-sm font-semibold hidden sm:inline">
+            Déclarations récentes
+          </span>
+          <span
+            className="text-[11px] px-1.5 py-0.5 rounded-full font-bold"
+            style={{
+              background: "var(--color-primary-soft)",
+              color: "var(--color-primary)",
+            }}>
+            {mesDemandes.length}
+          </span>
+          {showRecents ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
-        <h1 className="text-[22px] font-semibold">Déclarer une panne</h1>
       </div>
 
-      {/* Card : hauteur max 80vh, body scrollable */}
-      <div className="tbl-card mt-5 flex flex-col max-h-[80vh]">
-        <div className="tbl-head p-0 pb-3.5 border-b border-[var(--border-subtle)] shrink-0">
-          <span className="tbl-title">Informations</span>
-        </div>
-        <div className="m-body overflow-y-auto flex-1 pt-3.5 min-h-0">
-          {formBody}
-        </div>
-        <div className="px-0 pb-0 shrink-0">{formActions}</div>
+      <div
+        className={`grid gap-6 transition-all duration-300 ${
+          showRecents ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"
+        }`}>
+        {formCard}
+        {recentsSidebar}
       </div>
     </div>
   );

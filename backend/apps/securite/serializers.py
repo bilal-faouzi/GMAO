@@ -75,12 +75,13 @@ class UtilisateurSerializer(serializers.ModelSerializer):
 
     def get_unite_principale(self, obj):
         try:
-            app = obj.appartenances.select_related('unite').get(estPrincipale=True)
-            if app.unite:
+            app = obj.appartenances.prefetch_related('unites').get(estPrincipale=True)
+            premiere_unite = app.unites.first()
+            if premiere_unite:
                 return {
-                    'id': str(app.unite.id),
-                    'code': app.unite.code,
-                    'libelle': app.unite.libelle,
+                    'id': str(premiere_unite.id),
+                    'code': premiere_unite.code,
+                    'libelle': premiere_unite.libelle,
                 }
         except Exception:
             pass

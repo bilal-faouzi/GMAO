@@ -127,11 +127,7 @@ export default function ListeOTs() {
             {total} ordre{total > 1 ? "s" : ""}
           </p>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={() => navigate("/ordres/ots/nouveau")}>
-          <Plus size={14} /> Nouvel OT
-        </button>
+
       </div>
 
       {/* Filtres */}

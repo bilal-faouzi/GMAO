@@ -34,19 +34,19 @@ import { Textarea } from "@/components/ui/textarea";
 //  Constants 
 const PRIORITE_CLS = {
   critique: "bg-danger-soft text-danger border-danger/40",
-  haute: "bg-status-orange/20 text-status-orange border-status-orange/40",
+  haute: "bg-status-orange-soft text-status-orange border-status-orange/40",
   normale: "bg-primary-soft text-primary border-primary/40",
   basse: "bg-hover text-text-secondary border-border/40",
 };
 const STATUT_CLS = {
-  EN_COURS: "bg-warning/20 text-warning border-warning/30",
-  DEPANNE: "bg-status-orange/20 text-status-orange border-status-orange/30",
+  EN_COURS: "bg-warning-soft text-warning border-warning/30",
+  DEPANNE: "bg-status-orange-soft text-status-orange border-status-orange/30",
   CLOTURE: "bg-success-soft text-success border-success/30",
 };
 const STATUT_BORDER = {
-  EN_COURS: "border-l-amber-500",
-  DEPANNE: "border-l-orange-500",
-  CLOTURE: "border-l-green-500",
+  EN_COURS: "border-l-warning",
+  DEPANNE: "border-l-status-orange",
+  CLOTURE: "border-l-success",
 };
 const STATUT_LABEL = {
   EN_COURS: "En cours",
@@ -245,12 +245,12 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {erreur && (
-        <div className="text-danger text-xs bg-danger-soft p-3 rounded-lg border border-red-500/20 flex items-start gap-2">
+        <div className="text-danger text-xs bg-danger-soft p-3 rounded-lg border border-danger/30 flex items-start gap-2">
           <X size={14} className="mt-0.5 shrink-0" /> {erreur}
         </div>
       )}
       {succes && (
-        <div className="text-success text-xs bg-success-soft p-3 rounded-lg border border-green-500/20 flex items-start gap-2">
+        <div className="text-success text-xs bg-success-soft p-3 rounded-lg border border-success/30 flex items-start gap-2">
           <Check size={14} className="mt-0.5 shrink-0" /> {succes}
         </div>
       )}
@@ -261,8 +261,8 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
           onClick={() => { setType("interne"); setErreur(""); }}
           className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition ${
             type === "interne"
-              ? "bg-purple-600 border-purple-500 text-text"
-              : "bg-elevated border-border-subtle text-text-secondary hover:text-text"
+              ? "btn btn-primary"
+              : "btn btn-ghost"
           }`}>
            Équipe interne
         </Button>
@@ -271,8 +271,8 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
           onClick={() => { setType("externe"); setErreur(""); }}
           className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition ${
             type === "externe"
-              ? "bg-amber-600 border-amber-500 text-text"
-              : "bg-elevated border-border-subtle text-text-secondary hover:text-text"
+              ? "btn btn-warning"
+              : "btn btn-ghost"
           }`}>
            Sous-traitant
         </Button>
@@ -281,8 +281,8 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
       {type === "interne" && (
         <>
           {/*  Sélection d'équipe et membres  */}
-          <div className="bg-surface rounded-lg border border-border p-4 space-y-3">
-            <p className="text-xs text-text-secondary uppercase tracking-wider font-semibold">
+          <div className="bg-surface rounded-xl border border-border shadow-card p-5 space-y-3">
+            <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">
               Sélectionner une équipe et ses techniciens
             </p>
 
@@ -316,7 +316,7 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
                   return (
                     <label key={uid}
                       className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition border ${
-                        checked ? "bg-primary-soft border-primary/30" : "bg-[var(--color-bg)]/30 border-border/30 hover:bg-elevated/30"
+                        checked ? "bg-primary-soft border-primary/30" : "bg-elevated border-border-subtle hover:bg-hover"
                       }`}>
                       <input
                         type="checkbox"
@@ -338,7 +338,7 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
               <button
                 type="button"
                 onClick={ajouterSelection}
-                className="w-full py-2 bg-purple-600/20 hover:bg-purple-600/30 text-primary border border-primary/30 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5">
+                className="w-full py-2 btn btn-primary rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5">
                 <Plus size={14} /> Ajouter {membresSelectionnes.length} technicien(s) à l'affectation
               </button>
             )}
@@ -346,9 +346,9 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
 
           {/*  Récapitulatif des sélections  */}
           {selections.length > 0 && (
-            <div className="bg-surface rounded-lg border border-border p-4 space-y-3">
+            <div className="bg-surface rounded-xl border border-border shadow-card p-5 space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-text-secondary uppercase tracking-wider font-semibold flex items-center gap-1.5">
+                <p className="text-xs text-text-muted uppercase tracking-wider font-semibold flex items-center gap-1.5">
                   <Users size={12} /> Affectations préparées ({selections.length})
                 </p>
                 <button type="button" onClick={() => setSelections([])} className="text-[10px] text-text-muted hover:text-danger transition">
@@ -358,7 +358,7 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
 
               <div className="space-y-2">
                 {selections.map((sel) => (
-                  <div key={sel.equipeId} className="bg-[var(--color-bg)]/50 rounded-lg p-3 border border-border/50">
+                  <div key={sel.equipeId} className="bg-elevated rounded-lg p-3 border border-border-subtle">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-xs font-semibold text-text">{sel.equipeLibelle}</p>
                       <button type="button" onClick={() => retirerSelection(sel.equipeId)}
@@ -413,14 +413,14 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
           <Button
             type="button"
             onClick={onCancelPrefill}
-            className="flex-1 py-2.5 bg-elevated hover:bg-active rounded-lg text-sm font-medium transition">
+            className="flex-1 py-2.5 btn btn-ghost rounded-lg text-sm font-medium transition">
             Annuler
           </Button>
         )}
         <Button
           type="submit"
           disabled={loading || (type === "interne" && selections.length === 0 && !prefillData)}
-          className={`py-2.5 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition disabled:opacity-50 flex items-center justify-center gap-2 ${prefillData ? "flex-1" : "w-full"}`}>
+          className={`py-2.5 btn btn-primary rounded-lg text-sm font-medium transition disabled:opacity-50 flex items-center justify-center gap-2 ${prefillData ? "flex-1" : "w-full"}`}>
           {loading ? (
             <><span className="animate-spin"></span> Enregistrement...</>
           ) : prefillData ? (
@@ -758,10 +758,10 @@ export default function GestionOTs() {
 
   const CATEGORIES_CAUSE = {
     mecanique: { label: "Mécanique", color: "bg-primary-soft text-primary border-primary/30" },
-    electrique: { label: "Électrique", color: "bg-warning/20 text-warning border-warning/30" },
-    humain: { label: "Erreur humaine", color: "bg-status-orange/20 text-status-orange border-status-orange/30" },
+    electrique: { label: "Électrique", color: "bg-warning-soft text-warning border-warning/30" },
+    humain: { label: "Erreur humaine", color: "bg-status-orange-soft text-status-orange border-status-orange/30" },
     externe: { label: "Facteur externe", color: "bg-danger-soft text-danger border-danger/30" },
-    autre: { label: "Autre", color: "bg-hover text-text-secondary border-border/30" },
+    autre: { label: "Autre", color: "bg-hover text-text-secondary border-border-subtle" },
   };
 
   const otsTries = [...ots].sort((a, b) => {
@@ -770,13 +770,13 @@ export default function GestionOTs() {
   });
 
   return (
-    <div className="flex h-full text-text overflow-hidden">
+    <div className="page">
       {/*  Liste principale  */}
       <div
         className={`flex flex-col ${otSelectionne ? "w-1/2" : "w-full"} transition-all duration-300 min-h-0 border-r border-border`}>
         <div className="p-6 pb-0 flex-shrink-0">
-          <div className="flex justify-between items-center mb-4">
-            <div>
+          <div className="hdr">
+            <div className="hdr-l">
               <h1 className="text-2xl font-bold text-text">
                 Gestion des Interventions
               </h1>
@@ -784,20 +784,15 @@ export default function GestionOTs() {
                 Responsable Techniciens
               </p>
             </div>
-            <Button
-              onClick={() => navigate("/ordres/ots/nouveau")}
-              className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-md text-sm font-medium transition">
-              + Nouvel OT
-            </Button>
           </div>
 
           {/*  Tabs  */}
-          <div className="flex gap-1 mb-4 bg-surface/60 p-1 rounded-md">
+          <div className="flex gap-1 mb-4 bg-surface p-1 rounded-md">
             <button
               onClick={() => setOnglet("ots")}
               className={`flex-1 px-4 py-2 rounded-md text-xs font-medium transition flex items-center justify-center gap-2 pop-shadow ${
                 onglet === "ots"
-                  ? "bg-surface text-text shadow"
+                  ? "bg-elevated text-text shadow"
                   : "text-text-secondary hover:text-text"
               }`}>
               Ordres de travail
@@ -805,7 +800,7 @@ export default function GestionOTs() {
                 <span
                   className={`h-5 min-w-5 px-1 rounded-full text-xs flex items-center justify-center font-bold ${
                     onglet === "ots"
-                      ? "bg-purple-600 text-text"
+                      ? "bg-primary text-text"
                       : "bg-active text-text"
                   }`}>
                   {ots.length}
@@ -817,12 +812,12 @@ export default function GestionOTs() {
               variant="outline"
               className={`flex-1 px-4 py-2 rounded-md text-xs font-medium transition flex items-center justify-center gap-2 ${
                 onglet === "demandes"
-                  ? "bg-surface text-text shadow"
+                  ? "bg-elevated text-text shadow"
                   : "text-text-secondary hover:text-text"
               }`}>
               Demandes en attente
               {demandes.length > 0 && (
-                <span className="h-5 min-w-5 px-1 bg-red-500 text-text text-xs rounded-full flex items-center justify-center font-bold">
+                <span className="h-5 min-w-5 px-1 bg-danger text-text text-xs rounded-full flex items-center justify-center font-bold">
                   {demandes.length}
                 </span>
               )}
@@ -876,7 +871,7 @@ export default function GestionOTs() {
               {[...Array(5)].map((_, i) => (
                 <div
                   key={i}
-                  className="h-28 bg-surface/60 rounded-xl animate-pulse border border-border/50"
+                  className="h-28 bg-surface rounded-xl animate-pulse border border-border-subtle"
                 />
               ))}
             </div>
@@ -900,8 +895,8 @@ export default function GestionOTs() {
                     }}
                     className={`p-4 rounded-xl border-l-4 border border-border cursor-pointer transition-all ${STATUT_BORDER[ot.statut]} ${
                       otSelectionne?.id === ot.id
-                        ? "bg-primary-soft ring-1 ring-purple-500/30 border-r-purple-500/30 border-t-purple-500/30 border-b-purple-500/30"
-                        : "bg-surface hover:bg-surface/80 hover:border-border-subtle pop-shadow"
+                        ? "bg-primary-soft ring-1 ring-primary/30 border-r-primary/30 border-t-primary/30 border-b-primary/30"
+                        : "bg-surface hover:bg-hover hover:border-border-subtle pop-shadow"
                     }`}>
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -918,21 +913,21 @@ export default function GestionOTs() {
                         {ot.estBloquant && (
                           <span
                             title="Cette intervention bloque la production"
-                            className="text-xs bg-red-500/30 text-danger px-1.5 py-0.5 rounded-full border border-danger/30 cursor-help">
+                            className="text-xs bg-danger/30 text-danger px-1.5 py-0.5 rounded-full border border-danger/30 cursor-help">
                              Bloquant
                           </span>
                         )}
                         {ot.estSousTraite && (
                           <span
                             title="Intervention sous-traitée"
-                            className="text-xs bg-warning/20 text-warning px-1.5 py-0.5 rounded-full border border-warning/30 cursor-help">
+                            className="text-xs bg-warning-soft text-warning px-1.5 py-0.5 rounded-full border border-warning/30 cursor-help">
                              ST
                           </span>
                         )}
                         {ot.rejetOperateur && (
                           <span
                             title="Rejeté par l'opérateur"
-                            className="text-xs bg-red-500/30 text-danger px-1.5 py-0.5 rounded-full border border-danger/40 cursor-help animate-pulse">
+                            className="text-xs bg-danger/30 text-danger px-1.5 py-0.5 rounded-full border border-danger/40 cursor-help animate-pulse">
                              Rejet opérateur
                           </span>
                         )}
@@ -958,7 +953,7 @@ export default function GestionOTs() {
                       </p>
                     )}
 
-                    <div className="flex justify-between items-center mt-3 pt-2 border-t border-border/50">
+                    <div className="flex justify-between items-center mt-3 pt-2 border-t border-border-subtle">
                       <div className="flex gap-3 text-xs text-text-muted">
                         <span className="relative flex items-center">
                           <MessageCircle size={15} />
@@ -1022,7 +1017,7 @@ export default function GestionOTs() {
                       key={d.id}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className={`bg-surface border border-border border-l-4 border-l-blue-500 rounded-xl pop-shadow transition-all ${isExpanded ? "ring-1 ring-blue-500/30" : ""}`}>
+                      className={`bg-surface border border-border border-l-4 border-l-primary rounded-xl pop-shadow transition-all ${isExpanded ? "ring-1 ring-primary/30" : ""}`}>
                       {/*  Header toujours visible  */}
                       <div className="p-4">
                         <div className="flex justify-between items-start mb-2">
@@ -1111,7 +1106,7 @@ export default function GestionOTs() {
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: "auto" }}
                             transition={{ duration: 0.2 }}
-                            className="mt-4 pt-4 border-t border-border/50 space-y-4">
+                            className="mt-4 pt-4 border-t border-border-subtle space-y-4">
 
                             {/* Images */}
                             {imagePieces.length > 0 && (
@@ -1132,7 +1127,7 @@ export default function GestionOTs() {
                                         href={img.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-[var(--color-bg)]/40 transition opacity-0 group-hover:opacity-100">
+                                        className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 transition opacity-0 group-hover:opacity-100">
                                         <span className="text-[10px] text-text bg-black/60 px-2 py-0.5 rounded">Voir</span>
                                       </a>
                                     </div>
@@ -1170,10 +1165,10 @@ export default function GestionOTs() {
                                   {audioPieces.map((audio) => (
                                     <div
                                       key={audio.id}
-                                      className={`bg-blue-600/10 border border-primary/30 rounded-lg p-2.5 flex items-center gap-3 transition ${playingAudioId === audio.id ? "ring-1 ring-blue-400" : ""}`}>
+                                      className={`bg-primary/10 border border-primary/30 rounded-lg p-2.5 flex items-center gap-3 transition ${playingAudioId === audio.id ? "ring-1 ring-primary" : ""}`}>
                                       <button
                                         onClick={() => playAudio(audio.url, audio.id)}
-                                        className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-text text-xs transition ${playingAudioId === audio.id ? "bg-blue-500 animate-pulse" : "bg-blue-600 hover:bg-blue-700"}`}>
+                                        className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-text text-xs transition ${playingAudioId === audio.id ? "bg-primary animate-pulse" : "bg-primary hover:bg-primary/80"}`}>
                                         {playingAudioId === audio.id ? "⏸" : ""}
                                       </button>
                                       <div className="flex-1 min-w-0">
@@ -1220,7 +1215,7 @@ export default function GestionOTs() {
                             <div className="flex gap-2 pt-2">
                               <button
                                 onClick={() => handleValider(d.id)}
-                                className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium transition text-text">
+                                className="flex-1 py-2.5 btn btn-success rounded-lg text-sm font-medium transition text-text">
                                  Valider → Créer OT
                               </button>
                               <button
@@ -1228,7 +1223,7 @@ export default function GestionOTs() {
                                   setModalRejet(d.id);
                                   setMotifRejet("");
                                 }}
-                                className="flex-1 py-2.5 bg-red-600/20 hover:bg-red-600/40 text-danger rounded-lg text-sm font-medium border border-danger/30 transition">
+                                className="flex-1 py-2.5 btn btn-danger rounded-lg text-sm font-medium transition">
                                 Rejeter
                               </button>
                             </div>
@@ -1240,12 +1235,12 @@ export default function GestionOTs() {
                           <div className="flex gap-2 mt-3">
                             <button
                               onClick={() => viewDemandeDetail(d)}
-                              className="flex-1 py-2 bg-blue-600/20 hover:bg-blue-600/40 text-primary rounded-lg text-sm font-medium border border-primary/30 transition">
+                              className="flex-1 py-2 btn btn-primary rounded-lg text-sm font-medium transition">
                               Voir détails
                             </button>
                             <button
                               onClick={() => handleValider(d.id)}
-                              className="flex-1 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium transition text-text">
+                              className="flex-1 py-2 btn btn-success rounded-lg text-sm font-medium transition text-text">
                               Valider
                             </button>
                             <button
@@ -1253,7 +1248,7 @@ export default function GestionOTs() {
                                 setModalRejet(d.id);
                                 setMotifRejet("");
                               }}
-                              className="flex-1 py-2 bg-red-600/20 hover:bg-red-600/40 text-danger rounded-lg text-sm font-medium border border-danger/30 transition">
+                              className="flex-1 py-2 btn btn-danger rounded-lg text-sm font-medium transition">
                               Rejeter
                             </button>
                           </div>
@@ -1276,9 +1271,9 @@ export default function GestionOTs() {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "100%", opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="w-1/2 flex flex-col bg-[var(--color-bg)]/50 backdrop-blur min-h-0 border-l border-border">
+            className="w-1/2 flex flex-col bg-elevated min-h-0 border-l border-border">
             {/* Header panneau */}
-            <div className="p-4 border-b border-border bg-[var(--color-bg)]/40 flex-shrink-0">
+            <div className="p-4 border-b border-border bg-elevated flex-shrink-0">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -1307,14 +1302,14 @@ export default function GestionOTs() {
               </div>
 
               {/* Tabs panneau */}
-              <div className="flex gap-1 mt-3 bg-surface/60 p-1 rounded-md">
+              <div className="flex gap-1 mt-3 bg-surface p-1 rounded-md">
                 {["actions", "infos", "historique"].map((o) => (
                   <button
                     key={o}
                     onClick={() => setPanneauOnglet(o)}
                     className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium capitalize transition ${
                       panneauOnglet === o
-                        ? "bg-surface text-text shadow"
+                        ? "bg-elevated text-text shadow"
                         : "text-text-secondary hover:text-text"
                     }`}>
                     {o}
@@ -1323,7 +1318,7 @@ export default function GestionOTs() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[var(--color-bg)]/30">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-surface">
               {/*  Actions  */}
               {panneauOnglet === "actions" && (
                 <motion.div
@@ -1336,7 +1331,7 @@ export default function GestionOTs() {
 
                   {/* Changer statut */}
                   {TRANSITIONS[otSelectionne.statut] && (
-                    <div className="bg-surface rounded-xl p-4 border border-border">
+                    <div className="bg-surface rounded-xl p-4 border border-border shadow-card">
                       <p className="text-xs text-text-secondary mb-3 font-semibold">
                         Changer le statut
                       </p>
@@ -1359,7 +1354,7 @@ export default function GestionOTs() {
 
                   {/* Affecter équipe */}
                   {["EN_COURS"].includes(otSelectionne.statut) && (
-                    <div className="bg-surface rounded-xl p-4 border border-border">
+                    <div className="bg-surface rounded-xl p-4 border border-border shadow-card">
                       <p className="text-xs text-text-secondary mb-3 font-semibold">
                         {editAffectation ? "Modifier l'affectation" : "Affecter une équipe / sous-traitant"}
                       </p>
@@ -1374,7 +1369,7 @@ export default function GestionOTs() {
 
                   {/* Affectations existantes */}
                   {otSelectionne.affectations?.length > 0 && (
-                    <div className="bg-surface rounded-xl p-4 border border-border">
+                    <div className="bg-surface rounded-xl p-4 border border-border shadow-card">
                       <p className="text-xs text-text-secondary mb-2 font-semibold">
                         Affectations en cours (
                         {otSelectionne.affectations.length})
@@ -1383,7 +1378,7 @@ export default function GestionOTs() {
                         {otSelectionne.affectations.map((a) => (
                           <div
                             key={a.id}
-                            className="flex items-center justify-between p-2 bg-elevated/50 rounded-lg border border-border-subtle">
+                            className="flex items-center justify-between p-2 bg-elevated rounded-lg border border-border-subtle">
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-medium text-text">
                                 {a.equipe_detail?.libelle ||
@@ -1398,7 +1393,7 @@ export default function GestionOTs() {
                                 {a.membres?.length > 0 ? (
                                   a.membres.map((m) => (
                                     <span key={m.id} className="text-[9px] bg-primary-soft text-primary px-1.5 py-0.5 rounded border border-primary/20 flex items-center gap-1">
-                                      <span className="w-3 h-3 rounded-full bg-purple-600/20 text-primary flex items-center justify-center text-[7px] font-bold border border-primary/30">
+                                      <span className="w-3 h-3 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[7px] font-bold border border-primary/30">
                                         {m.utilisateur_detail
                                           ? `${m.utilisateur_detail.prenom?.[0] || ""}${m.utilisateur_detail.nom?.[0] || ""}`.toUpperCase()
                                           : "?"}
@@ -1436,8 +1431,8 @@ export default function GestionOTs() {
                                   a.statut === "termine"
                                     ? "bg-success-soft text-success border-success/30"
                                     : a.statut === "en_cours"
-                                      ? "bg-warning/20 text-warning border-warning/30"
-                                      : "bg-hover text-text-secondary border-border/30"
+                                      ? "bg-warning-soft text-warning border-warning/30"
+                                      : "bg-hover text-text-secondary border-border-subtle"
                                 }`}>
                                 {a.statut}
                               </span>
@@ -1484,13 +1479,13 @@ export default function GestionOTs() {
                   )}
 
                   {/* Commentaire */}
-                  <div className="bg-surface rounded-xl p-4 border border-border">
+                  <div className="bg-surface rounded-xl p-4 border border-border shadow-card">
                     <p className="text-xs text-text-secondary mb-3 font-semibold">
                       Compte rendu / Commentaire
                     </p>
                     <Button
                       onClick={() => setModalComment(true)}
-                      className="w-full py-2 bg-elevated hover:bg-active border border-border-subtle rounded-lg text-sm transition">
+                      className="w-full py-2 btn btn-ghost rounded-lg text-sm transition">
                        Saisir compte rendu
                     </Button>
                   </div>
@@ -1498,7 +1493,7 @@ export default function GestionOTs() {
                   {/* Voir détail */}
                   <Button
                     onClick={() => navigate(`/ordres/ots/${otSelectionne.id}`)}
-                    className="w-full py-2 bg-purple-600/20 hover:bg-purple-600/40 text-primary rounded-xl text-sm border border-primary/30 transition">
+                    className="w-full py-2 btn btn-primary rounded-xl text-sm transition">
                     Voir détail complet →
                   </Button>
                 </motion.div>
@@ -1542,11 +1537,11 @@ export default function GestionOTs() {
                           )
                         : "—",
                     ],
-                    ["Coût total", `${otSelectionne.cout_total || 0} MAD`],
+
                   ].map(([l, v]) => (
                     <div
                       key={l}
-                      className="flex justify-between text-sm py-2 px-2 border-b border-border/70 last:border-0">
+                      className="flex justify-between text-sm py-2 px-2 border-b border-border-subtle last:border-0">
                       <span className="text-text-secondary font-medium">{l}</span>
                       <span className="text-text font-semibold text-right max-w-[55%] break-words">
                         {v}
@@ -1619,7 +1614,7 @@ export default function GestionOTs() {
       {/*  Modal changer statut  */}
       {modalStatut && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-[var(--color-bg)] rounded-2xl border border-border p-6 w-full max-w-sm shadow-2xl">
+          <div className="bg-surface rounded-2xl border border-border p-6 w-full max-w-sm shadow-2xl">
             <h2 className="text-lg font-semibold mb-1">
               Confirmer le changement
             </h2>
@@ -1642,13 +1637,13 @@ export default function GestionOTs() {
             <div className="flex gap-3 justify-end">
               <Button
                 onClick={() => setModalStatut(false)}
-                className="px-4 py-2 text-sm bg-elevated hover:bg-active border border-border-subtle rounded-lg transition text-text">
+                className="px-4 py-2 text-sm btn btn-ghost rounded-lg transition text-text">
                 Annuler
               </Button>
               <Button
                 onClick={handleChangerStatut}
                 disabled={submitting}
-                className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 rounded-lg transition text-text disabled:opacity-50">
+                className="px-4 py-2 text-sm btn btn-primary rounded-lg transition text-text disabled:opacity-50">
                 {submitting ? "..." : "Confirmer"}
               </Button>
             </div>
@@ -1659,7 +1654,7 @@ export default function GestionOTs() {
       {/*  Modal rejet DI  */}
       {modalRejet && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-[var(--color-bg)] rounded-2xl border border-border p-6 w-full max-w-sm shadow-2xl">
+          <div className="bg-surface rounded-2xl border border-border p-6 w-full max-w-sm shadow-2xl">
             <h2 className="text-lg font-semibold mb-4">Motif de rejet</h2>
             <label className="block text-xs text-text-secondary mb-1">Motif</label>
             <Textarea
@@ -1671,12 +1666,12 @@ export default function GestionOTs() {
             <div className="flex gap-3 justify-end">
               <Button
                 onClick={() => setModalRejet(null)}
-                className="px-4 py-2 text-sm bg-elevated hover:bg-active border border-border-subtle rounded-lg transition text-text">
+                className="px-4 py-2 text-sm btn btn-ghost rounded-lg transition text-text">
                 Annuler
               </Button>
               <Button
                 onClick={handleRejeter}
-                className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 rounded-lg transition text-text">
+                className="px-4 py-2 text-sm btn btn-danger rounded-lg transition text-text">
                 Rejeter
               </Button>
             </div>
@@ -1687,13 +1682,13 @@ export default function GestionOTs() {
       {/*  Modal compte rendu enrichi  */}
       {modalComment && (
         <div className="fixed inset-0 bg-black/60 flex items-start justify-center z-50 py-8 overflow-y-auto">
-          <div className="bg-[var(--color-bg)] rounded-2xl border border-border p-6 w-full max-w-2xl shadow-2xl my-auto">
+          <div className="bg-surface rounded-2xl border border-border p-6 w-full max-w-2xl shadow-2xl my-auto">
             <h2 className="text-lg font-semibold mb-1"> Compte rendu d'intervention</h2>
             <p className="text-text-secondary text-sm mb-4">{otSelectionne?.numero} — {otSelectionne?.actif_detail?.code}</p>
 
             <form onSubmit={handleCompteRendu} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
               {/* Actifs corrigés */}
-              <div className="bg-surface rounded-xl border border-border p-4">
+              <div className="bg-surface rounded-xl border border-border p-4 shadow-card">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xs font-semibold text-status-cyan uppercase tracking-wider flex items-center gap-1.5">
                     <CheckCircle size={12} /> Actifs corrigés
@@ -1717,7 +1712,7 @@ export default function GestionOTs() {
                 <AnimatePresence>
                   {showActifCorrigeSelector && (
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                      <div className="bg-[var(--color-bg)]/50 rounded-lg p-3 border border-border/50 space-y-2">
+                      <div className="bg-elevated rounded-lg p-3 border border-border-subtle space-y-2">
                         <p className="text-[10px] text-text-secondary">Sélectionnez l'équipement réparé :</p>
                         {corrigeLoading ? (
                           <p className="text-xs text-text-muted">Chargement...</p>
@@ -1744,7 +1739,7 @@ export default function GestionOTs() {
                               <div className="flex items-center justify-between pt-1">
                                 <p className="text-[10px] text-text-secondary">Sélection : <span className="text-text font-medium">{corrigeSelectionPath[corrigeSelectionPath.length - 1]?.code}</span></p>
                                 <button type="button" onClick={ajouterActifCorrige}
-                                  className="text-[10px] bg-teal-600 hover:bg-teal-700 text-text px-3 py-1 rounded-lg transition flex items-center gap-1">
+                                  className="text-[10px] btn btn-success text-text px-3 py-1 rounded-lg transition flex items-center gap-1">
                                   <Plus size={10} /> Ajouter
                                 </button>
                               </div>
@@ -1814,28 +1809,28 @@ export default function GestionOTs() {
               </div>
 
               {/* État final */}
-              <div className="bg-surface rounded-xl border border-border p-3">
+              <div className="bg-surface rounded-xl border border-border p-3 shadow-card">
                 <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-2"> État final</p>
                 <div className="space-y-2">
-                  <label className="flex items-start gap-2 p-2 rounded-lg border border-green-600/30 bg-green-600/10 cursor-pointer hover:bg-green-600/20 transition"
+                  <label className="flex items-start gap-2 p-2 rounded-lg border border-success/30 bg-success/10 cursor-pointer hover:bg-success/20 transition"
                     onClick={() => setRapport((r) => ({ ...r, estCloture: true, typeCloture: "corrige" }))}>
-                    <input type="radio" name="etatFinal" checked={rapport.estCloture && rapport.typeCloture === "corrige"} onChange={() => {}} className="mt-0.5 accent-green-500" />
+                    <input type="radio" name="etatFinal" checked={rapport.estCloture && rapport.typeCloture === "corrige"} onChange={() => {}} className="mt-0.5 accent-success" />
                     <div>
                       <p className="text-xs font-medium text-success">Réparation définitive</p>
                       <p className="text-[10px] text-success/80">Clôturer l'OT — équipement réparé</p>
                     </div>
                   </label>
-                  <label className="flex items-start gap-2 p-2 rounded-lg border border-orange-600/30 bg-orange-600/10 cursor-pointer hover:bg-orange-600/20 transition"
+                  <label className="flex items-start gap-2 p-2 rounded-lg border border-status-orange/30 bg-status-orange/10 cursor-pointer hover:bg-status-orange/20 transition"
                     onClick={() => setRapport((r) => ({ ...r, estCloture: true, typeCloture: "depanne" }))}>
-                    <input type="radio" name="etatFinal" checked={rapport.estCloture && rapport.typeCloture === "depanne"} onChange={() => {}} className="mt-0.5 accent-orange-500" />
+                    <input type="radio" name="etatFinal" checked={rapport.estCloture && rapport.typeCloture === "depanne"} onChange={() => {}} className="mt-0.5 accent-status-orange" />
                     <div>
                       <p className="text-xs font-medium text-status-orange">Dépannage temporaire</p>
                       <p className="text-[10px] text-status-orange/80">Marquer dépanné — intervention ultérieure nécessaire</p>
                     </div>
                   </label>
-                  <label className="flex items-start gap-2 p-2 rounded-lg border border-border-subtle/30 bg-elevated/30 cursor-pointer hover:bg-elevated/50 transition"
+                  <label className="flex items-start gap-2 p-2 rounded-lg border border-border-subtle bg-elevated cursor-pointer hover:bg-hover transition"
                     onClick={() => setRapport((r) => ({ ...r, estCloture: false, typeCloture: "depanne" }))}>
-                    <input type="radio" name="etatFinal" checked={!rapport.estCloture} onChange={() => {}} className="mt-0.5 accent-gray-500" />
+                    <input type="radio" name="etatFinal" checked={!rapport.estCloture} onChange={() => {}} className="mt-0.5 accent-text-secondary" />
                     <div>
                       <p className="text-xs font-medium text-text">Ne pas clôturer</p>
                       <p className="text-[10px] text-text-muted">Enregistrer le rapport, OT reste en cours</p>
@@ -1849,13 +1844,13 @@ export default function GestionOTs() {
                 <Button
                   type="button"
                   onClick={() => setModalComment(false)}
-                  className="px-4 py-2 text-sm bg-elevated hover:bg-active border border-border-subtle rounded-lg transition text-text">
+                  className="px-4 py-2 text-sm btn btn-ghost rounded-lg transition text-text">
                   Annuler
                 </Button>
                 <Button
                   type="submit"
                   disabled={submitting || !rapport.descriptionTravail.trim() || !rapport.solutionApportee.trim()}
-                  className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 rounded-lg transition text-text disabled:opacity-50 flex items-center gap-1.5">
+                  className="px-4 py-2 text-sm btn btn-primary rounded-lg transition text-text disabled:opacity-50 flex items-center gap-1.5">
                   {submitting ? "..." : <><CheckCircle size={14} /> Envoyer le rapport</>}
                 </Button>
               </div>
@@ -1867,7 +1862,7 @@ export default function GestionOTs() {
       {/*  Modal Affectation Automatique (après création OT)  */}
       {modalAffectationAuto && otAffectationAuto && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-[var(--color-bg)] rounded-2xl border border-border p-6 w-full max-w-md shadow-2xl">
+          <div className="bg-surface rounded-2xl border border-border p-6 w-full max-w-md shadow-2xl">
             <h2 className="text-lg font-semibold mb-1"> Nouvel OT créé</h2>
             <p className="text-text-secondary text-sm mb-4">
               <span className="font-mono text-primary">
@@ -1887,7 +1882,7 @@ export default function GestionOTs() {
             />
             <Button
               onClick={() => setModalAffectationAuto(false)}
-              className="w-full mt-3 px-4 py-2 text-sm bg-elevated hover:bg-active rounded-lg transition text-text">
+              className="w-full mt-3 px-4 py-2 text-sm btn btn-ghost rounded-lg transition text-text">
               Ignorer pour maintenant
             </Button>
           </div>
@@ -1923,7 +1918,7 @@ export default function GestionOTs() {
             {/* Contenu */}
             <div className="p-6 space-y-6">
               {/* Historique Audit */}
-              <div className="bg-elevated/30 rounded-lg p-4 border border-border-subtle">
+              <div className="bg-elevated rounded-lg p-4 border border-border-subtle">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-lg"></span>
                   <p className="text-sm font-bold text-text uppercase tracking-wider">
@@ -1997,7 +1992,7 @@ export default function GestionOTs() {
 
               {/* Status & Urgence */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-elevated/30 rounded-lg p-4 border border-border-subtle">
+                <div className="bg-elevated rounded-lg p-4 border border-border-subtle">
                   <p className="text-xs text-text-secondary uppercase font-semibold mb-1">
                     Urgence
                   </p>
@@ -2014,7 +2009,7 @@ export default function GestionOTs() {
                     {demandeDetail.urgence?.toUpperCase()}
                   </p>
                 </div>
-                <div className="bg-elevated/30 rounded-lg p-4 border border-border-subtle">
+                <div className="bg-elevated rounded-lg p-4 border border-border-subtle">
                   <p className="text-xs text-text-secondary uppercase font-semibold mb-1">
                     Date
                   </p>
@@ -2028,7 +2023,7 @@ export default function GestionOTs() {
 
               {/* Équipement */}
               <div className="bg-primary-soft rounded-lg p-4 border border-primary/30">
-                <p className="text-xs text-primary uppercase font-semibold mb-2">
+                <p className="text-xs text-text-muted uppercase font-semibold mb-2">
                   Équipement
                 </p>
                 <p className="text-sm font-mono text-primary">
@@ -2044,7 +2039,7 @@ export default function GestionOTs() {
 
               {/* Description */}
               <div className="bg-primary-soft rounded-lg p-4 border border-primary/30">
-                <p className="text-xs text-primary uppercase font-semibold mb-2">
+                <p className="text-xs text-text-muted uppercase font-semibold mb-2">
                   Description du problème
                 </p>
                 <p className="text-sm text-text leading-relaxed">
@@ -2125,7 +2120,7 @@ export default function GestionOTs() {
             <div className="sticky bottom-0 bg-surface border-t border-border p-6 flex gap-3">
               <Button
                 onClick={() => setDemandeDetail(null)}
-                className="flex-1 py-2 bg-elevated hover:bg-active rounded-lg text-sm font-medium transition text-text">
+                className="flex-1 py-2 btn btn-ghost rounded-lg text-sm font-medium transition text-text">
                 Fermer
               </Button>
               <Button
@@ -2133,7 +2128,7 @@ export default function GestionOTs() {
                   handleValider(demandeDetail.id);
                   setDemandeDetail(null);
                 }}
-                className="flex-1 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium transition text-text">
+                className="flex-1 py-2 btn btn-success rounded-lg text-sm font-medium transition text-text">
                  Valider
               </Button>
             </div>

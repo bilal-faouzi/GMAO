@@ -203,14 +203,15 @@ class AppartenanceOrganisationnelleSerializer(serializers.ModelSerializer):
     secteur_libelle = serializers.CharField(
         source='secteur.libelle', read_only=True, default=None
     )
-    unite_libelle = serializers.CharField(
-        source='unite.libelle', read_only=True, default=None
-    )
+    unites_libelles = serializers.SerializerMethodField()
 
     class Meta:
         model = AppartenanceOrganisationnelle
         fields = '__all__'
         read_only_fields = ['id']
+
+    def get_unites_libelles(self, obj):
+        return [u.libelle for u in obj.unites.all()]
 
     def get_utilisateur_nom(self, obj):
         prenom = getattr(obj.utilisateur, 'prenom', '') or ''
@@ -241,24 +242,26 @@ class AppartenanceOrganisationnelleSerializer(serializers.ModelSerializer):
                     )
                 })
 
-        # ← NOUVEAU : doublon exact (même user + même site)
+        # ← NOUVEAU : doublon exact (même user + même site + même secteur)
+        secteur = data.get('secteur')
         if utilisateur and site:
             qs_doublon = AppartenanceOrganisationnelle.objects.filter(
                 utilisateur=utilisateur,
-                site=site
+                site=site,
+                secteur=secteur
             )
             if self.instance:
                 qs_doublon = qs_doublon.exclude(pk=self.instance.pk)
 
             if qs_doublon.exists():
+                secteur_str = f" et au secteur '{secteur.libelle}'" if secteur else " sans secteur"
                 raise serializers.ValidationError(
                     f"{utilisateur.prenom} {utilisateur.nom} est déjà rattaché "
-                    f"au site '{site.libelle}'. "
+                    f"au site '{site.libelle}'{secteur_str}. "
                     "Modifiez l'appartenance existante plutôt que d'en créer une nouvelle."
                 )
 
         # ← NOUVEAU : cohérence hiérarchique — le secteur doit appartenir au site
-        secteur = data.get('secteur')
         if secteur and site and secteur.site_id != site.id:
             raise serializers.ValidationError({
                 'secteur': (
@@ -268,14 +271,16 @@ class AppartenanceOrganisationnelleSerializer(serializers.ModelSerializer):
                 )
             })
 
-        # ← NOUVEAU : cohérence hiérarchique — l'unité doit appartenir au secteur
-        unite = data.get('unite')
-        if unite and secteur and unite.secteur_id != secteur.id:
-            raise serializers.ValidationError({
-                'unite': (
-                    f"L'unité '{unite.libelle}' n'appartient pas "
-                    f"au secteur '{secteur.libelle}'."
-                )
-            })
+        # ← MODIFIÉ : cohérence hiérarchique — les unités doivent appartenir au secteur
+        unites = data.get('unites', [])
+        if unites and secteur:
+            for unite in unites:
+                if unite.secteur_id != secteur.id:
+                    raise serializers.ValidationError({
+                        'unites': (
+                            f"L'unité '{unite.libelle}' n'appartient pas "
+                            f"au secteur '{secteur.libelle}'."
+                        )
+                    })
 
         return data

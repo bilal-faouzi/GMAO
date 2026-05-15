@@ -1,58 +1,104 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { getPieces, getAlertes } from "../../services/magasinService";
+import {
+  getPieces,
+  getAlertes,
+  importerPiecesCSV,
+} from "../../services/magasinService";
 import { getOTs, enregistrerPieces } from "../../services/ordreService";
-import { getTechniciens } from "../../services/organisationService";
-import { motion, AnimatePresence } from "framer-motion";
-import { Package, Trash2, Plus, ShoppingCart, AlertTriangle, CheckCircle, Upload, FileSpreadsheet } from "lucide-react";
+import { getUtilisateurs } from "@/services/securiteService";
 
-const STATUTS_ACTIFS = [, "EN_COURS", "DEPANNE"];
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import {
+  AlertTriangle,
+  Package,
+  Search,
+  X,
+  Plus,
+  Minus,
+  CheckCircle2,
+  Loader2,
+  ChevronRight,
+  User,
+  Boxes,
+  MapPin,
+  ChevronsUpDown,
+  Upload,
+  FileSpreadsheet,
+} from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 
+// ✅ Bug corrigé : suppression de la virgule initiale qui créait un undefined
+const STATUTS_ACTIFS = ["EN_COURS", "DEPANNE"];
+
+// ─── Composant principal ──────────────────────────────────────────────────────
 export default function InterfaceMagasinier() {
+  // ─── État général ─────────────────────────────────────────────────────────
   const [ots, setOTs] = useState([]);
   const [pieces, setPieces] = useState([]);
   const [totalPieces, setTotalPieces] = useState(0);
   const [tablePage, setTablePage] = useState(1);
   const [alertes, setAlertes] = useState([]);
+  const [utilisateurs, setUtilisateurs] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Recherche backend pièce
+  // ─── Sélection OT ────────────────────────────────────────────────────────
+  const [otSelectionne, setOtSelectionne] = useState(null);
+  const [otSearch, setOtSearch] = useState("");
+  const [otOpen, setOtOpen] = useState(false);
+
+  // ─── Sélection Technicien ────────────────────────────────────────────────
+  const [userSelectionnee, setUserSelectionnee] = useState(null);
+  const [userSearch, setUserSearch] = useState("");
+  const [userOpen, setUserOpen] = useState(false);
+
+  // ─── Recherche pièce — backend debounce 300ms (branche 1) ────────────────
+  const [pieceSearch, setPieceSearch] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [selectedPiece, setSelectedPiece] = useState(null);
+  const [pieceDropdown, setPieceDropdown] = useState(false);
+  const pieceRef = useRef(null);
 
-  // Sélection OT
-  const [otSelectionne, setOtSelectionne] = useState("");
-  const [otSearch, setOtSearch] = useState("");
-
-  // Panier
+  // ─── Panier ───────────────────────────────────────────────────────────────
   const [panier, setPanier] = useState([]);
 
-  // Sélection pièce courante
-  const [pieceSearch, setPieceSearch] = useState("");
-  const [quantite, setQuantite] = useState("");
-  const [technicien, setTechnicien] = useState("");
-  const [techniciens, setTechniciens] = useState([]);
-
+  // ─── Feedback ─────────────────────────────────────────────────────────────
   const [erreur, setErreur] = useState("");
   const [succes, setSucces] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // ─── Import CSV SAGE X3 (branche 1) ──────────────────────────────────────
+  const [importLoading, setImportLoading] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const fileInputRef = useRef(null);
+
+  // ─── Chargement initial ───────────────────────────────────────────────────
+  // Utilise useCallback + tablePage pour la pagination du tableau SAGE X3
   const chargerDonnees = useCallback(async () => {
     setLoading(true);
     try {
-      const [o, p, a, t] = await Promise.all([
+      const [o, p, a, u] = await Promise.all([
         getOTs({ statut__in: STATUTS_ACTIFS.join(",") }),
         getPieces({ estActif: true, page: tablePage, page_size: 50 }),
         getAlertes(),
-        getTechniciens(),
+        getUtilisateurs(),
       ]);
       setOTs(o.data.results || o.data);
       setPieces(p.data.results || p.data);
       setTotalPieces(p.data.count || p.data.length);
       setAlertes(a.data.results || a.data);
-      setTechniciens(t.data || []);
-    } catch (e) {
-      console.error(e);
+      setUtilisateurs(u.data.results || u.data);
     } finally {
       setLoading(false);
     }
@@ -62,474 +108,936 @@ export default function InterfaceMagasinier() {
     chargerDonnees();
   }, [chargerDonnees]);
 
-  // Recherche backend debounce (300ms)
+  // ─── Recherche pièce backend debounce 300ms ───────────────────────────────
   useEffect(() => {
-    if (!pieceSearch || pieceSearch.length < 2) {
+    if (!pieceSearch || pieceSearch.length < 1) {
       setSearchResults([]);
-      setSelectedPiece(null);
       return;
     }
     const timer = setTimeout(async () => {
       setSearchLoading(true);
       try {
-        const res = await getPieces({ search: pieceSearch, estActif: true, page_size: 20 });
-        setSearchResults(res.data.results || res.data);
-      } catch (e) {
+        const res = await getPieces({
+          search: pieceSearch,
+          estActif: true,
+          page_size: 20,
+        });
+        // Exclure les pièces déjà dans le panier
+        const idsDansPanier = panier.map((item) => item.piece.id);
+        setSearchResults(
+          (res.data.results || res.data).filter(
+            (p) => !idsDansPanier.includes(p.id),
+          ),
+        );
+      } catch {
         setSearchResults([]);
       } finally {
         setSearchLoading(false);
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [pieceSearch]);
+  }, [pieceSearch, panier]);
 
-  const otsFiltres = ots.filter(
-    (o) =>
-      o.numero?.toLowerCase().includes(otSearch.toLowerCase()) ||
-      o.actif_detail?.code?.toLowerCase().includes(otSearch.toLowerCase()) ||
-      o.actif_detail?.libelle?.toLowerCase().includes(otSearch.toLowerCase()),
-  );
+  // ─── Fermer dropdown pièce au clic extérieur ─────────────────────────────
+  useEffect(() => {
+    const handle = (e) => {
+      if (pieceRef.current && !pieceRef.current.contains(e.target))
+        setPieceDropdown(false);
+    };
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, []);
 
-  const otCourant = ots.find((o) => o.id === otSelectionne);
+  // ─── Filtres OT / Utilisateurs ────────────────────────────────────────────
+  const otsFiltres = ots.filter((o) => {
+    const q = otSearch.toLowerCase();
+    return (
+      o.numero?.toLowerCase().includes(q) ||
+      o.actif_detail?.code?.toLowerCase().includes(q) ||
+      o.actif_detail?.libelle?.toLowerCase().includes(q)
+    );
+  });
 
+  const usersFiltres = utilisateurs.filter((u) => {
+    const q = userSearch.toLowerCase();
+    return (
+      u.prenom?.toLowerCase().includes(q) ||
+      u.nom?.toLowerCase().includes(q) ||
+      u.email?.toLowerCase().includes(q)
+    );
+  });
+
+  // ─── Panier ───────────────────────────────────────────────────────────────
   const ajouterAuPanier = (piece) => {
-    setErreur("");
-    const qte = parseFloat(quantite);
-    if (!qte || qte <= 0) {
-      setErreur("Quantité invalide.");
-      return;     
-    }
-    if (qte > Number(piece.quantiteStock)) {
-      setErreur(`Stock insuffisant : ${piece.quantiteStock} ${piece.unite} disponible(s).`);
-      return;
-    }
-    // Vérifier si déjà dans le panier
-    const existant = panier.find((l) => l.piece.id === piece.id);
-    if (existant) {
-      const nouvelleQte = existant.quantite + qte;
-      if (nouvelleQte > Number(piece.quantiteStock)) {
-        setErreur(`Total demandé (${nouvelleQte}) dépasse le stock (${piece.quantiteStock} ${piece.unite}).`);
-        return;
-      }
-      setPanier((prev) =>
-        prev.map((l) =>
-          l.piece.id === piece.id ? { ...l, quantite: nouvelleQte } : l
-        )
-      );
-    } else {
-      setPanier((prev) => [...prev, { piece, quantite: qte }]);
-    }
+    setPanier((prev) => [...prev, { piece, quantite: "" }]);
     setPieceSearch("");
-    setSelectedPiece(null);
-    setQuantite("");
+    setSearchResults([]);
+    setPieceDropdown(false);
   };
 
   const retirerDuPanier = (pieceId) => {
-    setPanier((prev) => prev.filter((l) => l.piece.id !== pieceId));
+    setPanier((prev) => prev.filter((item) => item.piece.id !== pieceId));
   };
 
-  const modifierQtePanier = (pieceId, nouvelleQte) => {
-    const qte = parseFloat(nouvelleQte);
-    const ligne = panier.find((l) => l.piece.id === pieceId);
-    if (!ligne) return;
-    if (!qte || qte <= 0) {
-      retirerDuPanier(pieceId);
-      return;
-    }
-    if (qte > Number(ligne.piece.quantiteStock)) {
-      setErreur(`Stock insuffisant pour ${ligne.piece.reference}.`);
-      return;
-    }
+  const modifierQuantite = (pieceId, val) => {
     setPanier((prev) =>
-      prev.map((l) => (l.piece.id === pieceId ? { ...l, quantite: qte } : l))
+      prev.map((item) =>
+        item.piece.id === pieceId ? { ...item, quantite: val } : item,
+      ),
     );
   };
 
+  // ─── Soumission batch — un seul appel API (branche 1) ────────────────────
   const handleSortieBatch = async (e) => {
     e.preventDefault();
     setErreur("");
     setSucces("");
-    if (!otSelectionne) return setErreur("Sélectionnez un OT.");
-    if (panier.length === 0) return setErreur("Le panier est vide. Ajoutez au moins une pièce.");
-    if (!technicien) return setErreur("Sélectionnez un technicien bénéficiaire.");
+
+    if (!otSelectionne)
+      return setErreur("Veuillez sélectionner un ordre de travail.");
+    if (!userSelectionnee)
+      return setErreur("Veuillez sélectionner un technicien bénéficiaire.");
+    if (panier.length === 0) return setErreur("Ajoutez au moins une pièce.");
+
+    for (const item of panier) {
+      if (!item.quantite || Number(item.quantite) <= 0)
+        return setErreur(`Quantité invalide pour : ${item.piece.reference}`);
+      if (Number(item.quantite) > Number(item.piece.quantiteStock))
+        return setErreur(
+          `Stock insuffisant pour : ${item.piece.reference} (${item.piece.quantiteStock} ${item.piece.unite} dispo)`,
+        );
+    }
 
     setSubmitting(true);
     try {
-      const piecesPayload = panier.map((l) => ({
-        idPiece: l.piece.id,
-        quantite: l.quantite,
+      const piecesPayload = panier.map((item) => ({
+        idPiece: item.piece.id,
+        quantite: item.quantite,
       }));
-      const res = await enregistrerPieces(otSelectionne, piecesPayload, technicien || null);
-      setSucces(` ${res.data.message || "Sorties enregistrées"} → ${otCourant?.numero}`);
+      const res = await enregistrerPieces(
+        otSelectionne.id,
+        piecesPayload,
+        userSelectionnee.id,
+      );
+      setSucces(
+        `✅ ${res.data.message || `${panier.length} sortie(s) enregistrée(s)`} → ${otSelectionne.numero}`,
+      );
       setPanier([]);
-      setTechnicien("");
+      setOtSelectionne(null);
+      setUserSelectionnee(null);
+      setOtSearch("");
+      setUserSearch("");
       await chargerDonnees();
-    } catch (e) {
-      const msg = e.response?.data?.error || "Erreur lors de l'enregistrement.";
-      setErreur(msg);
+    } catch (err) {
+      setErreur(
+        err.response?.data?.error ||
+          "Une erreur est survenue lors de l'enregistrement.",
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  // const coutTotalPanier = panier.reduce(
-  //   (sum, l) => sum + (l.piece.prixUnitaire || 0) * l.quantite,
-  //   0
-  // );
+  const panierValide =
+    otSelectionne &&
+    userSelectionnee &&
+    panier.length > 0 &&
+    panier.every((item) => item.quantite && Number(item.quantite) > 0);
 
-  if (loading) return <div className="p-6 text-text-secondary">Chargement...</div>;
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-sm text-text-muted animate-pulse">Chargement…</p>
+      </div>
+    );
 
   return (
-    <div className="p-6 text-text">
-      {/* Header */}
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Interface Magasinier</h1>
-          <p className="text-text-secondary text-sm mt-1">
+    <div className="p-6 space-y-5">
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <div className="flex items-start justify-between">
+        <div className="space-y-0.5">
+          <h1 className="text-xl font-bold text-text tracking-tight">
+            Interface Magasinier
+          </h1>
+          <p className="text-sm text-text-muted">
             Enregistrement des sorties de pièces détachées — mode batch
           </p>
         </div>
-        <div />
+
+        {/* ── Import CSV SAGE X3 ──────────────────────────────────────────── */}
+        <div className="flex flex-col items-end gap-2">
+          <Button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importLoading}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm">
+            {importLoading ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                Import en cours…
+              </>
+            ) : (
+              <>
+                <Upload size={14} />
+                Importer CSV SAGE X3
+              </>
+            )}
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,.txt"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              setImportLoading(true);
+              setErreur("");
+              setSucces("");
+              setImportResult(null);
+              try {
+                const res = await importerPiecesCSV(file);
+                setImportResult(res.data);
+                const msg = `✅ Import terminé : ${res.data.creees} créées, ${res.data.mises_a_jour} mises à jour${
+                  res.data.erreurs?.length
+                    ? `, ${res.data.erreurs.length} erreurs`
+                    : ""
+                }`;
+                setSucces(msg);
+                await chargerDonnees();
+              } catch (err) {
+                const msg =
+                  err.response?.data?.error || "Erreur lors de l'import CSV.";
+                setErreur(msg);
+              } finally {
+                setImportLoading(false);
+                e.target.value = "";
+              }
+            }}
+          />
+          {importResult && (
+            <div className="text-xs text-text-muted text-right leading-relaxed">
+              <p>
+                Fichier :{" "}
+                <span className="text-text">{importResult.fichier}</span>
+              </p>
+              <p>
+                Lignes :{" "}
+                <span className="text-text">{importResult.total_lignes}</span> |
+                Créées :{" "}
+                <span className="text-emerald-500">{importResult.creees}</span>{" "}
+                | MàJ :{" "}
+                <span className="text-blue-500">
+                  {importResult.mises_a_jour}
+                </span>
+              </p>
+              {importResult.erreurs?.length > 0 && (
+                <p className="text-red-400">
+                  Erreurs : {importResult.erreurs.length}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Alertes stock */}
+      {/* ── Alertes stock ──────────────────────────────────────────────────── */}
       {alertes.length > 0 && (
-        <div className="bg-red-100 dark:bg-danger-soft border border-red-300 dark:border-danger/30 rounded-xl p-4 mb-6">
-          <p className="text-red-700 dark:text-danger font-medium text-sm mb-2 flex items-center gap-2">
-            <AlertTriangle size={14} /> {alertes.length} pièce(s) sous le seuil minimum
-          </p>
+        <div className="bg-red-50 dark:bg-red-500/5 border border-red-200 dark:border-red-500/20 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle size={14} className="text-red-500" />
+            <p className="text-sm font-semibold text-red-700 dark:text-red-400">
+              {alertes.length} pièce(s) sous le seuil minimum
+            </p>
+          </div>
           <div className="flex flex-wrap gap-2">
-            {alertes.slice(0, 5).map((a) => (
-              <span key={a.id} className="text-xs bg-red-200 dark:bg-danger-soft text-red-700 dark:text-danger px-2 py-1 rounded-full font-mono">
-                {a.reference} — {a.quantiteStock} {a.unite} (min: {a.seuilMinimum})
+            {alertes.slice(0, 6).map((a) => (
+              <span
+                key={a.id}
+                className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium px-2.5 py-1 rounded-lg border bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/30">
+                {a.reference}
+                <span className="text-red-400 dark:text-red-500">
+                  {a.quantiteStock}/{a.seuilMinimum} {a.unite}
+                </span>
               </span>
             ))}
+            {alertes.length > 6 && (
+              <span className="text-[11px] text-red-500 dark:text-red-400 py-1">
+                +{alertes.length - 6} autres
+              </span>
+            )}
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/*  Colonne gauche : formulaire + panier  */}
-        <div className="space-y-5">
-          {/* Messages */}
+      {/* ── Corps ──────────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* ── Formulaire (2/3) ─────────────────────────────────────────────── */}
+        <form onSubmit={handleSortieBatch} className="lg:col-span-2 space-y-4">
+          {/* Feedback */}
           {erreur && (
-            <div className="bg-red-100 dark:bg-danger-soft border border-red-300 dark:border-danger/40 text-red-700 dark:text-danger rounded-lg p-3 text-sm flex items-start gap-2">
-              <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+            <div className="flex items-start gap-2.5 bg-red-50 dark:bg-red-500/5 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 rounded-xl px-4 py-3 text-sm">
+              <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
               {erreur}
             </div>
           )}
           {succes && (
-            <div className="bg-green-100 dark:bg-success-soft border border-green-300 dark:border-success/40 text-green-700 dark:text-success rounded-lg p-3 text-sm flex items-start gap-2">
-              <CheckCircle size={16} className="mt-0.5 shrink-0" />
+            <div className="flex items-start gap-2.5 bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-xl px-4 py-3 text-sm">
+              <CheckCircle2 size={14} className="mt-0.5 flex-shrink-0" />
               {succes}
             </div>
           )}
 
-          {/* Sélection OT */}
-          <div className="bg-surface rounded-xl border border-border p-5">
-            <h2 className="text-sm font-semibold text-purple-600 dark:text-primary uppercase tracking-wider mb-4">
-              1. Sélectionner l'intervention (OT)
-            </h2>
-            <input
-              type="text"
-              placeholder="Rechercher OT par numéro ou actif..."
-              value={otSearch}
-              onChange={(e) => setOtSearch(e.target.value)}
-              className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-primary mb-2"
-            />
-            <select
-              value={otSelectionne}
-              onChange={(e) => { setOtSelectionne(e.target.value); setPanier([]); }}
-              className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-primary"
-              size={Math.min(otsFiltres.length + 1, 4)}>
-              <option value="">— Sélectionner l'OT —</option>
-              {otsFiltres.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.numero} | {o.actif_detail?.code} — {o.actif_detail?.libelle?.slice(0, 30)}
-                </option>
-              ))}
-            </select>
-            {otCourant && (
-              <div className="mt-3 p-3 bg-purple-100 dark:bg-primary-soft border border-purple-300 dark:border-primary/20 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-mono text-sm text-purple-700 dark:text-primary">{otCourant.numero}</p>
-                    <p className="text-xs text-text-secondary">{otCourant.actif_detail?.libelle}</p>
-                  </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    otCourant.priorite === "critique" ? "bg-red-200 dark:bg-danger-soft text-red-700 dark:text-danger" :
-                    otCourant.priorite === "haute" ? "bg-orange-200 dark:bg-status-orange/20 text-orange-700 dark:text-status-orange" :
-                    "bg-blue-200 dark:bg-primary-soft text-blue-700 dark:text-primary"
-                  }`}>{otCourant.priorite}</span>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* ── Bloc 1 : OT + Technicien ─────────────────────────────────── */}
+          <div className="bg-surface border border-border rounded-xl p-5 space-y-4">
+            <p className="text-[10px] uppercase tracking-widest text-text-muted font-semibold">
+              Intervention
+            </p>
 
-          {/* Ajout pièce */}
-          <div className="bg-surface rounded-xl border border-border p-5">
-            <h2 className="text-sm font-semibold text-teal-600 dark:text-status-cyan uppercase tracking-wider mb-4">
-              2. Ajouter des pièces au panier
-            </h2>
-
-            {/* Recherche pièce */}
-            <div className="mb-3">
-              <label className="block text-xs text-text-secondary mb-1 font-medium">Référence / Désignation</label>
-              <input
-                id="input-piece-search"
-                type="text"
-                placeholder="Rechercher par référence, désignation ou emplacement..."
-                value={pieceSearch}
-                onChange={(e) => { setPieceSearch(e.target.value); setSelectedPiece(null); }}
-                disabled={!otSelectionne}
-                className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-status-cyan disabled:opacity-40"
-              />
-              {pieceSearch && (
-                <div className="bg-elevated border border-border rounded-lg max-h-40 overflow-y-auto mt-1">
-                  {searchLoading ? (
-                    <p className="text-text-muted text-xs p-3 text-center">Recherche...</p>
-                  ) : searchResults.length === 0 ? (
-                    <p className="text-text-muted text-xs p-3 text-center">Aucune pièce trouvée</p>
-                  ) : (
-                    searchResults.map((p) => (
-                      <div
-                        key={p.id}
-                        onClick={() => {
-                          setPieceSearch(p.reference);
-                          setSelectedPiece(p);
-                        }}
-                        className={`flex items-center justify-between px-3 py-2 hover:bg-surface cursor-pointer border-b border-border/50 last:border-0 ${
-                          selectedPiece?.id === p.id ? "bg-teal-100 dark:bg-status-cyan/20" : ""
-                        }`}>
-                        <div>
-                          <span className="font-mono text-sm text-purple-700 dark:text-primary">{p.reference}</span>
-                          <span className="text-xs text-text-secondary ml-2">{p.designation}</span>
-                        </div>
-                        <span className={`text-xs font-bold ml-2 ${p.est_sous_seuil ? "text-red-700 dark:text-danger" : "text-green-700 dark:text-success"}`}>
-                          {p.quantiteStock} {p.unite}
+            {/* Sélecteur OT */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-text">
+                Ordre de travail <span className="text-red-500">*</span>
+              </Label>
+              <Popover open={otOpen} onOpenChange={setOtOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={otOpen}
+                    className="w-full justify-between bg-elevated border-border text-sm font-normal h-9 px-3">
+                    {otSelectionne ? (
+                      <span className="text-text">{otSelectionne.numero}</span>
+                    ) : (
+                      <span className="text-text-muted">
+                        Sélectionner un OT…
+                      </span>
+                    )}
+                    <div className="flex items-center gap-1 ml-2 shrink-0">
+                      {otSelectionne && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOtSelectionne(null);
+                            setOtSearch("");
+                            setPanier([]);
+                          }}
+                          onKeyDown={(e) =>
+                            e.key === "Enter" && e.currentTarget.click()
+                          }
+                          className="text-text-muted hover:text-text rounded p-0.5">
+                          <X size={12} />
                         </span>
-                      </div>
-                    ))
-                  )}
+                      )}
+                      <ChevronsUpDown size={12} className="text-text-muted" />
+                    </div>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-[--radix-popover-trigger-width] p-0 bg-surface border border-border shadow-lg rounded-xl overflow-hidden"
+                  align="start">
+                  <Command shouldFilter={false}>
+                    <div className="flex items-center border-b border-border px-3">
+                      <Search
+                        size={13}
+                        className="text-text-muted shrink-0 mr-2"
+                      />
+                      <input
+                        value={otSearch}
+                        onChange={(e) => setOtSearch(e.target.value)}
+                        placeholder="Numéro, actif…"
+                        className="flex-1 bg-transparent py-2.5 text-sm text-text placeholder:text-text-muted outline-none"
+                      />
+                      {otSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setOtSearch("")}
+                          className="text-text-muted hover:text-text ml-1">
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
+                    <CommandList className="max-h-60 overflow-y-auto">
+                      <CommandEmpty className="py-6 text-center text-sm text-text-muted">
+                        Aucun ordre de travail trouvé.
+                      </CommandEmpty>
+                      {otsFiltres.map((ot) => (
+                        <CommandItem
+                          key={ot.id}
+                          value={ot.id.toString()}
+                          onSelect={() => {
+                            setOtSelectionne(ot);
+                            setOtSearch("");
+                            setOtOpen(false);
+                            setPanier([]);
+                          }}
+                          className={`flex flex-col items-start gap-0.5 px-4 py-2.5 cursor-pointer border-b border-border last:border-0 rounded-none ${
+                            otSelectionne?.id === ot.id
+                              ? "bg-blue-50 dark:bg-blue-500/10"
+                              : "hover:bg-elevated"
+                          }`}>
+                          <span className="text-sm font-mono font-semibold text-text">
+                            {ot.numero}
+                          </span>
+                          {ot.actif_detail?.libelle && (
+                            <span className="text-xs text-text-muted">
+                              {ot.actif_detail.libelle}
+                            </span>
+                          )}
+                        </CommandItem>
+                      ))}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+
+              {/* Récap OT sélectionné */}
+              {otSelectionne && (
+                <div className="flex items-center justify-between mt-2 p-3 bg-blue-50 dark:bg-blue-500/5 border border-blue-200 dark:border-blue-500/20 rounded-lg">
+                  <div>
+                    <p className="font-mono text-sm text-blue-700 dark:text-blue-300">
+                      {otSelectionne.numero}
+                    </p>
+                    <p className="text-xs text-text-muted">
+                      {otSelectionne.actif_detail?.libelle}
+                    </p>
+                  </div>
+                  <PrioriteBadge priorite={otSelectionne.priorite} />
                 </div>
               )}
             </div>
 
-            {/* Quantité + bouton ajouter */}
-            <div className="flex gap-2 items-end">
-              <div className="flex-1">
-                <label className="block text-xs text-text-secondary mb-1 font-medium">Quantité</label>
-                <input
-                  type="number"
-                  min="0.001"
-                  step="any"
-                  value={quantite}
-                  onChange={(e) => setQuantite(e.target.value)}
-                  disabled={!otSelectionne}
-                  placeholder="0"
-                  className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-status-cyan disabled:opacity-40"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (selectedPiece) {
-                    ajouterAuPanier(selectedPiece);
-                  } else {
-                    const p = searchResults.find((x) => x.reference === pieceSearch);
-                    if (p) ajouterAuPanier(p);
-                    else setErreur("Sélectionnez une pièce dans la liste.");
-                  }
-                }}
-                disabled={!otSelectionne || !quantite}
-                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 dark:bg-teal-600 dark:hover:bg-teal-700 disabled:opacity-40 rounded-lg text-sm font-semibold transition text-white flex items-center gap-1.5">
-                <Plus size={14} /> Ajouter
-              </button>
-            </div>
+            <Separator className="bg-border" />
 
-            {/* Technicien */}
-            <div className="mt-3">
-              <label className="block text-xs text-text-secondary mb-1 font-medium">Technicien bénéficiaire</label>
-              <select
-                value={technicien}
-                onChange={(e) => setTechnicien(e.target.value)}
-                disabled={!otSelectionne || techniciens.length === 0}
-                className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-status-cyan disabled:opacity-40"
-              >
-                <option value="">— Sélectionner un technicien —</option>
-                {techniciens.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.nom_complet}
-                  </option>
-                ))}
-              </select>
+            {/* Sélecteur Technicien */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-text">
+                Technicien bénéficiaire <span className="text-red-500">*</span>
+              </Label>
+              <Popover open={userOpen} onOpenChange={setUserOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={userOpen}
+                    className="w-full justify-between bg-elevated border-border text-sm font-normal h-9 px-3">
+                    {userSelectionnee ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                          <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400">
+                            {userSelectionnee.prenom?.[0]}
+                            {userSelectionnee.nom?.[0]}
+                          </span>
+                        </div>
+                        <span className="text-text">
+                          {userSelectionnee.prenom} {userSelectionnee.nom}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-text-muted">
+                        Sélectionner un technicien…
+                      </span>
+                    )}
+                    <div className="flex items-center gap-1 ml-2 shrink-0">
+                      {userSelectionnee && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setUserSelectionnee(null);
+                            setUserSearch("");
+                          }}
+                          onKeyDown={(e) =>
+                            e.key === "Enter" && e.currentTarget.click()
+                          }
+                          className="text-text-muted hover:text-text rounded p-0.5">
+                          <X size={12} />
+                        </span>
+                      )}
+                      <ChevronsUpDown size={12} className="text-text-muted" />
+                    </div>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-[--radix-popover-trigger-width] p-0 bg-surface border border-border shadow-lg rounded-xl overflow-hidden"
+                  align="start">
+                  <Command shouldFilter={false}>
+                    <div className="flex items-center border-b border-border px-3">
+                      <User
+                        size={13}
+                        className="text-text-muted shrink-0 mr-2"
+                      />
+                      <input
+                        value={userSearch}
+                        onChange={(e) => setUserSearch(e.target.value)}
+                        placeholder="Prénom, nom ou email…"
+                        className="flex-1 bg-transparent py-2.5 text-sm text-text placeholder:text-text-muted outline-none"
+                      />
+                      {userSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setUserSearch("")}
+                          className="text-text-muted hover:text-text ml-1">
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
+                    <CommandList className="max-h-60 overflow-y-auto">
+                      <CommandEmpty className="py-6 text-center text-sm text-text-muted">
+                        Aucun technicien trouvé.
+                      </CommandEmpty>
+                      {usersFiltres.map((u) => (
+                        <CommandItem
+                          key={u.id}
+                          value={u.id.toString()}
+                          onSelect={() => {
+                            setUserSelectionnee(u);
+                            setUserSearch("");
+                            setUserOpen(false);
+                          }}
+                          className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer border-b border-border last:border-0 rounded-none ${
+                            userSelectionnee?.id === u.id
+                              ? "bg-blue-50 dark:bg-blue-500/10"
+                              : "hover:bg-elevated"
+                          }`}>
+                          <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                            <span className="text-[11px] font-semibold text-blue-600 dark:text-blue-400">
+                              {u.prenom?.[0]}
+                              {u.nom?.[0]}
+                            </span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-text">
+                              {u.prenom} {u.nom}
+                            </p>
+                            {u.email && (
+                              <p className="text-xs text-text-muted truncate">
+                                {u.email}
+                              </p>
+                            )}
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
-          {/* Panier */}
-          <AnimatePresence>
-            {panier.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="bg-surface rounded-xl border border-border p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-semibold text-amber-600 dark:text-warning uppercase tracking-wider flex items-center gap-2">
-                    <ShoppingCart size={14} /> Panier ({panier.length})
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={() => setPanier([])}
-                    className="text-xs text-text-muted hover:text-red-600 dark:hover:text-danger transition">
-                    Vider
-                  </button>
+          {/* ── Bloc 2 : Pièces ──────────────────────────────────────────── */}
+          <div className="bg-surface border border-border rounded-xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] uppercase tracking-widest text-text-muted font-semibold">
+                Pièces détachées
+              </p>
+              {panier.length > 0 && (
+                <span className="text-[11px] font-medium text-text-muted">
+                  {panier.length} article(s)
+                </span>
+              )}
+            </div>
+
+            {/* Searchbox pièce — backend debounce */}
+            <div ref={pieceRef} className="space-y-1.5">
+              <Label className="text-xs font-medium text-text">
+                Ajouter une pièce <span className="text-red-500">*</span>
+              </Label>
+              <div className="relative">
+                <Search
+                  size={13}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
+                />
+                <input
+                  value={pieceSearch}
+                  onChange={(e) => {
+                    setPieceSearch(e.target.value);
+                    setPieceDropdown(true);
+                  }}
+                  onFocus={() => setPieceDropdown(true)}
+                  disabled={!otSelectionne}
+                  placeholder={
+                    otSelectionne
+                      ? "Référence, désignation ou emplacement…"
+                      : "Sélectionnez d'abord un OT"
+                  }
+                  className="w-full bg-elevated border border-border text-text placeholder:text-text-muted rounded-lg pl-8 pr-8 py-2 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors disabled:opacity-40"
+                />
+                {searchLoading && (
+                  <Loader2
+                    size={13}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted animate-spin"
+                  />
+                )}
+              </div>
+
+              {/* Dropdown résultats backend */}
+              {pieceDropdown && pieceSearch.length >= 1 && (
+                <div className="w-full bg-surface border border-border rounded-xl shadow-lg overflow-hidden z-20 relative">
+                  <div className={`overflow-y-auto max-h-64 ${searchResults.length > 0 ? 'h-auto' : 'h-20'}`}>
+                    <div className="w-full">
+                      {searchLoading ? (
+                        <p className="text-xs text-text-muted text-center py-6">
+                          Recherche en cours…
+                        </p>
+                      ) : searchResults.length === 0 ? (
+                        <p className="text-xs text-text-muted text-center py-6">
+                          Aucune pièce trouvée
+                        </p>
+                      ) : (
+                        searchResults.map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => ajouterAuPanier(p)}
+                            className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-elevated text-left transition-colors border-b border-border last:border-0">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <Package
+                                size={13}
+                                className="text-text-muted flex-shrink-0"
+                              />
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-mono font-semibold text-text">
+                                    {p.reference}
+                                  </span>
+                                  {p.est_sous_seuil && (
+                                    <AlertTriangle
+                                      size={11}
+                                      className="text-amber-500 flex-shrink-0"
+                                    />
+                                  )}
+                                </div>
+                                <p className="text-xs text-text-muted truncate">
+                                  {p.designation}
+                                </p>
+                                {p.emplacement && (
+                                  <p className="text-[11px] text-text-muted flex items-center gap-1 mt-0.5">
+                                    <MapPin size={10} /> {p.emplacement}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                              <span
+                                className={`text-sm font-bold ${
+                                  p.est_sous_seuil
+                                    ? "text-amber-500"
+                                    : "text-emerald-600 dark:text-emerald-400"
+                                }`}>
+                                {p.quantiteStock}
+                              </span>
+                              <span className="text-xs text-text-muted">
+                                {p.unite}
+                              </span>
+                              <Plus size={13} className="text-text-muted" />
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Panier */}
+            {panier.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 border-2 border-dashed border-border rounded-xl">
+                <Boxes size={28} className="text-border mb-2" />
+                <p className="text-xs text-text-muted">
+                  Recherchez et sélectionnez des pièces ci-dessus
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="grid grid-cols-[1fr_auto_auto] gap-3 px-1">
+                  <p className="text-[10px] uppercase tracking-widest text-text-muted font-semibold">
+                    Pièce
+                  </p>
+                  <p className="text-[10px] uppercase tracking-widest text-text-muted font-semibold text-center w-28">
+                    Quantité
+                  </p>
+                  <p className="w-6" />
                 </div>
 
-                <div className="space-y-2">
-                  {panier.map((ligne) => (
-                    <div key={ligne.piece.id} className="flex items-center gap-3 bg-elevated rounded-lg p-3 border border-border">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-text truncate">{ligne.piece.reference}</p>
-                        <p className="text-xs text-text-secondary truncate">{ligne.piece.designation}</p>
+                {panier.map((item) => {
+                  const depasse =
+                    Number(item.quantite) > Number(item.piece.quantiteStock);
+                  return (
+                    <div
+                      key={item.piece.id}
+                      className={`grid grid-cols-[1fr_auto_auto] gap-3 items-center p-3 rounded-lg border transition-colors ${
+                        depasse
+                          ? "bg-red-50 dark:bg-red-500/5 border-red-200 dark:border-red-500/20"
+                          : "bg-elevated border-border-subtle"
+                      }`}>
+                      {/* Infos pièce */}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-mono font-semibold text-text">
+                            {item.piece.reference}
+                          </span>
+                          {item.piece.est_sous_seuil && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded border bg-amber-50 dark:bg-amber-500/5 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20 font-medium">
+                              Stock faible
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-text-muted truncate">
+                          {item.piece.designation}
+                        </p>
+                        <p className="text-[11px] text-text-muted mt-0.5">
+                          Dispo :{" "}
+                          <span
+                            className={`font-semibold ${
+                              depasse ? "text-red-500" : "text-text"
+                            }`}>
+                            {item.piece.quantiteStock} {item.piece.unite}
+                          </span>
+                        </p>
                       </div>
-                      <div className="flex items-center gap-2">
+
+                      {/* Saisie quantité avec boutons ± (branche 2) */}
+                      <div className="flex items-center gap-1 w-28">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            modifierQuantite(
+                              item.piece.id,
+                              String(
+                                Math.max(0, Number(item.quantite || 0) - 1),
+                              ),
+                            )
+                          }
+                          className="w-7 h-7 rounded-lg bg-surface border border-border flex items-center justify-center hover:bg-elevated transition-colors text-text-muted">
+                          <Minus size={11} />
+                        </button>
                         <input
                           type="number"
                           min="0.001"
                           step="any"
-                          value={ligne.quantite}
-                          onChange={(e) => modifierQtePanier(ligne.piece.id, e.target.value)}
-                          className="w-20 bg-surface text-text rounded-lg px-2 py-1 text-sm border border-border outline-none focus:border-amber-500 text-center"
+                          value={item.quantite}
+                          onChange={(e) =>
+                            modifierQuantite(item.piece.id, e.target.value)
+                          }
+                          placeholder="0"
+                          className={`w-12 text-center bg-surface border rounded-lg px-1 py-1.5 text-sm font-semibold outline-none transition-colors ${
+                            depasse
+                              ? "border-red-300 dark:border-red-500/40 text-red-600 dark:text-red-400"
+                              : "border-border text-text focus:border-blue-400 dark:focus:border-blue-500"
+                          }`}
                         />
-                        <span className="text-xs text-text-secondary w-12">{ligne.piece.unite}</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            modifierQuantite(
+                              item.piece.id,
+                              String(Number(item.quantite || 0) + 1),
+                            )
+                          }
+                          className="w-7 h-7 rounded-lg bg-surface border border-border flex items-center justify-center hover:bg-elevated transition-colors text-text-muted">
+                          <Plus size={11} />
+                        </button>
                       </div>
-                      {/* Prix masqué - À implémenter ultérieurement */}
+
+                      {/* Supprimer */}
                       <button
                         type="button"
-                        onClick={() => retirerDuPanier(ligne.piece.id)}
-                        className="text-text-muted hover:text-danger p-1 transition">
-                        <Trash2 size={14} />
+                        onClick={() => retirerDuPanier(item.piece.id)}
+                        className="w-6 h-6 flex items-center justify-center text-text-muted hover:text-red-500 transition-colors">
+                        <X size={14} />
                       </button>
                     </div>
-                  ))}
-                </div>
-
-                {/* Total + validation */}
-                <div className="mt-4 pt-3 border-t border-border">
-                  {/* Coût total masqué - À implémenter ultérieurement */}
-                  <button
-                    type="button"
-                    onClick={handleSortieBatch}
-                    disabled={submitting}
-                    className="w-full py-3 bg-teal-600 hover:bg-teal-700 dark:bg-teal-600 dark:hover:bg-teal-700 disabled:opacity-40 rounded-xl text-sm font-semibold transition text-white flex items-center justify-center gap-2">
-                    {submitting ? (
-                      <><span className="animate-spin"></span> Enregistrement...</>
-                    ) : (
-                      <><Package size={16} /> Confirmer les {panier.length} sortie(s)</>
-                    )}
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/*  Colonne droite : stock et OT  */}
-        <div className="space-y-4">
-          {/* Résumé stock */}
-          <div className="bg-surface rounded-xl border border-border p-5">
-            <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-4">
-              État du stock en temps réel
-            </h2>
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="bg-elevated rounded-lg p-3 text-center">
-                <p className="text-2xl font-bold text-text">{totalPieces}</p>
-                <p className="text-xs text-text-secondary mt-1">Références</p>
-              </div>
-              <div className={`rounded-lg p-3 text-center ${alertes.length > 0 ? "bg-red-100 dark:bg-danger-soft" : "bg-elevated"}`}>
-                <p className={`text-2xl font-bold ${alertes.length > 0 ? "text-red-700 dark:text-danger" : "text-text"}`}>{alertes.length}</p>
-                <p className="text-xs text-text-secondary mt-1">Alertes</p>
-              </div>
-              <div className="bg-elevated rounded-lg p-3 text-center">
-                <p className="text-2xl font-bold text-text">{ots.length}</p>
-                <p className="text-xs text-text-secondary mt-1">OT actifs</p>
-              </div>
-            </div>
-
-            {alertes.length > 0 && (
-              <div>
-                <p className="text-xs text-red-700 dark:text-danger font-medium mb-2">Pièces à réapprovisionner :</p>
-                <div className="space-y-1 max-h-32 overflow-y-auto">
-                  {alertes.map((a) => (
-                    <div key={a.id} className="flex justify-between items-center text-xs p-2 bg-red-100 dark:bg-danger-soft rounded-lg">
-                      <span className="font-mono text-red-700 dark:text-danger">{a.reference}</span>
-                      <span className="text-text-secondary truncate mx-2">{a.designation?.slice(0, 25)}</span>
-                      <span className="text-red-700 dark:text-danger font-bold whitespace-nowrap">{a.quantiteStock} / {a.seuilMinimum}</span>
-                    </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             )}
           </div>
 
-          {/* Tableau stock style SAGE X3 */}
-          <div className="bg-surface rounded-xl border border-border p-5">
+          {/* ── Bouton Soumettre ─────────────────────────────────────────── */}
+          <Button
+            type="submit"
+            disabled={submitting || !panierValide}
+            className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50 h-10">
+            {submitting ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                Enregistrement en cours…
+              </>
+            ) : (
+              <>
+                <ChevronRight size={14} />
+                Confirmer{" "}
+                {panier.length > 0
+                  ? `${panier.length} sortie(s)`
+                  : "les sorties"}
+              </>
+            )}
+          </Button>
+        </form>
+
+        {/* ── Sidebar droite (1/3) ─────────────────────────────────────────── */}
+        <div className="space-y-4">
+          {/* Résumé stock */}
+          <div className="bg-surface border border-border rounded-xl p-5">
+            <p className="text-[10px] uppercase tracking-widest text-text-muted font-semibold mb-4">
+              État du stock
+            </p>
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <StockStat label="Références" value={totalPieces} />
+              <StockStat
+                label="Alertes"
+                value={alertes.length}
+                variant={alertes.length > 0 ? "danger" : "default"}
+              />
+              <StockStat label="OT actifs" value={ots.length} />
+            </div>
+            {alertes.length > 0 && (
+              <>
+                <Separator className="bg-border mb-3" />
+                <p className="text-[10px] uppercase tracking-widest text-red-500 font-semibold mb-2">
+                  À réapprovisionner
+                </p>
+                <div className="overflow-y-auto max-h-36">
+                  <div className="space-y-1.5">
+                    {alertes.map((a) => (
+                      <div
+                        key={a.id}
+                        className="flex items-center justify-between text-xs p-2 bg-red-50 dark:bg-red-500/5 border border-red-100 dark:border-red-500/10 rounded-lg">
+                        <span className="font-mono font-semibold text-red-600 dark:text-red-400">
+                          {a.reference}
+                        </span>
+                        <span className="text-red-500 font-bold tabular-nums">
+                          {a.quantiteStock}/{a.seuilMinimum}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* OT actifs */}
+          <div className="bg-surface border border-border rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider flex items-center gap-2">
-                <FileSpreadsheet size={14} /> Stock pièces (style SAGE X3)
-              </h2>
-              <span className="text-xs text-text-muted">{totalPieces} références</span>
+              <p className="text-[10px] uppercase tracking-widest text-text-muted font-semibold">
+                Interventions actives
+              </p>
+              <span className="text-[10px] text-text-muted bg-elevated border border-border px-1.5 py-0.5 rounded-full">
+                {ots.length}
+              </span>
+            </div>
+            <div className="overflow-y-auto max-h-48">
+              <div className="space-y-1.5">
+                {ots.length === 0 ? (
+                  <p className="text-xs text-text-muted text-center py-6">
+                    Aucune intervention active
+                  </p>
+                ) : (
+                  ots.map((o) => (
+                    <button
+                      key={o.id}
+                      type="button"
+                      onClick={() => {
+                        setOtSelectionne(o);
+                        setPanier([]);
+                      }}
+                      className={`w-full flex items-center justify-between p-3 rounded-lg border text-left transition-colors ${
+                        otSelectionne?.id === o.id
+                          ? "bg-blue-50 dark:bg-blue-500/5 border-blue-200 dark:border-blue-500/20"
+                          : "bg-elevated border-border-subtle hover:border-border"
+                      }`}>
+                      <div className="min-w-0">
+                        <p className="text-sm font-mono font-semibold text-text">
+                          {o.numero}
+                        </p>
+                        <p className="text-xs text-text-muted truncate">
+                          {o.actif_detail?.libelle?.slice(0, 30)}
+                        </p>
+                      </div>
+                      <PrioriteBadge priorite={o.priorite} />
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Tableau stock SAGE X3 avec pagination (branche 1) */}
+          <div className="bg-surface border border-border rounded-xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[10px] uppercase tracking-widest text-text-muted font-semibold flex items-center gap-1.5">
+                <FileSpreadsheet size={12} /> Stock SAGE X3
+              </p>
+              <span className="text-[10px] text-text-muted">
+                {totalPieces} réf.
+              </span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="text-left text-text-muted border-b border-border">
-                    <th className="pb-2 font-medium">Référence</th>
+                    <th className="pb-2 font-medium">Réf.</th>
                     <th className="pb-2 font-medium">Désignation</th>
-                    <th className="pb-2 font-medium">Catégorie</th>
                     <th className="pb-2 font-medium">Empl.</th>
                     <th className="pb-2 font-medium text-right">Stock</th>
                     <th className="pb-2 font-medium">Unité</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {pieces.slice(0, 50).map((p) => (
+                  {pieces.map((p) => (
                     <tr
                       key={p.id}
                       onClick={() => {
                         setPieceSearch(p.reference);
-                        const el = document.getElementById('input-piece-search');
-                        if (el) el.focus();
+                        setPieceDropdown(true);
                       }}
                       className={`cursor-pointer transition hover:bg-elevated ${
-                        p.est_sous_seuil ? "bg-red-100 dark:bg-red-500/5" : ""
+                        p.est_sous_seuil ? "bg-red-50 dark:bg-red-500/5" : ""
                       }`}>
-                      <td className="py-2 font-mono text-purple-700 dark:text-primary">{p.reference}</td>
-                      <td className="py-2 text-text truncate max-w-[120px]">{p.designation}</td>
-                      <td className="py-2 text-text-secondary">{p.categorie || "—"}</td>
-                      <td className="py-2 text-text-secondary">{p.emplacement || "—"}</td>
-                      <td className={`py-2 text-right font-bold ${p.est_sous_seuil ? "text-red-700 dark:text-danger" : "text-green-700 dark:text-success"}`}>
+                      <td className="py-1.5 font-mono text-purple-700 dark:text-purple-300 whitespace-nowrap">
+                        {p.reference}
+                      </td>
+                      <td className="py-1.5 text-text truncate max-w-[80px]">
+                        {p.designation}
+                      </td>
+                      <td className="py-1.5 text-text-muted">
+                        {p.emplacement || "—"}
+                      </td>
+                      <td
+                        className={`py-1.5 text-right font-bold ${
+                          p.est_sous_seuil
+                            ? "text-red-600 dark:text-red-400"
+                            : "text-emerald-600 dark:text-emerald-400"
+                        }`}>
                         {p.quantiteStock}
                       </td>
-                      <td className="py-2 text-text-secondary">{p.unite}</td>
+                      <td className="py-1.5 text-text-muted">{p.unite}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {/* Pagination tableau SAGE */}
+
+              {/* Pagination */}
               {totalPieces > 50 && (
                 <div className="flex items-center justify-between mt-3 pt-2 border-t border-border">
                   <button
+                    type="button"
                     className="text-xs text-text-muted hover:text-text disabled:opacity-30 transition"
                     disabled={tablePage === 1}
                     onClick={() => setTablePage((p) => Math.max(1, p - 1))}>
                     ← Précédent
                   </button>
                   <span className="text-xs text-text-muted">
-                    Page {tablePage} / {Math.ceil(totalPieces / 50)}
+                    {tablePage} / {Math.ceil(totalPieces / 50)}
                   </span>
                   <button
+                    type="button"
                     className="text-xs text-text-muted hover:text-text disabled:opacity-30 transition"
                     disabled={tablePage >= Math.ceil(totalPieces / 50)}
                     onClick={() => setTablePage((p) => p + 1)}>
@@ -540,42 +1048,73 @@ export default function InterfaceMagasinier() {
             </div>
           </div>
 
-          {/* OT actifs */}
-          <div className="bg-surface rounded-xl border border-border p-5">
-            <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-4">
-              Interventions en cours
-            </h2>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {ots.length === 0 ? (
-                <p className="text-text-muted text-sm text-center py-4">Aucune intervention active</p>
-              ) : (
-                ots.map((o) => (
+          {/* Récapitulatif panier */}
+          {panier.length > 0 && (
+            <div className="bg-surface border border-border rounded-xl p-5">
+              <p className="text-[10px] uppercase tracking-widest text-text-muted font-semibold mb-3">
+                Récapitulatif
+              </p>
+              <div className="space-y-1.5">
+                {panier.map((item) => (
                   <div
-                    key={o.id}
-                    onClick={() => { setOtSelectionne(o.id); setOtSearch(""); setPanier([]); }}
-                    className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition ${
-                      otSelectionne === o.id
-                        ? "bg-purple-100 dark:bg-primary-soft border border-purple-300 dark:border-purple-500/40"
-                        : "bg-elevated hover:bg-surface"
-                    }`}>
-                    <div>
-                      <p className="font-mono text-sm text-purple-700 dark:text-primary">{o.numero}</p>
-                      <p className="text-xs text-text-secondary">{o.actif_detail?.libelle?.slice(0, 35)}</p>
-                    </div>
-                    <div className="text-right">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        o.priorite === "critique" ? "bg-red-200 dark:bg-danger-soft text-red-700 dark:text-danger" :
-                        o.priorite === "haute" ? "bg-orange-200 dark:bg-status-orange/20 text-orange-700 dark:text-status-orange" :
-                        "bg-blue-200 dark:bg-primary-soft text-blue-700 dark:text-primary"
-                      }`}>{o.priorite}</span>
-                    </div>
+                    key={item.piece.id}
+                    className="flex items-center justify-between text-xs">
+                    <span className="font-mono text-text truncate">
+                      {item.piece.reference}
+                    </span>
+                    <span className="text-text-muted tabular-nums flex-shrink-0 ml-2">
+                      {item.quantite || "—"} {item.piece.unite}
+                    </span>
                   </div>
-                ))
-              )}
+                ))}
+                <Separator className="bg-border mt-2 mb-2" />
+                <div className="flex items-center justify-between text-xs font-semibold text-text">
+                  <span>Total articles</span>
+                  <span>{panier.length}</span>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Sous-composants ──────────────────────────────────────────────────────────
+
+function PrioriteBadge({ priorite }) {
+  const map = {
+    critique:
+      "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/20",
+    haute:
+      "bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/20",
+    normale:
+      "bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/20",
+    basse: "bg-surface text-text-muted border-border",
+  };
+  return (
+    <span
+      className={`inline-flex text-[10px] font-medium px-2 py-0.5 rounded-lg border flex-shrink-0 ${
+        map[priorite] ?? map.basse
+      }`}>
+      {priorite}
+    </span>
+  );
+}
+
+function StockStat({ label, value, variant = "default" }) {
+  const variants = {
+    default: "text-text",
+    danger: "text-red-600 dark:text-red-400",
+    success: "text-emerald-600 dark:text-emerald-400",
+  };
+  return (
+    <div className="bg-elevated border border-border-subtle rounded-lg p-3 text-center">
+      <p className={`text-xl font-bold tabular-nums ${variants[variant]}`}>
+        {value}
+      </p>
+      <p className="text-[10px] text-text-muted mt-0.5">{label}</p>
     </div>
   );
 }

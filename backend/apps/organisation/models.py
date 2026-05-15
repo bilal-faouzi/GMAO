@@ -172,9 +172,9 @@ class AppartenanceOrganisationnelle(BaseModel):
         Secteur, on_delete=models.SET_NULL,
         null=True, blank=True
     )
-    unite = models.ForeignKey(
-        Unite, on_delete=models.SET_NULL,
-        null=True, blank=True
+    unites = models.ManyToManyField(
+        Unite, blank=True,
+        related_name="appartenances_unites"
     )
     estPrincipale = models.BooleanField(default=False)
 

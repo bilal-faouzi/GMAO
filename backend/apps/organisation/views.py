@@ -238,8 +238,8 @@ class EquipeUtilisateurViewSet(ModelViewSet):
 
 class AppartenanceOrganisationnelleViewSet(ModelViewSet):
     queryset = AppartenanceOrganisationnelle.objects.select_related(
-        'utilisateur', 'societe', 'site', 'secteur', 'unite'
-    ).all()
+        'utilisateur', 'societe', 'site', 'secteur'
+    ).prefetch_related('unites').all()
     serializer_class = AppartenanceOrganisationnelleSerializer
     permission_classes = [IsAuthenticated, IsSessionActive]
     filter_backends = [DjangoFilterBackend]

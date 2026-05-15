@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { getOTs, validerOT } from "../../services/ordreService";
+import useAuthStore from "../../store/authStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { Wrench, MessageCircle, Package, Clock, User, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
 
 export default function ValidationOperateur() {
+  const user = useAuthStore((s) => s.user);
   const [ots, setOTs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null); // { ot, type: 'ok'|'panne' }
@@ -16,7 +18,12 @@ export default function ValidationOperateur() {
   const charger = async () => {
     setLoading(true);
     try {
-      const res = await getOTs({ isvalide: "false", no_page: "true" });
+      const filters = { isvalide: "false", no_page: "true" };
+      const idUnite = user?.unite_principale?.id;
+      if (idUnite) {
+        filters.idUnite = idUnite;
+      }
+      const res = await getOTs(filters);
       const data = res.data.results || res.data || [];
       const liste = Array.isArray(data) ? data : [];
       // Ne garder que les OT clôturés ou dépannés en attente de validation

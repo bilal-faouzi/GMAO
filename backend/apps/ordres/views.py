@@ -54,6 +54,9 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        id_unite = self.request.query_params.get('idUnite')
+        if id_unite:
+            queryset = queryset.filter(idActif__idUnite=id_unite)
         statut_in = self.request.query_params.get('statut__in')
         if statut_in:
             statuts = [s.strip() for s in statut_in.split(',')]
@@ -66,9 +69,9 @@ class DemandeInterventionViewSet(viewsets.ModelViewSet):
                 appartenance_principale = self.request.user.appartenances.get(
                     estPrincipale=True
                 )
-                user_unite = appartenance_principale.unite
-                if user_unite:
-                    queryset = queryset.filter(idActif__idUnite=user_unite)
+                user_unites = appartenance_principale.unites.all()
+                if user_unites.exists():
+                    queryset = queryset.filter(idActif__idUnite__in=user_unites)
                 else:
                     queryset = queryset.none()
             except Exception:
@@ -1161,25 +1164,77 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def dashboard(self, request):
+        from django.db.models import Count, Avg, Q
+        from datetime import timedelta
+
         total      = OrdreTravail.objects.count()
         par_statut = list(OrdreTravail.objects.values('statut').annotate(nb=Count('id')))
+        par_priorite = list(OrdreTravail.objects.values('priorite').annotate(nb=Count('id')))
         en_retard  = OrdreTravail.objects.filter(
             echeanceSLA__lt=timezone.now(),
-            statut__in=['EN_COURS']
+            statut__in=['EN_COURS', 'DEPANNE']
         ).count()
+        en_cours   = OrdreTravail.objects.filter(statut__in=['EN_COURS', 'DEPANNE']).count()
         termines   = OrdreTravail.objects.filter(statut='CLOTURE')
+        rejetes    = OrdreTravail.objects.filter(statut='REJETE').count()
         mttr       = termines.aggregate(Avg('dureeReelleMin'))['dureeReelleMin__avg']
         taux       = round(termines.count() / total * 100, 1) if total else 0
-        recents    = OrdreTravailSerializer(
-            OrdreTravail.objects.order_by('-created_at')[:5], many=True
+
+        # Cette semaine / aujourd'hui
+        debut_semaine = timezone.now() - timedelta(days=timezone.now().weekday())
+        debut_semaine = debut_semaine.replace(hour=0, minute=0, second=0, microsecond=0)
+        debut_jour = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        ot_semaine = OrdreTravail.objects.filter(created_at__gte=debut_semaine).count()
+        ot_jour = OrdreTravail.objects.filter(created_at__gte=debut_jour).count()
+
+        # Par équipe (top 5)
+        par_equipe = list(
+            AffectationEquipe.objects.filter(
+                idOrdreTravail__statut__in=['EN_COURS', 'DEPANNE']
+            ).values('idEquipe__libelle')
+             .annotate(nb=Count('id'))
+             .order_by('-nb')[:5]
+        )
+
+        # Demandes en attente
+        demandes_attente = DemandeIntervention.objects.filter(statut='en_attente').count()
+
+        # Par unité (top 5)
+        par_unite = list(
+            OrdreTravail.objects.filter(
+                idActif__idUnite__isnull=False
+            ).values('idActif__idUnite__libelle')
+             .annotate(nb=Count('id'))
+             .order_by('-nb')[:5]
+        )
+
+        recents = OrdreTravailSerializer(
+            OrdreTravail.objects.select_related('idActif').order_by('-created_at')[:6], many=True
         ).data
+
+        demandes_recentes = DemandeInterventionSerializer(
+            DemandeIntervention.objects.select_related('idActif', 'idUtilisateurSignalement')
+            .filter(statut='en_attente')
+            .order_by('-dateSignalement')[:5], many=True
+        ).data
+
         return Response({
-            'total':           total,
-            'par_statut':      par_statut,
-            'en_retard':       en_retard,
-            'mttr':            round(mttr or 0, 1),
-            'taux_resolution': taux,
-            'ots_recents':     recents,
+            'total':             total,
+            'en_cours':          en_cours,
+            'en_retard':         en_retard,
+            'clotures':          termines.count(),
+            'rejetes':           rejetes,
+            'mttr':              round(mttr or 0, 1),
+            'taux_resolution':   taux,
+            'par_statut':        par_statut,
+            'par_priorite':      par_priorite,
+            'par_equipe':        par_equipe,
+            'par_unite':         par_unite,
+            'ot_semaine':        ot_semaine,
+            'ot_jour':           ot_jour,
+            'demandes_attente':  demandes_attente,
+            'ots_recents':       recents,
+            'demandes_recentes': demandes_recentes,
         })
 
 

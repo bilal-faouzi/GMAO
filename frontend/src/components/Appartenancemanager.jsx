@@ -69,7 +69,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
     societe: "",
     site: "",
     secteur: "",
-    unite: "",
+    unites: [],
     estPrincipale: false,
   });
 
@@ -112,7 +112,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
       setSites([]);
       setSecteurs([]);
       setUnites([]);
-      setForm((f) => ({ ...f, site: "", secteur: "", unite: "" }));
+      setForm((f) => ({ ...f, site: "", secteur: "", unites: [] }));
       return;
     }
     getSites({ societe: form.societe }).then((r) =>
@@ -124,7 +124,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
     if (!form.site) {
       setSecteurs([]);
       setUnites([]);
-      setForm((f) => ({ ...f, secteur: "", unite: "" }));
+      setForm((f) => ({ ...f, secteur: "", unites: [] }));
       return;
     }
     getSecteurs({ site: form.site }).then((r) =>
@@ -135,7 +135,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
   useEffect(() => {
     if (!form.secteur) {
       setUnites([]);
-      setForm((f) => ({ ...f, unite: "" }));
+      setForm((f) => ({ ...f, unites: [] }));
       return;
     }
     getUnites({ secteur: form.secteur }).then((r) =>
@@ -155,14 +155,14 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
         societe: form.societe,
         site: form.site,
         secteur: form.secteur || null,
-        unite: form.unite || null,
+        unites: form.unites || [],
         estPrincipale: form.estPrincipale,
       });
       setForm({
         societe: "",
         site: "",
         secteur: "",
-        unite: "",
+        unites: [],
         estPrincipale: false,
       });
       setShowForm(false);
@@ -195,7 +195,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
       societe: "",
       site: "",
       secteur: "",
-      unite: "",
+      unites: [],
       estPrincipale: false,
     });
     clearErrors();
@@ -287,7 +287,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
                   a.societe_libelle,
                   a.site_libelle,
                   a.secteur_libelle,
-                  a.unite_libelle,
+                  a.unites_libelles && a.unites_libelles.length > 0 ? a.unites_libelles.join(", ") : null,
                 ]
                   .filter(Boolean)
                   .map((label, i, arr) => (
@@ -465,34 +465,57 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
             <FieldError errors={errors} field="secteur" />
           </div>
 
-          {/* Unité */}
+          {/* Unités (multiples) */}
           <div>
             <span style={labelCls}>
-              Unité{" "}
-              <span style={{ fontWeight: 400, opacity: 0.7 }}>(optionnel)</span>
+              Unités <span style={{ fontWeight: 400, opacity: 0.7 }}>(optionnel)</span>
             </span>
-            <Select
-              value={form.unite}
-              onValueChange={(v) => setForm({ ...form, unite: v })}
-              disabled={!form.secteur}>
-              <SelectTrigger className="w-full">
-                <SelectValue
-                  placeholder={
-                    form.secteur ? "Aucune unité" : "Choisir un secteur d'abord"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {unites.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.libelle}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            <FieldError errors={errors} field="unite" />
+            <div
+              style={{
+                background: "var(--bg-elevated)",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--r-sm)",
+                padding: "10px",
+                maxHeight: "150px",
+                overflowY: "auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+              }}>
+              {!form.secteur ? (
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                  Sélectionnez d'abord un secteur
+                </span>
+              ) : unites.length === 0 ? (
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                  Aucune unité pour ce secteur
+                </span>
+              ) : (
+                unites.map((u) => {
+                  const checked = form.unites.includes(u.id);
+                  return (
+                    <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <Checkbox
+                        id={`unite-mgr-${u.id}`}
+                        checked={checked}
+                        onCheckedChange={(c) => {
+                          setForm((f) => ({
+                            ...f,
+                            unites: c
+                              ? [...f.unites, u.id]
+                              : f.unites.filter((uid) => uid !== u.id),
+                          }));
+                        }}
+                      />
+                      <Label htmlFor={`unite-mgr-${u.id}`} style={{ fontSize: 13 }}>
+                        {u.libelle}
+                      </Label>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            <FieldError errors={errors} field="unites" />
           </div>
 
           {/* Principale */}

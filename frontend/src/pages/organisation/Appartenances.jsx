@@ -56,7 +56,7 @@ function AddAppartenanceModal({ onClose, onSaved }) {
     societe: "",
     site: "",
     secteur: "",
-    unite: "",
+    unites: [],
     estPrincipale: false,
   });
   const [saving, setSaving] = useState(false);
@@ -76,7 +76,7 @@ function AddAppartenanceModal({ onClose, onSaved }) {
       );
     else {
       setSites([]);
-      setForm((f) => ({ ...f, site: "", secteur: "", unite: "" }));
+      setForm((f) => ({ ...f, site: "", secteur: "", unites: [] }));
     }
   }, [form.societe]);
 
@@ -87,7 +87,7 @@ function AddAppartenanceModal({ onClose, onSaved }) {
       );
     else {
       setSecteurs([]);
-      setForm((f) => ({ ...f, secteur: "", unite: "" }));
+      setForm((f) => ({ ...f, secteur: "", unites: [] }));
     }
   }, [form.site]);
 
@@ -98,7 +98,7 @@ function AddAppartenanceModal({ onClose, onSaved }) {
       );
     else {
       setUnites([]);
-      setForm((f) => ({ ...f, unite: "" }));
+      setForm((f) => ({ ...f, unites: [] }));
     }
   }, [form.secteur]);
 
@@ -113,7 +113,7 @@ function AddAppartenanceModal({ onClose, onSaved }) {
         societe: form.societe,
         site: form.site,
         secteur: form.secteur || null,
-        unite: form.unite || null,
+        unites: form.unites || [],
         estPrincipale: form.estPrincipale,
       };
       await createAppartenance(payload);
@@ -259,34 +259,42 @@ function AddAppartenanceModal({ onClose, onSaved }) {
           <FieldError name="secteur" errors={errors} />
         </div>
 
-        {/* Unité */}
+        {/* Unités (multiples) */}
         <div>
           <Label className="text-xs text-text-secondary mb-1 block">
-            Unité (optionnel)
+            Unités (optionnel)
           </Label>
-          <Select
-            value={form.unite}
-            onValueChange={(v) => setForm({ ...form, unite: v })}
-            disabled={!form.secteur}>
-            <SelectTrigger
-              className={`w-full bg-surface border text-text disabled:opacity-50 ${
-                errors.unite
-                  ? "border-red-300 dark:border-red-500"
-                  : "border-border"
-              }`}>
-              <SelectValue placeholder="Aucune" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {unites.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.libelle}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <FieldError name="unite" errors={errors} />
+          <div className="bg-surface border border-border rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
+            {!form.secteur ? (
+              <span className="text-xs text-text-muted">Sélectionnez d'abord un secteur</span>
+            ) : unites.length === 0 ? (
+              <span className="text-xs text-text-muted">Aucune unité pour ce secteur</span>
+            ) : (
+              unites.map((u) => {
+                const checked = form.unites.includes(u.id);
+                return (
+                  <div key={u.id} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`unite-${u.id}`}
+                      checked={checked}
+                      onCheckedChange={(c) => {
+                        setForm((f) => ({
+                          ...f,
+                          unites: c
+                            ? [...f.unites, u.id]
+                            : f.unites.filter((uid) => uid !== u.id),
+                        }));
+                      }}
+                    />
+                    <Label htmlFor={`unite-${u.id}`} className="text-sm font-medium">
+                      {u.libelle}
+                    </Label>
+                  </div>
+                );
+              })
+            )}
+          </div>
+          <FieldError name="unites" errors={errors} />
         </div>
 
         {/* Principale */}
@@ -375,7 +383,7 @@ export default function Appartenances() {
                 "Société",
                 "Site",
                 "Secteur",
-                "Unité",
+                "Unités",
                 "Type",
               ].map((h) => (
                 <th
@@ -424,7 +432,9 @@ export default function Appartenances() {
                     {a.secteur_libelle || "—"}
                   </td>
                   <td className="px-4 py-3 text-text-secondary">
-                    {a.unite_libelle || "—"}
+                    {a.unites_libelles && a.unites_libelles.length > 0 
+                      ? a.unites_libelles.join(", ") 
+                      : "—"}
                   </td>
                   <td className="px-4 py-3">
                     {a.estPrincipale ? (

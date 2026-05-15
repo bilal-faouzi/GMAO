@@ -61,10 +61,10 @@ class ActifViewSet(viewsets.ModelViewSet):
                 appartenance_principale = self.request.user.appartenances.get(
                     estPrincipale=True
                 )
-                user_unite = appartenance_principale.unite
+                user_unites = appartenance_principale.unites.all()
                 
-                if user_unite:
-                    qs = qs.filter(idUnite=user_unite)
+                if user_unites.exists():
+                    qs = qs.filter(idUnite__in=user_unites)
                 else:
                     # L'utilisateur a une appartenance principale mais pas d'unité rattachée
                     qs = qs.none()

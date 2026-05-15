@@ -22,7 +22,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { CheckCircle, User, Wrench, MessageSquare, AlertTriangle, Plus, X, Package } from "lucide-react";
+import { CheckCircle, User, Wrench, MessageSquare, AlertTriangle, Plus, X, Package, Clock } from "lucide-react";
 
 //  Statuts affectation 
 const STATUT_AFFECTATION_LABEL = {
@@ -393,72 +393,60 @@ export default function DetailOT() {
   const s = STATUT[ot.statut];
 
   return (
-    <div className="p-6">
-      {/*  Header  */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-3 flex-wrap">
+    <div className="page">
+      {/* ===== Header ===== */}
+      <div className="hdr">
+        <div className="hdr-l">
           <button
             onClick={() => navigate("/ordres/ots")}
             className="text-text-muted hover:text-text text-sm transition">
             ← Retour
           </button>
           <h1 className="text-2xl font-semibold font-mono">{ot.numero}</h1>
-          <span
-            className={`px-3 py-1 rounded-full text-xs font-medium border ${s?.cls}`}>
+          <span className={`px-3 py-1 rounded-full text-xs font-medium border ${s?.cls}`}>
             {s?.label}
           </span>
           {ot.est_en_retard && (
             <span className="px-2 py-0.5 rounded-full text-xs bg-danger-soft text-danger border border-danger/30">
-               Retard
+              Retard
             </span>
           )}
           {ot.rejetOperateur && (
-            <span className="px-2 py-0.5 rounded-full text-xs bg-red-500/30 text-danger border border-danger/40 animate-pulse">
-               Rejeté opérateur
+            <span className="px-2 py-0.5 rounded-full text-xs bg-danger-soft text-danger border border-danger/40 animate-pulse">
+              Rejeté opérateur
             </span>
           )}
         </div>
-
-        {/* Boutons d'action */}
         <div className="flex gap-2">
-          {/* Bouton Compte rendu — toujours visible */}
           <button
             onClick={() => navigate(`/ordres/ots/${id}/rapport`)}
-            className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
+            className="btn btn-primary flex items-center gap-1.5">
             <MessageSquare size={16} /> Compte rendu
           </button>
-
           {!estVerrouille && (
             <>
-              {/* Bouton Dépanné */}
-              <button
-                onClick={() => setModalDepanne(true)}
-                className="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg text-sm font-medium transition">
-                 Dépanné
+              <button onClick={() => setModalDepanne(true)} className="btn btn-warning">
+                Dépanné
               </button>
-
-              {/* Bouton Clôturer */}
-              <button
-                onClick={() => setModalCloture(true)}
-                className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-medium transition">
-                 Clôturer
+              <button onClick={() => setModalCloture(true)} className="btn btn-success">
+                Clôturer
               </button>
             </>
           )}
         </div>
       </div>
 
-      {/*  Notification rejet opérateur  */}
+      {/* ===== Rejet opérateur ===== */}
       {ot.rejetOperateur && (
         <div className="bg-danger-soft border border-danger/30 rounded-xl p-4 mb-6">
           <div className="flex items-start gap-3">
             <AlertTriangle size={18} className="text-danger mt-0.5 shrink-0" />
             <div className="flex-1">
               <p className="text-sm font-semibold text-danger">
-                 Cette intervention a été rejetée par l'opérateur
+                Cette intervention a été rejetée par l'opérateur
               </p>
               {ot.motifRejetOperateur && (
-                <p className="text-sm text-text-secondary/80 mt-1">
+                <p className="text-sm text-text-secondary mt-1">
                   Motif : {ot.motifRejetOperateur}
                 </p>
               )}
@@ -475,80 +463,63 @@ export default function DetailOT() {
         </div>
       )}
 
-      {/*  Traçabilité  */}
+      {/* ===== Tracabilité ===== */}
       {ot.demande_detail && (
-        <div className="bg-surface/60 rounded-xl p-4 border border-border mb-4">
-          <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-1.5">
-             Traçabilité
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* DI créée par */}
-            <div className="bg-elevated/40 rounded-lg p-3 border border-border/50">
-              <p className="text-[10px] text-text-muted mb-1">DI créée par</p>
-              <p className="text-sm font-medium text-text">
-                {ot.demande_detail.signalement_detail
-                  ? `${ot.demande_detail.signalement_detail.prenom} ${ot.demande_detail.signalement_detail.nom}`
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+          <div className="bg-surface rounded-xl p-4 border border-border shadow-card">
+            <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-2">DI créée par</p>
+            <p className="text-sm font-medium text-text">
+              {ot.demande_detail.signalement_detail
+                ? `${ot.demande_detail.signalement_detail.prenom} ${ot.demande_detail.signalement_detail.nom}`
+                : "—"}
+            </p>
+            <p className="text-[10px] text-text-muted mt-1">
+              {ot.demande_detail.dateSignalement
+                ? new Date(ot.demande_detail.dateSignalement).toLocaleString("fr-FR")
+                : "—"}
+            </p>
+            <p className="text-[10px] text-text-muted mt-1 font-mono">{ot.demande_detail.numero}</p>
+          </div>
+          <div className="bg-surface rounded-xl p-4 border border-border shadow-card">
+            <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-2">OT créé par</p>
+            <p className="text-sm font-medium text-text">
+              {ot.createur_detail ? `${ot.createur_detail.prenom} ${ot.createur_detail.nom}` : "—"}
+            </p>
+            <p className="text-[10px] text-text-muted mt-1">
+              {ot.created_at ? new Date(ot.created_at).toLocaleString("fr-FR") : "—"}
+            </p>
+            <p className="text-[10px] text-text-muted mt-1">
+              Depuis une DI {ot.demande_detail.urgence === 'critique' ? 'critique' : 'normale'}
+            </p>
+          </div>
+          <div className={`rounded-xl p-4 border shadow-card ${ot.validation_detail ? 'bg-success-soft border-success/30' : 'bg-surface border-border'}`}>
+            <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-2">OT validé par</p>
+            <p className={`text-sm font-medium ${ot.validation_detail ? 'text-success' : 'text-text'}`}>
+              {ot.validation_detail
+                ? `${ot.validation_detail.prenom} ${ot.validation_detail.nom}`
+                : ot.statut === 'CLOTURE' || ot.statut === 'DEPANNE'
+                  ? "En attente de validation"
                   : "—"}
-              </p>
-              <p className="text-[10px] text-text-muted">
-                {ot.demande_detail.dateSignalement
-                  ? new Date(ot.demande_detail.dateSignalement).toLocaleString("fr-FR")
+            </p>
+            <p className="text-[10px] text-text-muted mt-1">
+              {ot.dateCloture
+                ? new Date(ot.dateCloture).toLocaleString("fr-FR")
+                : ot.statut === 'CLOTURE' || ot.statut === 'DEPANNE'
+                  ? "Validation opérateur en cours"
                   : "—"}
-              </p>
-              <p className="text-[10px] text-text-muted mt-1 font-mono">
-                {ot.demande_detail.numero}
-              </p>
-            </div>
-
-            {/* OT créé par */}
-            <div className="bg-elevated/40 rounded-lg p-3 border border-border/50">
-              <p className="text-[10px] text-text-muted mb-1">OT créé par</p>
-              <p className="text-sm font-medium text-text">
-                {ot.createur_detail
-                  ? `${ot.createur_detail.prenom} ${ot.createur_detail.nom}`
-                  : "—"}
-              </p>
-              <p className="text-[10px] text-text-muted">
-                {ot.created_at
-                  ? new Date(ot.created_at).toLocaleString("fr-FR")
-                  : "—"}
-              </p>
-              <p className="text-[10px] text-text-muted mt-1">
-                Depuis une DI {ot.demande_detail.urgence === 'critique' ? ' critique' : ''}
-              </p>
-            </div>
-
-            {/* OT validé par */}
-            <div className={`rounded-lg p-3 border ${ot.validation_detail ? 'bg-success-soft border-green-700/30' : 'bg-elevated/40 border-border/50'}`}>
-              <p className="text-[10px] text-text-muted mb-1">OT validé par</p>
-              <p className={`text-sm font-medium ${ot.validation_detail ? 'text-success' : 'text-text'}`}>
-                {ot.validation_detail
-                  ? `${ot.validation_detail.prenom} ${ot.validation_detail.nom}`
-                  : ot.statut === 'CLOTURE' || ot.statut === 'DEPANNE'
-                    ? "En attente de validation"
-                    : "—"}
-              </p>
-              <p className="text-[10px] text-text-muted">
-                {ot.dateCloture
-                  ? new Date(ot.dateCloture).toLocaleString("fr-FR")
-                  : ot.statut === 'CLOTURE' || ot.statut === 'DEPANNE'
-                    ? "Validation opérateur en cours"
-                    : "—"}
-              </p>
-              {ot.validation_detail && (
-                <p className="text-[10px] text-success mt-1"> Approuvé</p>
-              )}
-            </div>
+            </p>
+            {ot.validation_detail && (
+              <p className="text-[10px] text-success mt-1 font-medium">Approuvé</p>
+            )}
           </div>
         </div>
       )}
 
-      {/*  Infos & Délais  */}
+      {/* ===== Infos & Delais ===== */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {/* Informations générales */}
-        <div className="bg-surface rounded-xl p-5 border border-border">
-          <h2 className="text-xs text-text-muted uppercase tracking-wider mb-3">
-            Informations
+        <div className="bg-surface rounded-xl p-5 border border-border shadow-card">
+          <h2 className="text-xs text-text-muted uppercase tracking-wider font-semibold mb-4 pb-2 border-b border-border-subtle flex items-center gap-2">
+            <Wrench size={14} /> Informations
           </h2>
           {[
             ["Actif", `${ot.actif_detail?.code} — ${ot.actif_detail?.libelle}`],
@@ -557,47 +528,22 @@ export default function DetailOT() {
             ["Sous-traité", ot.estSousTraite ? "Oui" : "Non"],
             ["Description", ot.description || "—"],
           ].map(([l, v]) => (
-            <div
-              key={l}
-              className="flex justify-between text-sm py-1.5 border-b border-border/50 last:border-0">
+            <div key={l} className="flex justify-between text-sm py-2 border-b border-border-subtle last:border-0">
               <span className="text-text-muted">{l}</span>
-              <span className="text-text font-medium text-right max-w-[200px]">
-                {v}
-              </span>
+              <span className="text-text font-medium text-right max-w-[220px]">{v}</span>
             </div>
           ))}
         </div>
-
-        {/* Délais & Coûts */}
-        <div className="bg-surface rounded-xl p-5 border border-border">
-          <h2 className="text-xs text-text-muted uppercase tracking-wider mb-3">
-            Délais &amp; Coûts
+        <div className="bg-surface rounded-xl p-5 border border-border shadow-card">
+          <h2 className="text-xs text-text-muted uppercase tracking-wider font-semibold mb-4 pb-2 border-b border-border-subtle flex items-center gap-2">
+            <Clock size={14} /> Délais
           </h2>
           {[
-            [
-              "Échéance SLA",
-              ot.echeanceSLA
-                ? new Date(ot.echeanceSLA).toLocaleString("fr-FR")
-                : "—",
-            ],
-            [
-              "Durée estimée",
-              ot.dureeEstimeeMin ? `${ot.dureeEstimeeMin} min` : "—",
-            ],
-            [
-              "Durée réelle",
-              ot.dureeReelleMin ? `${ot.dureeReelleMin} min` : "—",
-            ],
-            ["Coût M.O.", ot.coutMainOeuvre ? `${ot.coutMainOeuvre} MAD` : "—"],
-            [
-              "Coût ST",
-              ot.coutSousTraitance ? `${ot.coutSousTraitance} MAD` : "—",
-            ],
-            ["Coût total", `${ot.cout_total} MAD`],
+            ["Échéance SLA", ot.echeanceSLA ? new Date(ot.echeanceSLA).toLocaleString("fr-FR") : "—"],
+            ["Durée estimée", ot.dureeEstimeeMin ? `${ot.dureeEstimeeMin} min` : "—"],
+            ["Durée réelle", ot.dureeReelleMin ? `${ot.dureeReelleMin} min` : "—"],
           ].map(([l, v]) => (
-            <div
-              key={l}
-              className="flex justify-between text-sm py-1.5 border-b border-border/50 last:border-0">
+            <div key={l} className="flex justify-between text-sm py-2 border-b border-border-subtle last:border-0">
               <span className="text-text-muted">{l}</span>
               <span className="text-text font-medium">{v}</span>
             </div>
@@ -605,73 +551,73 @@ export default function DetailOT() {
         </div>
       </div>
 
-      {/*  Compte rendu  */}
+      {/* ===== Compte rendu ===== */}
       {(() => {
         const stripEmojis = (str) => str?.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '') || '';
         const comptesRendus = commentaires.filter(
           (c) => c.estInterne && c.commentaire?.includes("COMPTE RENDU INTERVENTION")
         );
         return comptesRendus.length > 0 ? (
-          <div className="bg-surface rounded-xl border border-border p-5 mb-6">
-            <h2 className="text-xs text-primary uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <div className="mb-6">
+            <h2 className="text-xs text-text-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-2">
               <MessageSquare size={14} /> Compte rendu d'intervention
             </h2>
             <div className="space-y-3">
               {comptesRendus.map((cr) => (
-                <div key={cr.id} className="bg-primary-soft rounded-lg p-4 border border-primary/20">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold border border-primary/30">
+                <div key={cr.id} className="bg-surface rounded-xl p-4 border border-border shadow-card">
+                  <div className="flex items-center gap-3 mb-3 pb-3 border-b border-border-subtle">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold border border-primary/20">
                       {cr.utilisateur_detail
                         ? `${cr.utilisateur_detail.prenom?.[0] || ""}${cr.utilisateur_detail.nom?.[0] || ""}`.toUpperCase()
                         : "?"}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-text">
-                        {cr.utilisateur_detail
-                          ? `${cr.utilisateur_detail.prenom} ${cr.utilisateur_detail.nom}`
-                          : "Technicien"}
+                      <p className="text-sm font-semibold text-text">
+                        {cr.utilisateur_detail ? `${cr.utilisateur_detail.prenom} ${cr.utilisateur_detail.nom}` : "Technicien"}
                       </p>
                       <p className="text-[10px] text-text-muted">
                         {new Date(cr.dateCreation).toLocaleString("fr-FR")}
                       </p>
                     </div>
                   </div>
-                  <div className="text-sm text-text-secondary whitespace-pre-wrap">{stripEmojis(cr.commentaire)}</div>
+                  <div className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
+                    {stripEmojis(cr.commentaire)}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         ) : (
-          <div className="bg-surface rounded-xl border border-border p-5 mb-6">
-            <h2 className="text-xs text-primary uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <div className="bg-surface rounded-xl p-5 border border-border shadow-card mb-6">
+            <h2 className="text-xs text-text-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-2">
               <MessageSquare size={14} /> Compte rendu d'intervention
             </h2>
             <p className="text-sm text-text-muted mb-3">Aucun compte rendu n'a été rédigé pour cet OT.</p>
             <button
               onClick={() => navigate(`/ordres/ots/${id}/rapport`)}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-primary-soft text-primary border border-primary/20 hover:bg-primary-soft transition flex items-center gap-1.5 w-fit">
+              className="btn btn-outline flex items-center gap-1.5" style={{fontSize:'12px',padding:'5px 10px'}}>
               <MessageSquare size={12} /> Rédiger le compte rendu
             </button>
           </div>
         );
       })()}
 
-      {/*  Actifs corrigés  */}
+      {/* ===== Actifs corrigés ===== */}
       {ot.actifs_corriges?.length > 0 && (
-        <div className="bg-surface rounded-xl border border-border p-5 mb-6">
-          <h2 className="text-xs text-status-cyan uppercase tracking-wider mb-3 flex items-center gap-1.5">
-            <CheckCircle size={14} /> Actifs corrigés pendant l'ordre de travail
+        <div className="bg-surface rounded-xl p-5 border border-border shadow-card mb-6">
+          <h2 className="text-xs text-text-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-2">
+            <CheckCircle size={14} /> Actifs corrigés
           </h2>
           <div className="flex flex-wrap gap-2">
             {ot.actifs_corriges.map((ac) => (
-              <div key={ac.id} className="bg-status-cyan/10 rounded-lg px-3 py-2 border border-status-cyan/20 flex items-center gap-2">
-                <CheckCircle size={12} className="text-status-cyan" />
+              <div key={ac.id} className="bg-elevated rounded-lg px-3 py-2 border border-border-subtle flex items-center gap-2">
+                <CheckCircle size={14} className="text-success" />
                 <div>
-                  <p className="text-sm font-medium text-status-cyan">{ac.actif_detail?.code}</p>
-                  <p className="text-[10px] text-status-cyan/70">{ac.actif_detail?.libelle}</p>
+                  <p className="text-sm font-medium text-text">{ac.actif_detail?.code}</p>
+                  <p className="text-[10px] text-text-muted">{ac.actif_detail?.libelle}</p>
                 </div>
                 {ac.dateCorrection && (
-                  <span className="text-[10px] text-text-muted ml-2 border-l border-status-cyan/20 pl-2">
+                  <span className="text-[10px] text-text-muted ml-2 border-l border-border-subtle pl-2">
                     {new Date(ac.dateCorrection).toLocaleDateString("fr-FR")}
                   </span>
                 )}
@@ -681,22 +627,22 @@ export default function DetailOT() {
         </div>
       )}
 
-      {/*  Onglets  */}
-      <div className="bg-surface rounded-xl border border-border overflow-hidden">
-        <div className="flex border-b border-border">
+      {/* ===== Onglets ===== */}
+      <div className="bg-surface rounded-xl border border-border shadow-card overflow-hidden">
+        <div className="flex border-b border-border overflow-x-auto">
           {[
             ["affectations", `Affectations (${ot.affectations?.length || 0})`],
             ["pieces", `Pièces (${ot.nb_pieces_utilisees || 0})`],
             ["commentaires", `Commentaires (${commentaires.filter((c) => !(c.estInterne && c.commentaire?.includes("COMPTE RENDU INTERVENTION"))).length})`],
             ["historique", `Historique (${historique.length})`],
-            ["audit", `Audit complet (${audit.length})`],
+            ["audit", `Audit (${audit.length})`],
           ].map(([k, l]) => (
             <button
               key={k}
               onClick={() => setOnglet(k)}
-              className={`py-3 px-4 text-sm font-medium transition border-b-2 -mb-px ${
+              className={`py-3 px-4 text-sm font-medium transition border-b-2 -mb-px whitespace-nowrap ${
                 onglet === k
-                  ? "text-primary border-purple-400"
+                  ? "text-primary border-primary"
                   : "text-text-muted border-transparent hover:text-text"
               }`}>
               {l}
@@ -704,123 +650,83 @@ export default function DetailOT() {
           ))}
         </div>
 
-        <div className="p-4">
+        <div className="p-5">
           {/* Affectations */}
           {onglet === "affectations" && (
             <div className="space-y-3">
               {!estVerrouille && (
                 <div className="flex justify-end">
-                  <button
-                    onClick={() => openAffectationModal()}
-                    className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-primary-soft text-primary border border-primary/20 hover:bg-primary-soft transition">
-                    <Plus size={14} />
-                    Affecter une équipe
+                  <button onClick={() => openAffectationModal()} className="btn btn-outline flex items-center gap-1.5" style={{fontSize:'12px',padding:'5px 10px'}}>
+                    <Plus size={14} /> Affecter une équipe
                   </button>
                 </div>
               )}
               {ot.affectations?.length === 0 ? (
-                <p className="text-text-muted text-sm text-center py-8">
-                  Aucune affectation
-                </p>
+                <p className="text-text-muted text-sm text-center py-8">Aucune affectation</p>
               ) : (
-                <>
-                  {ot.affectations?.map((a) => (
-                  <div
-                    key={a.id}
-                    className="bg-hover/40 rounded-lg p-3 border border-border/50">
-                    <div className="flex justify-between items-start mb-2">
+                ot.affectations?.map((a) => (
+                  <div key={a.id} className="bg-elevated rounded-xl p-4 border border-border-subtle">
+                    <div className="flex justify-between items-start mb-3">
                       <div>
-                        <p className="text-sm font-medium text-text">
-                          {a.equipe_detail?.libelle ??
-                            a.soustraitant_detail?.raisonSociale ??
-                            "—"}
+                        <p className="text-sm font-semibold text-text">
+                          {a.equipe_detail?.libelle ?? a.soustraitant_detail?.raisonSociale ?? "—"}
                         </p>
-                        <p className="text-xs text-text-muted">
+                        <p className="text-xs text-text-muted mt-0.5">
                           {new Date(a.dateDebut).toLocaleString("fr-FR")}
                         </p>
-                        {/* Affecté par */}
                         {a.chefTechnicien_detail && (
                           <p className="text-[10px] text-text-muted mt-0.5">
-                            Affecté par{" "}
-                            <span className="text-text-secondary">
-                              {a.chefTechnicien_detail.prenom} {a.chefTechnicien_detail.nom}
-                            </span>
+                            Affecté par <span className="text-text-secondary">{a.chefTechnicien_detail.prenom} {a.chefTechnicien_detail.nom}</span>
                           </p>
                         )}
                       </div>
                       <div className="flex flex-col items-end gap-1.5">
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full ${
-                            a.statut === "termine"
-                              ? "bg-success-soft text-success"
-                              : a.statut === "en_cours"
-                                ? "bg-warning/20 text-warning"
-                                : a.statut === "rejeter"
-                                  ? "bg-danger-soft text-danger"
-                                  : "bg-hover text-text-muted"
-                          }`}>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          a.statut === "termine" ? "bg-success-soft text-success" :
+                          a.statut === "en_cours" ? "bg-warning-soft text-warning" :
+                          a.statut === "rejeter" ? "bg-danger-soft text-danger" :
+                          "bg-hover text-text-muted"
+                        }`}>
                           {STATUT_AFFECTATION_LABEL[a.statut] || a.statut}
                         </span>
                         {!estVerrouille && (
                           <div className="flex gap-1">
-                            <button
-                              onClick={() => openAffectationModal(a)}
-                              className="text-[10px] px-2 py-0.5 rounded bg-primary-soft text-primary border border-primary/20 hover:bg-primary-soft transition"
-                              title="Modifier">
-                              Modifier
-                            </button>
-                            <button
-                              onClick={() => handleDeleteAffectation(a.id)}
-                              className="text-[10px] px-2 py-0.5 rounded bg-danger-soft text-danger border border-danger/20 hover:bg-danger-soft transition"
-                              title="Supprimer">
-                              Supprimer
-                            </button>
+                            <button onClick={() => openAffectationModal(a)} className="text-[10px] px-2 py-0.5 rounded bg-primary-soft text-primary border border-primary/20 hover:bg-primary/20 transition">Modifier</button>
+                            <button onClick={() => handleDeleteAffectation(a.id)} className="text-[10px] px-2 py-0.5 rounded bg-danger-soft text-danger border border-danger/20 hover:bg-danger/20 transition">Supprimer</button>
                           </div>
                         )}
                       </div>
                     </div>
-                    {/* Membres de l'affectation */}
-                    <div className="mt-2 pt-2 border-t border-border/50">
-                      <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                    <div className="pt-3 border-t border-border-subtle">
+                      <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1">
                         <User size={10} />
-                        {a.membres?.length > 0
-                          ? `Techniciens affectés (${a.membres.length})`
-                          : "Aucun membre affecté"}
+                        {a.membres?.length > 0 ? `Techniciens affectés (${a.membres.length})` : "Aucun membre affecté"}
                       </p>
                       {a.membres?.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
                           {a.membres.map((m) => (
-                            <span
-                              key={m.id}
-                              title={m.dateDebut ? `Affecté le ${new Date(m.dateDebut).toLocaleString("fr-FR")}` : ""}
-                              className="text-[11px] bg-primary-soft text-primary px-2 py-0.5 rounded-full border border-primary/20 flex items-center gap-1">
-                              <span className="w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[8px] font-bold border border-primary/30">
-                                {m.utilisateur_detail
-                                  ? `${m.utilisateur_detail.prenom?.[0] || ""}${m.utilisateur_detail.nom?.[0] || ""}`.toUpperCase()
-                                  : "?"}
+                            <span key={m.id} title={m.dateDebut ? `Affecté le ${new Date(m.dateDebut).toLocaleString("fr-FR")}` : ""}
+                              className="text-[11px] bg-hover text-text px-2 py-0.5 rounded-full border border-border-subtle flex items-center gap-1">
+                              <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[8px] font-bold border border-primary/20">
+                                {m.utilisateur_detail ? `${m.utilisateur_detail.prenom?.[0] || ""}${m.utilisateur_detail.nom?.[0] || ""}`.toUpperCase() : "?"}
                               </span>
-                              {m.utilisateur_detail
-                                ? `${m.utilisateur_detail.prenom} ${m.utilisateur_detail.nom}`
-                                : m.utilisateur_nom || "Technicien"}
+                              {m.utilisateur_detail ? `${m.utilisateur_detail.prenom} ${m.utilisateur_detail.nom}` : m.utilisateur_nom || "Technicien"}
                             </span>
                           ))}
                         </div>
                       )}
                     </div>
                   </div>
-                ))}
-              </>
-            )}
-          </div>
-        )}
+                ))
+              )}
+            </div>
+          )}
 
           {/* Pièces */}
           {onglet === "pieces" && (
             <div>
               {ot.pieces_utilisees_detail?.length === 0 ? (
-                <p className="text-text-muted text-sm text-center py-8">
-                  Aucune pièce utilisée
-                </p>
+                <p className="text-text-muted text-sm text-center py-8">Aucune pièce utilisée</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -835,26 +741,18 @@ export default function DetailOT() {
                     <tbody className="divide-y divide-border">
                       {ot.pieces_utilisees_detail?.map((p) => (
                         <tr key={p.id} className="hover:bg-hover/30 transition">
-                          <td className="py-2.5 font-mono text-primary text-xs">
-                            {p.piece_detail?.reference}
-                          </td>
-                          <td className="py-2.5 text-text">
-                            {p.piece_detail?.designation}
-                          </td>
-                          <td className="py-2.5 text-right font-semibold text-text">
-                            {p.quantite} <span className="text-text-muted font-normal text-xs">{p.idPiece_unite || 'pc'}</span>
-                          </td>
+                          <td className="py-2.5 font-mono text-primary text-xs">{p.piece_detail?.reference}</td>
+                          <td className="py-2.5 text-text">{p.piece_detail?.designation}</td>
+                          <td className="py-2.5 text-right font-semibold text-text">{p.quantite} <span className="text-text-muted font-normal text-xs">{p.idPiece_unite || 'pc'}</span></td>
                           <td className="py-2.5">
                             {p.technicien_detail ? (
                               <span className="inline-flex items-center gap-1.5 text-xs">
-                                <span className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[9px] font-bold border border-primary/25">
+                                <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[9px] font-bold border border-primary/20">
                                   {`${p.technicien_detail.prenom?.[0] || ''}${p.technicien_detail.nom?.[0] || ''}`.toUpperCase()}
                                 </span>
                                 {p.technicien_detail.nom_complet}
                               </span>
-                            ) : (
-                              <span className="text-text-muted text-xs">—</span>
-                            )}
+                            ) : <span className="text-text-muted text-xs">—</span>}
                           </td>
                         </tr>
                       ))}
@@ -879,37 +777,21 @@ export default function DetailOT() {
                     (c) => !(c.estInterne && c.commentaire?.includes("COMPTE RENDU INTERVENTION"))
                   );
                   return vraisCommentaires.length === 0 ? (
-                    <p className="text-text-muted text-sm text-center py-4">
-                      Aucun commentaire
-                    </p>
+                    <p className="text-text-muted text-sm text-center py-4">Aucun commentaire</p>
                   ) : (
                     vraisCommentaires.map((c) => (
-                      <div
-                        key={c.id}
-                        className={`rounded-lg p-3 ${
-                          c.estInterne
-                            ? "bg-warning/10 border border-warning/20"
-                            : "bg-hover/40 border border-border/50"
-                        }`}>
+                      <div key={c.id} className={`rounded-xl p-4 border ${c.estInterne ? "bg-warning-soft border-warning/20" : "bg-elevated border-border-subtle"}`}>
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold border border-primary/30 shrink-0">
-                              {c.utilisateur_detail
-                                ? `${c.utilisateur_detail.prenom?.[0] || ""}${c.utilisateur_detail.nom?.[0] || ""}`.toUpperCase()
-                                : "?"}
+                            <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold border border-primary/20 shrink-0">
+                              {c.utilisateur_detail ? `${c.utilisateur_detail.prenom?.[0] || ""}${c.utilisateur_detail.nom?.[0] || ""}`.toUpperCase() : "?"}
                             </div>
                             <div>
-                              <p className="text-xs font-medium text-text">
-                                {c.utilisateur_detail
-                                  ? `${c.utilisateur_detail.prenom} ${c.utilisateur_detail.nom}`
-                                  : "Utilisateur"}
-                                {c.estInterne && (
-                                  <span className="ml-2 text-warning text-[10px]">[Interne]</span>
-                                )}
+                              <p className="text-xs font-semibold text-text">
+                                {c.utilisateur_detail ? `${c.utilisateur_detail.prenom} ${c.utilisateur_detail.nom}` : "Utilisateur"}
+                                {c.estInterne && <span className="ml-2 text-warning text-[10px]">[Interne]</span>}
                               </p>
-                              <p className="text-[10px] text-text-muted">
-                                {new Date(c.dateCreation).toLocaleString("fr-FR")}
-                              </p>
+                              <p className="text-[10px] text-text-muted">{new Date(c.dateCreation).toLocaleString("fr-FR")}</p>
                             </div>
                           </div>
                         </div>
@@ -920,221 +802,128 @@ export default function DetailOT() {
                 })()}
               </div>
               <form onSubmit={handleCommentaire} className="flex gap-2">
-                <input
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Ajouter un commentaire…"
-                  className="flex-1 bg-hover text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-primary"
-                />
-                <label className="flex items-center gap-1 text-xs text-text-muted cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={estInterne}
-                    onChange={(e) => setEstInterne(e.target.checked)}
-                    className="accent-warning"
-                  />
+                <input value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Ajouter un commentaire…"
+                  className="flex-1 bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-primary" />
+                <label className="flex items-center gap-1 text-xs text-text-muted cursor-pointer shrink-0">
+                  <input type="checkbox" checked={estInterne} onChange={(e) => setEstInterne(e.target.checked)} className="accent-warning" />
                   Interne
                 </label>
-                <button
-                  type="submit"
-                  className="bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded-lg text-sm transition text-text">
-                  Envoyer
-                </button>
+                <button type="submit" className="btn btn-primary px-3 py-2 text-sm">Envoyer</button>
               </form>
             </div>
           )}
 
           {/* Historique */}
-          {onglet === "historique" &&
-            (historique.length === 0 ? (
-              <p className="text-text-muted text-sm text-center py-8">
-                Aucun historique
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {historique.map((h) => (
-                  <div
-                    key={h.id}
-                    className="flex items-center gap-3 p-3 bg-hover/40 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      {h.ancienStatut && (
-                        <>
-                          <span
-                            className={`px-2 py-0.5 rounded text-xs border ${STATUT[h.ancienStatut]?.cls}`}>
-                            {STATUT[h.ancienStatut]?.label}
-                          </span>
-                          <span className="text-text-muted text-xs">→</span>
-                        </>
-                      )}
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs border ${STATUT[h.nouveauStatut]?.cls}`}>
-                        {STATUT[h.nouveauStatut]?.label}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      {h.motif && (
-                        <p className="text-xs text-text-muted">{h.motif}</p>
-                      )}
-                    </div>
-                    <span className="text-xs text-text-muted">
-                      {new Date(h.dateChangement).toLocaleString("fr-FR")}
-                    </span>
+          {onglet === "historique" && (historique.length === 0 ? (
+            <p className="text-text-muted text-sm text-center py-8">Aucun historique</p>
+          ) : (
+            <div className="space-y-2">
+              {historique.map((h) => (
+                <div key={h.id} className="flex items-center gap-3 p-3 bg-elevated rounded-lg border border-border-subtle">
+                  <div className="flex items-center gap-2">
+                    {h.ancienStatut && (
+                      <>
+                        <span className={`px-2 py-0.5 rounded text-xs border ${STATUT[h.ancienStatut]?.cls}`}>{STATUT[h.ancienStatut]?.label}</span>
+                        <span className="text-text-muted text-xs">→</span>
+                      </>
+                    )}
+                    <span className={`px-2 py-0.5 rounded text-xs border ${STATUT[h.nouveauStatut]?.cls}`}>{STATUT[h.nouveauStatut]?.label}</span>
                   </div>
-                ))}
-              </div>
-            ))}
+                  <div className="flex-1 min-w-0">
+                    {h.motif && <p className="text-xs text-text-muted truncate">{h.motif}</p>}
+                  </div>
+                  <span className="text-xs text-text-muted shrink-0">{new Date(h.dateChangement).toLocaleString("fr-FR")}</span>
+                </div>
+              ))}
+            </div>
+          ))}
 
-          {/* Audit complet — Timeline */}
-          {onglet === "audit" &&
-            (audit.length === 0 ? (
-              <p className="text-text-muted text-sm text-center py-8">
-                Aucune entrée d'audit pour cet OT
-              </p>
-            ) : (
-              <div className="space-y-0">
-                {audit.map((entry, idx) => (
-                  <AuditTimelineItem
-                    key={entry.id}
-                    entry={entry}
-                    isLast={idx === audit.length - 1}
-                  />
-                ))}
-              </div>
-            ))}
+          {/* Audit */}
+          {onglet === "audit" && (audit.length === 0 ? (
+            <p className="text-text-muted text-sm text-center py-8">Aucune entrée d'audit pour cet OT</p>
+          ) : (
+            <div className="space-y-0">
+              {audit.map((entry, idx) => (
+                <AuditTimelineItem key={entry.id} entry={entry} isLast={idx === audit.length - 1} />
+              ))}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* 
-          Dialog — Dépanné
-       */}
+      {/* ===== Dialog Dépanné ===== */}
       <Dialog open={modalDepanne} onOpenChange={setModalDepanne}>
         <DialogContent className="bg-elevated border border-border text-text max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-status-orange">
-               Marquer comme Dépanné
+            <DialogTitle className="flex items-center gap-2 text-warning">
+              <Wrench size={18} /> Marquer comme Dépanné
             </DialogTitle>
             <DialogDescription className="text-text-muted text-sm">
-              L'OT <span className="font-mono text-text">{ot.numero}</span>{" "}
-              sera marqué comme dépanné temporairement. L'actif sera rétabli.
+              L'OT <span className="font-mono text-text">{ot.numero}</span> sera marqué comme dépanné temporairement. L'actif sera rétabli.
             </DialogDescription>
           </DialogHeader>
-
           <div className="space-y-4 py-2">
             <div>
-              <label className="text-xs text-text-muted mb-1.5 block">
-                Motif / Commentaire{" "}
-                <span className="text-text-muted">(optionnel)</span>
-              </label>
-              <textarea
-                value={motifDepanne}
-                onChange={(e) => setMotifDepanne(e.target.value)}
-                placeholder="Décrivez l'action de dépannage effectuée…"
-                rows={4}
-                className="w-full bg-surface text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-warning resize-none transition"
-              />
+              <label className="text-xs text-text-muted mb-1.5 block">Motif / Commentaire <span className="text-text-muted">(optionnel)</span></label>
+              <textarea value={motifDepanne} onChange={(e) => setMotifDepanne(e.target.value)} placeholder="Décrivez l'action de dépannage effectuée…" rows={4}
+                className="w-full bg-surface text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-warning resize-none transition" />
             </div>
           </div>
-
           <DialogFooter className="gap-2 mt-2">
-            <button
-              onClick={() => {
-                setModalDepanne(false);
-                setMotifDepanne("");
-              }}
-              className="px-4 py-2 text-sm bg-hover hover:bg-active rounded-lg transition text-text">
-              Annuler
-            </button>
-            <button
-              onClick={handleDepanner}
-              disabled={loadingDepanne}
-              className="px-4 py-2 text-sm bg-orange-600 hover:bg-orange-700 disabled:opacity-50 rounded-lg transition text-text font-medium">
+            <button onClick={() => { setModalDepanne(false); setMotifDepanne(""); }} className="px-4 py-2 text-sm bg-hover hover:bg-active rounded-lg transition text-text">Annuler</button>
+            <button onClick={handleDepanner} disabled={loadingDepanne} className="btn btn-warning">
               {loadingDepanne ? "Enregistrement…" : "Confirmer le dépannage"}
             </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* 
-          Dialog — Clôturer
-       */}
+      {/* ===== Dialog Clôturer ===== */}
       <Dialog open={modalCloture} onOpenChange={setModalCloture}>
         <DialogContent className="bg-elevated border border-border text-text max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-success">
-               Clôturer l'ordre de travail
+              <CheckCircle size={18} /> Clôturer l'ordre de travail
             </DialogTitle>
             <DialogDescription className="text-text-muted text-sm">
-              L'OT <span className="font-mono text-text">{ot.numero}</span>{" "}
-              sera clôturé définitivement. Cette action est irréversible.
+              L'OT <span className="font-mono text-text">{ot.numero}</span> sera clôturé définitivement. Cette action est irréversible.
             </DialogDescription>
           </DialogHeader>
-
           <div className="space-y-4 py-2">
-            {/* Type de clôture */}
             <div>
-              <label className="text-xs text-text-muted mb-1.5 block">
-                Type de clôture
-              </label>
+              <label className="text-xs text-text-muted mb-1.5 block">Type de clôture</label>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { value: "corrige", label: "Corrigé", icon: "" },
-                  { value: "depanne", label: "Dépanné", icon: "" },
-                  { value: "annule", label: "Annulé", icon: "" },
-                ].map(({ value, label, icon }) => (
-                  <button
-                    key={value}
-                    onClick={() => setTypeCloture(value)}
+                  { value: "corrige", label: "Corrigé", icon: CheckCircle },
+                  { value: "depanne", label: "Dépanné", icon: Wrench },
+                  { value: "annule", label: "Annulé", icon: X },
+                ].map(({ value, label, icon: BtnIcon }) => (
+                  <button key={value} onClick={() => setTypeCloture(value)}
                     className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg border text-xs font-medium transition ${
-                      typeCloture === value
-                        ? "border-green-500 bg-green-500/15 text-success"
-                        : "border-border bg-surface text-text-muted hover:border-border-strong"
+                      typeCloture === value ? "border-success bg-success-soft text-success" : "border-border bg-surface text-text-muted hover:border-border-strong"
                     }`}>
-                    <span className="text-base">{icon}</span>
+                    <BtnIcon size={16} />
                     {label}
                   </button>
                 ))}
               </div>
             </div>
-
-            {/* Motif */}
             <div>
-              <label className="text-xs text-text-muted mb-1.5 block">
-                Motif / Rapport de clôture{" "}
-                <span className="text-text-muted">(optionnel)</span>
-              </label>
-              <textarea
-                value={motifCloture}
-                onChange={(e) => setMotifCloture(e.target.value)}
-                placeholder="Décrivez les travaux effectués et le résultat final…"
-                rows={4}
-                className="w-full bg-surface text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-success resize-none transition"
-              />
+              <label className="text-xs text-text-muted mb-1.5 block">Motif / Rapport de clôture <span className="text-text-muted">(optionnel)</span></label>
+              <textarea value={motifCloture} onChange={(e) => setMotifCloture(e.target.value)} placeholder="Décrivez les travaux effectués et le résultat final…" rows={4}
+                className="w-full bg-surface text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-success resize-none transition" />
             </div>
           </div>
-
           <DialogFooter className="gap-2 mt-2">
-            <button
-              onClick={() => {
-                setModalCloture(false);
-                setMotifCloture("");
-                setTypeCloture("corrige");
-              }}
-              className="px-4 py-2 text-sm bg-hover hover:bg-active rounded-lg transition text-text">
-              Annuler
-            </button>
-            <button
-              onClick={handleCloturer}
-              disabled={loadingCloture}
-              className="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition text-text font-medium">
+            <button onClick={() => { setModalCloture(false); setMotifCloture(""); setTypeCloture("corrige"); }} className="px-4 py-2 text-sm bg-hover hover:bg-active rounded-lg transition text-text">Annuler</button>
+            <button onClick={handleCloturer} disabled={loadingCloture} className="btn btn-success">
               {loadingCloture ? "Clôture en cours…" : "Clôturer définitivement"}
             </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* 
-          Dialog — Affecter / Modifier une équipe
-       */}
+      {/* ===== Dialog Affectation ===== */}
       <Dialog open={modalAffectation} onOpenChange={setModalAffectation}>
         <DialogContent className="bg-elevated border border-border text-text max-w-md">
           <DialogHeader>
@@ -1143,33 +932,21 @@ export default function DetailOT() {
               {editingAffectation ? "Modifier l'affectation" : "Affecter une équipe"}
             </DialogTitle>
             <DialogDescription className="text-text-muted text-sm">
-              {editingAffectation
-                ? "Modifiez le statut et les membres de l'affectation"
-                : "Sélectionnez l'équipe et les membres qui interviendront sur l'OT"}{" "}
+              {editingAffectation ? "Modifiez le statut et les membres de l'affectation" : "Sélectionnez l'équipe et les membres qui interviendront sur l'OT"}{" "}
               <span className="font-mono text-text">{ot?.numero}</span>
             </DialogDescription>
           </DialogHeader>
-
           <div className="py-2 space-y-4">
-            {/* Équipe */}
             <div>
-              <label className="text-xs text-text-muted mb-1.5 block">
-                Équipe <span className="text-danger">*</span>
-              </label>
+              <label className="text-xs text-text-muted mb-1.5 block">Équipe <span className="text-danger">*</span></label>
               {editingAffectation ? (
-                <p className="text-sm text-text bg-surface rounded-lg px-3 py-2 border border-border">
-                  {editingAffectation.equipe_detail?.libelle ?? "—"}
-                </p>
+                <p className="text-sm text-text bg-surface rounded-lg px-3 py-2 border border-border">{editingAffectation.equipe_detail?.libelle ?? "—"}</p>
               ) : (
-                <select
-                  value={selectedEquipe}
-                  onChange={(e) => handleSelectEquipe(e.target.value)}
+                <select value={selectedEquipe} onChange={(e) => handleSelectEquipe(e.target.value)}
                   className="w-full bg-surface text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-primary transition">
                   <option value="">— Sélectionner une équipe —</option>
                   {equipes.map((eq) => (
-                    <option key={eq.id} value={eq.id}>
-                      {eq.libelle} {eq.chef_nom ? `(${eq.chef_nom})` : ""}
-                    </option>
+                    <option key={eq.id} value={eq.id}>{eq.libelle} {eq.chef_nom ? `(${eq.chef_nom})` : ""}</option>
                   ))}
                 </select>
               )}
@@ -1177,16 +954,10 @@ export default function DetailOT() {
                 <p className="text-xs text-text-muted mt-2">Chargement des équipes…</p>
               )}
             </div>
-
-            {/* Statut (mode édition uniquement) */}
             {editingAffectation && (
               <div>
-                <label className="text-xs text-text-muted mb-1.5 block">
-                  Statut
-                </label>
-                <select
-                  value={editStatut}
-                  onChange={(e) => setEditStatut(e.target.value)}
+                <label className="text-xs text-text-muted mb-1.5 block">Statut</label>
+                <select value={editStatut} onChange={(e) => setEditStatut(e.target.value)}
                   className="w-full bg-surface text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-primary transition">
                   <option value="en_attente">En attente</option>
                   <option value="en_cours">En cours</option>
@@ -1195,13 +966,9 @@ export default function DetailOT() {
                 </select>
               </div>
             )}
-
-            {/* Membres */}
             {(selectedEquipe || editingAffectation) && (
               <div>
-                <label className="text-xs text-text-muted mb-1.5 block">
-                  Membres participants <span className="text-danger">*</span>
-                </label>
+                <label className="text-xs text-text-muted mb-1.5 block">Membres participants <span className="text-danger">*</span></label>
                 <div className="max-h-48 overflow-y-auto space-y-1 bg-surface rounded-lg border border-border p-2">
                   {membresEquipe.length === 0 ? (
                     <p className="text-xs text-text-muted py-2">Aucun membre dans cette équipe.</p>
@@ -1212,65 +979,34 @@ export default function DetailOT() {
                       const checked = selectedMembres.includes(uid);
                       const alreadyInOther = ot.affectations?.some((aff) => {
                         if (editingAffectation && aff.id === editingAffectation.id) return false;
-                        return aff.membres?.some((mm) =>
-                          (mm.utilisateur_detail?.id || mm.idUtilisateur || mm.id) === uid
-                        );
+                        return aff.membres?.some((mm) => (mm.utilisateur_detail?.id || mm.idUtilisateur || mm.id) === uid);
                       });
                       const disabled = alreadyInOther && !checked;
                       return (
-                        <label
-                          key={uid}
-                          className={`flex items-center gap-2 px-2 py-1.5 rounded transition ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-hover"} ${checked && !disabled ? "bg-primary-soft" : ""}`}>
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => !disabled && toggleMembre(uid)}
-                            disabled={disabled}
-                            className="accent-primary w-4 h-4"
-                          />
+                        <label key={uid} className={`flex items-center gap-2 px-2 py-1.5 rounded transition ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-hover"} ${checked && !disabled ? "bg-primary-soft" : ""}`}>
+                          <input type="checkbox" checked={checked} onChange={() => !disabled && toggleMembre(uid)} disabled={disabled} className="accent-primary w-4 h-4" />
                           <span className={`text-sm ${disabled ? "text-text-muted" : "text-text"}`}>{nom}</span>
-                          {alreadyInOther && (
-                            <span className="text-[10px] text-warning uppercase ml-auto">
-                              Déjà affecté
-                            </span>
-                          )}
-                          {!alreadyInOther && m.niveauRole && (
-                            <span className="text-[10px] text-text-muted uppercase ml-auto">
-                              {m.niveauRole}
-                            </span>
-                          )}
+                          {alreadyInOther && <span className="text-[10px] text-warning uppercase ml-auto">Déjà affecté</span>}
+                          {!alreadyInOther && m.niveauRole && <span className="text-[10px] text-text-muted uppercase ml-auto">{m.niveauRole}</span>}
                         </label>
                       );
                     })
                   )}
                 </div>
                 {selectedMembres.length > 0 && (
-                  <p className="text-[10px] text-primary mt-1">
-                    {selectedMembres.length} sélectionné(s)
-                  </p>
+                  <p className="text-[10px] text-primary mt-1">{selectedMembres.length} sélectionné(s)</p>
                 )}
               </div>
             )}
           </div>
-
           <DialogFooter className="gap-2 mt-2">
-            <button
-              onClick={closeAffectationModal}
-              className="px-4 py-2 text-sm bg-hover hover:bg-active rounded-lg transition text-text">
-              Annuler
-            </button>
+            <button onClick={closeAffectationModal} className="px-4 py-2 text-sm bg-hover hover:bg-active rounded-lg transition text-text">Annuler</button>
             {editingAffectation ? (
-              <button
-                onClick={handleUpdateAffectation}
-                disabled={loadingAffectation || selectedMembres.length === 0}
-                className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg transition text-text font-medium">
+              <button onClick={handleUpdateAffectation} disabled={loadingAffectation || selectedMembres.length === 0} className="btn btn-primary">
                 {loadingAffectation ? "Enregistrement…" : "Enregistrer"}
               </button>
             ) : (
-              <button
-                onClick={handleAffecter}
-                disabled={loadingAffectation || !selectedEquipe || selectedMembres.length === 0}
-                className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg transition text-text font-medium">
+              <button onClick={handleAffecter} disabled={loadingAffectation || !selectedEquipe || selectedMembres.length === 0} className="btn btn-primary">
                 {loadingAffectation ? "Affectation en cours…" : "Affecter"}
               </button>
             )}

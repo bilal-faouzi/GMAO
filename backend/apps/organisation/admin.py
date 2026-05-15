@@ -55,5 +55,6 @@ class EquipeUtilisateurAdmin(admin.ModelAdmin):
 
 @admin.register(AppartenanceOrganisationnelle)
 class AppartenanceAdmin(admin.ModelAdmin):
-    list_display = ['utilisateur', 'societe', 'site', 'secteur', 'unite', 'estPrincipale']
+    list_display = ['utilisateur', 'societe', 'site', 'secteur', 'estPrincipale']
     list_filter = ['societe', 'site', 'estPrincipale']
+    filter_horizontal = ['unites']
