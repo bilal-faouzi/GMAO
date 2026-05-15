@@ -1,0 +1,13 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block content %}
+  <div class="content">
+    <h1>Créer un backup</h1>
+    <p>Cette action exporte toutes les données de la base au format JSON et les enregistre dans <code>media/backups</code>.</p>
+    <form method="post" style="margin-top: 16px;">
+      {% csrf_token %}
+      <input type="submit" value="Créer et télécharger le backup" class="default" />
+    </form>
+  </div>
+{% endblock %}

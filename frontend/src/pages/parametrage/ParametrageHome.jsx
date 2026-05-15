@@ -7,6 +7,7 @@ import {
   Users,
   Wrench,
   Building2,
+  DatabaseBackup,
   ArrowRight,
 } from "lucide-react";
 
@@ -88,6 +89,17 @@ const categories = [
     path: "/parametrage/soustraitants",
     count: 0,
   },
+  {
+    id: "backup",
+    title: "Sauvegarde",
+    description: "Exporter et télécharger un backup complet",
+    icon: DatabaseBackup,
+    color: "bg-blue-50 text-blue-600 dark:text-blue-400",
+    border: "border-blue-200 dark:border-blue-500/20",
+    hover: "hover:border-blue-400 dark:hover:border-blue-400/40",
+    path: "/parametrage/backup",
+    count: 1,
+  },
 ];
 
 export default function ParametrageHome() {
@@ -106,7 +118,7 @@ export default function ParametrageHome() {
       {/* Stats bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-surface border border-border rounded-xl p-4">
-          <div className="text-2xl font-bold text-text">7</div>
+          <div className="text-2xl font-bold text-text">8</div>
           <div className="text-xs text-text-secondary mt-1">Modules paramétrables</div>
         </div>
         <div className="bg-surface border border-border rounded-xl p-4">

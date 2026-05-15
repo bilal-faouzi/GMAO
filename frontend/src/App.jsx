@@ -48,6 +48,7 @@ import ActifUnite from "./pages/actifs/actifunite";
 import ParametrageHome from "@/pages/parametrage/ParametrageHome";
 import ParametrageActifs from "@/pages/parametrage/ParametrageActifs";
 import TypeActifsPage from "@/pages/parametrage/TypeActifsPage";
+import BackupPage from "@/pages/parametrage/BackupPage";
 import useAuthStore from "@/store/authStore";
 import AccessDenied from "@/components/AccessDenied";
 import DefaultRedirect from "@/components/DefaultRedirect";
@@ -138,6 +139,7 @@ export default function App() {
               <Route path="parametrage" element={<ProtectedRoute requiredInterface="PARAMETRAGE"><ParametrageHome /></ProtectedRoute>} />
               <Route path="parametrage/actifs" element={<ProtectedRoute requiredInterface="PARAMETRAGE"><ParametrageActifs /></ProtectedRoute>} />
               <Route path="parametrage/actifs/types" element={<ProtectedRoute requiredInterface="PARAMETRAGE"><TypeActifsPage /></ProtectedRoute>} />
+              <Route path="parametrage/backup" element={<ProtectedRoute requiredInterface="PARAMETRAGE_BACKUP"><BackupPage /></ProtectedRoute>} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

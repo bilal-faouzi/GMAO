@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { createDemande, getDemandes } from "../../services/ordreService";
 import { getActifs, getActif } from "../../services/actifService";
-import { updateUnite } from "../../services/organisationService";
 import {
   Upload, X, Image, Mic, Video, AlertTriangle, Building2,
   Clock, Wrench, ChevronRight, ChevronDown, ChevronUp,
@@ -408,14 +407,6 @@ export default function FormulaireDemande({
     try {
       const res = await createDemande(form);
       const demandeId = res.data.id;
-
-      if (form.urgence === "critique" && actifDetails?.idUnite) {
-        try {
-          await updateUnite(actifDetails.idUnite, { estProductive: false });
-        } catch (err) {
-          console.error("Erreur mise à jour unité:", err);
-        }
-      }
 
       const tousLesFichiers = [...images, ...videos, ...audioFiles];
       if (tousLesFichiers.length > 0) {
