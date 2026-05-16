@@ -72,7 +72,7 @@ const categories = [
     title: "Utilisateurs",
     description: "Profils, niveaux d'accès, habilitations",
     icon: Users,
-    color: "bg-status-cyan/10 text-cyan-600 dark:text-status-cyan",
+    color: "bg-cyan/10 text-cyan-600 dark:text-cyan",
     border: "border-cyan-200 dark:border-cyan-500/20",
     hover: "hover:border-cyan-400 dark:hover:border-cyan-400/40",
     path: "/parametrage/utilisateurs",
@@ -83,7 +83,7 @@ const categories = [
     title: "Sous-traitants",
     description: "Spécialités, statuts, types de contrat",
     icon: Wrench,
-    color: "bg-status-orange/10 text-orange-600 dark:text-status-orange",
+    color: "bg-orange/10 text-orange-600 dark:text-orange",
     border: "border-orange-200 dark:border-orange-500/20",
     hover: "hover:border-orange-400 dark:hover:border-orange-400/40",
     path: "/parametrage/soustraitants",
@@ -119,14 +119,20 @@ export default function ParametrageHome() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-surface border border-border rounded-xl p-4">
           <div className="text-2xl font-bold text-text">8</div>
-          <div className="text-xs text-text-secondary mt-1">Modules paramétrables</div>
+          <div className="text-xs text-text-secondary mt-1">
+            Modules paramétrables
+          </div>
         </div>
         <div className="bg-surface border border-border rounded-xl p-4">
-          <div className="text-2xl font-bold text-blue-600 dark:text-primary">1</div>
+          <div className="text-2xl font-bold text-blue-600 dark:text-primary">
+            1
+          </div>
           <div className="text-xs text-text-secondary mt-1">Module actif</div>
         </div>
         <div className="bg-surface border border-border rounded-xl p-4">
-          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">4</div>
+          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+            4
+          </div>
           <div className="text-xs text-text-secondary mt-1">Types d'actifs</div>
         </div>
         <div className="bg-surface border border-border rounded-xl p-4">

@@ -44,8 +44,18 @@ const navSections = [
     label: null,
     icon: null,
     items: [
-      { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", code: "DASHBOARD" },
-      { to: "/journal-audit", icon: ClipboardList, label: "Journal Audit", code: "SEC_JOURNAL_AUDIT" },
+      {
+        to: "/dashboard",
+        icon: LayoutDashboard,
+        label: "Dashboard",
+        code: "DASHBOARD",
+      },
+      {
+        to: "/journal-audit",
+        icon: ClipboardList,
+        label: "Journal Audit",
+        code: "SEC_JOURNAL_AUDIT",
+      },
     ],
   },
 
@@ -54,23 +64,55 @@ const navSections = [
     icon: Shield,
     items: [
       { to: "/roles", icon: Drama, label: "Rôles", code: "SEC_ROLES" },
-      { to: "/permissions", icon: Key, label: "Permissions", code: "SEC_PERMISSIONS" },
-      { to: "/utilisateurs", icon: Users, label: "Utilisateurs", code: "SEC_UTILISATEURS" },
-      { to: "/sessions", icon: MonitorSmartphone, label: "Sessions", code: "SEC_SESSIONS" },
+      {
+        to: "/permissions",
+        icon: Key,
+        label: "Permissions",
+        code: "SEC_PERMISSIONS",
+      },
+      {
+        to: "/utilisateurs",
+        icon: Users,
+        label: "Utilisateurs",
+        code: "SEC_UTILISATEURS",
+      },
+      {
+        to: "/sessions",
+        icon: MonitorSmartphone,
+        label: "Sessions",
+        code: "SEC_SESSIONS",
+      },
     ],
   },
   {
     label: null,
     icon: null,
-    items: [{ to: "/organisation", icon: Building2, label: "Arborescence", code: "ORGANISATION" }],
+    items: [
+      {
+        to: "/organisation",
+        icon: Building2,
+        label: "Arborescence",
+        code: "ORGANISATION",
+      },
+    ],
   },
   {
     label: "Organisation",
     icon: Pyramid,
     items: [
-      { to: "/societes", icon: Building2, label: "Sociétés", code: "ORG_SOCIETES" },
+      {
+        to: "/societes",
+        icon: Building2,
+        label: "Sociétés",
+        code: "ORG_SOCIETES",
+      },
       { to: "/sites", icon: MapPin, label: "Sites", code: "ORG_SITES" },
-      { to: "/secteurs", icon: Grid3x3, label: "Secteurs", code: "ORG_SECTEURS" },
+      {
+        to: "/secteurs",
+        icon: Grid3x3,
+        label: "Secteurs",
+        code: "ORG_SECTEURS",
+      },
       { to: "/unites", icon: Factory, label: "Unités", code: "ORG_UNITES" },
     ],
   },
@@ -78,17 +120,43 @@ const navSections = [
     label: "Ressources",
     icon: UsersRound,
     items: [
-      { to: "/specialites", icon: Wrench, label: "Spécialités", code: "ORG_SPECIALITES" },
-      { to: "/equipes", icon: UsersRound, label: "Équipes", code: "ORG_EQUIPES" },
-      { to: "/appartenances", icon: Link2, label: "Appartenances", code: "ORG_APPARTENANCES" },
+      {
+        to: "/specialites",
+        icon: Wrench,
+        label: "Spécialités",
+        code: "ORG_SPECIALITES",
+      },
+      {
+        to: "/equipes",
+        icon: UsersRound,
+        label: "Équipes",
+        code: "ORG_EQUIPES",
+      },
+      {
+        to: "/appartenances",
+        icon: Link2,
+        label: "Appartenances",
+        code: "ORG_APPARTENANCES",
+      },
     ],
   },
   {
     label: "Actifs",
     icon: Package,
     items: [
-      { to: "/actifs/dashboard", icon: BarChart2, label: "Dashboard", code: "ACTIFS_DASHBOARD" },
-      { to: "/actifs", icon: Package, label: "Liste des actifs", end: true, code: "ACTIFS_LISTE" },
+      {
+        to: "/actifs/dashboard",
+        icon: BarChart2,
+        label: "Dashboard",
+        code: "ACTIFS_DASHBOARD",
+      },
+      {
+        to: "/actifs",
+        icon: Package,
+        label: "Liste des actifs",
+        end: true,
+        code: "ACTIFS_LISTE",
+      },
       {
         to: "/actifs-racines",
         icon: FolderTree,
@@ -96,16 +164,37 @@ const navSections = [
         end: true,
         code: "ACTIFS_RACINES",
       },
-      { to: "/actifs/arborescence", icon: GitBranch, label: "Arborescence", code: "ACTIFS_ARBORESCENCE" },
-      { to: "/actifs/unite", icon: FactoryIcon, label: "Unités", code: "ACTIFS_UNITE" },
+      {
+        to: "/actifs/arborescence",
+        icon: GitBranch,
+        label: "Arborescence",
+        code: "ACTIFS_ARBORESCENCE",
+      },
+      {
+        to: "/actifs/unite",
+        icon: FactoryIcon,
+        label: "Unités",
+        code: "ACTIFS_UNITE",
+      },
     ],
   },
   {
     label: "Magasin",
     icon: Store,
     items: [
-      { to: "/magasin/dashboard", icon: BarChart2, label: "Dashboard Magasin", code: "MAGASIN_DASHBOARD" },
-      { to: "/magasin", icon: Package2, label: "Catalogue pièces", end: true, code: "MAGASIN_CATALOGUE" },
+      {
+        to: "/magasin/dashboard",
+        icon: BarChart2,
+        label: "Dashboard Magasin",
+        code: "MAGASIN_DASHBOARD",
+      },
+      {
+        to: "/magasin",
+        icon: Package2,
+        label: "Catalogue pièces",
+        end: true,
+        code: "MAGASIN_CATALOGUE",
+      },
       {
         to: "/magasin/sortie",
         icon: ArrowDownToLine,
@@ -138,7 +227,12 @@ const navSections = [
     label: "Interventions",
     icon: ClipboardCheck,
     items: [
-      { to: "/ordres/demandes", icon: FileText, label: "Demandes (DI)", code: "ORDRES_DEMANDES" },
+      {
+        to: "/ordres/demandes",
+        icon: FileText,
+        label: "Demandes (DI)",
+        code: "ORDRES_DEMANDES",
+      },
       {
         to: "/ordres/ots",
         icon: ClipboardCheck,
@@ -146,7 +240,12 @@ const navSections = [
         end: true,
         code: "ORDRES_OTS",
       },
-      { to: "/ordres/ots/dashboard", icon: BarChart2, label: "Dashboard OT", code: "ORDRES_DASHBOARD_OT" },
+      {
+        to: "/ordres/ots/dashboard",
+        icon: BarChart2,
+        label: "Dashboard OT",
+        code: "ORDRES_DASHBOARD_OT",
+      },
       {
         to: "/ordres/declarer",
         icon: AlertTriangle,
@@ -193,7 +292,7 @@ const navSections = [
 ];
 
 function filterNavSections(sections, interfaces) {
-  if (!interfaces || interfaces.length === 0) return sections;
+  if (!interfaces || interfaces.length === 0) return [];
   const allowedCodes = new Set(interfaces.map((i) => i.code));
   return sections
     .map((section) => ({
@@ -208,6 +307,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const interfaces = user?.interfaces || [];
+  console.log("User Interfaces:", interfaces);
   const visibleSections = filterNavSections(navSections, interfaces);
 
   // Calcule les groupes ouverts basé sur la location actuelle

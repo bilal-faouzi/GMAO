@@ -15,9 +15,18 @@ export default function BackupPage() {
 
   const handleRestore = async () => {
     if (!restoreFile) {
-      setRestoreStatus({ type: "error", message: "Sélectionnez un fichier JSON." });
+      setRestoreStatus({
+        type: "error",
+        message: "Sélectionnez un fichier JSON.",
+      });
       return;
     }
+
+    // Récupère le token CSRF depuis le cookie
+    const csrfToken = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("csrftoken="))
+      ?.split("=")[1];
 
     setRestoreLoading(true);
     setRestoreStatus(null);
@@ -27,15 +36,30 @@ export default function BackupPage() {
 
       const response = await fetch("/admin/restore/", {
         method: "POST",
+        headers: {
+          "X-CSRFToken": csrfToken || "", // ← ajout du token
+          Accept: "application/json",
+        },
         body: formData,
         credentials: "include",
       });
+      const data = await response.json().catch(() => null);
 
       if (!response.ok) {
-        throw new Error("Erreur lors de la restauration.");
+        throw new Error(data?.message || `Erreur HTTP ${response.status}`);
       }
 
-      setRestoreStatus({ type: "success", message: "Backup restauré avec succès." });
+      // ✅ Vérifier aussi le statut métier dans le JSON
+      if (data?.status === "error" || data?.success === false) {
+        throw new Error(
+          data?.message || "La restauration a échoué côté serveur.",
+        );
+      }
+
+      setRestoreStatus({
+        type: "success",
+        message: "Backup restauré avec succès.",
+      });
       setRestoreFile(null);
     } catch (error) {
       setRestoreStatus({
@@ -64,7 +88,9 @@ export default function BackupPage() {
             <DatabaseBackup size={20} />
           </div>
           <div>
-            <p className="text-sm font-semibold text-text">Créer un backup complet</p>
+            <p className="text-sm font-semibold text-text">
+              Créer un backup complet
+            </p>
             <p className="text-xs text-text-muted">
               Export JSON de toute la base de données. Le fichier sera aussi
               stocké dans <code>media/backups</code> côté serveur.
@@ -91,7 +117,9 @@ export default function BackupPage() {
             <Upload size={20} />
           </div>
           <div>
-            <p className="text-sm font-semibold text-text">Restaurer un backup</p>
+            <p className="text-sm font-semibold text-text">
+              Restaurer un backup
+            </p>
             <p className="text-xs text-text-muted">
               Sélectionnez un fichier JSON de sauvegarde pour restaurer la base.
             </p>

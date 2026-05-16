@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronUp,
   LayoutDashboard,
+  Check,
 } from "lucide-react";
 import {
   getRoles,
@@ -23,45 +24,57 @@ import {
   deleteRole,
 } from "@/services/securiteService";
 
-import { Modal } from "@/components/Modal";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { FieldError, GlobalError } from "@/components/FieldError";
 import { useFormErrors } from "@/hooks/useFormErrors";
 
-//  Helpers 
+//  Helpers
 
 const niveauStyles = {
   1: {
-    bg: "bg-red-100 dark:bg-danger-soft",
-    text: "text-red-700 dark:text-danger",
-    border: "border-red-300 dark:border-red-500",
-    shadow: "shadow-red-300/30 dark:shadow-red-500/30",
+    bg: "bg-status-red-bg",
+    text: "text-status-red",
+    border: "border-red-500/30",
+    icon: "bg-status-red/10",
+    label: "Admin — Accès complet",
   },
   2: {
-    bg: "bg-orange-100 dark:bg-status-orange/10",
-    text: "text-orange-700 dark:text-status-orange",
-    border: "border-orange-300 dark:border-orange-500",
-    shadow: "shadow-orange-300/30 dark:shadow-orange-500/30",
+    bg: "bg-status-orange-bg",
+    text: "text-status-orange",
+    border: "border-orange-500/30",
+    icon: "bg-status-orange/10",
+    label: "Manager — Supervision",
   },
   3: {
-    bg: "bg-blue-100 dark:bg-primary-soft",
-    text: "text-blue-700 dark:text-primary",
-    border: "border-blue-300 dark:border-blue-500",
-    shadow: "shadow-blue-300/30 dark:shadow-blue-500/30",
+    bg: "bg-status-blue-bg",
+    text: "text-status-blue",
+    border: "border-blue-500/30",
+    icon: "bg-status-blue/10",
+    label: "Superviseur — Modération",
   },
   4: {
-    bg: "bg-emerald-100 dark:bg-emerald-500/10",
-    text: "text-emerald-700 dark:text-emerald-400",
-    border: "border-emerald-300 dark:border-emerald-500",
-    shadow: "shadow-emerald-300/30 dark:shadow-emerald-500/30",
+    bg: "bg-status-green-bg",
+    text: "text-status-green",
+    border: "border-green-500/30",
+    icon: "bg-status-green/10",
+    label: "Opérateur — Opérations",
   },
   5: {
-    bg: "bg-cyan-100 dark:bg-status-cyan/10",
-    text: "text-cyan-700 dark:text-status-cyan",
-    border: "border-cyan-300 dark:border-cyan-500",
-    shadow: "shadow-cyan-300/30 dark:shadow-cyan-500/30",
+    bg: "bg-status-gray-bg",
+    text: "text-status-gray",
+    border: "border-gray-500/30",
+    icon: "bg-status-gray/10",
+    label: "Utilisateur — Lecture",
   },
 };
 
@@ -71,7 +84,7 @@ const actionColor = (action) => {
   if (action === "CREATE")
     return "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
   if (action === "UPDATE")
-    return "bg-orange-100 dark:bg-status-orange/10 text-orange-700 dark:text-status-orange";
+    return "bg-orange-100 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400";
   if (action === "DELETE")
     return "bg-red-100 dark:bg-danger-soft text-red-700 dark:text-danger";
   return "bg-surface text-text-secondary";
@@ -79,7 +92,20 @@ const actionColor = (action) => {
 
 const niveaux = [1, 2, 3, 4, 5];
 
-//  Component 
+// Helper pour grouper les permissions par module
+const groupPermissionsByModule = (permissions) => {
+  const grouped = {};
+  permissions.forEach((p) => {
+    const module = p.module || "AUTRE";
+    if (!grouped[module]) {
+      grouped[module] = [];
+    }
+    grouped[module].push(p);
+  });
+  return grouped;
+};
+
+//  Component
 
 export default function Roles() {
   const [roles, setRoles] = useState([]);
@@ -100,7 +126,7 @@ export default function Roles() {
 
   const { errors, setApiErrors, clearErrors, inputCls } = useFormErrors();
 
-  //  Fetch 
+  //  Fetch
 
   const fetchRoles = async () => {
     try {
@@ -131,7 +157,7 @@ export default function Roles() {
     fetchRoles();
   }, []);
 
-  //  Handlers 
+  //  Handlers
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -213,7 +239,9 @@ export default function Roles() {
 
   const handleAssignInterface = async (interfaceId) => {
     try {
-      await assignInterfaceToRole(selectedRole.id, { id_interface: interfaceId });
+      await assignInterfaceToRole(selectedRole.id, {
+        id_interface: interfaceId,
+      });
       const iface = allInterfaces.find((i) => i.id === interfaceId);
       setSelectedRole((prev) => ({
         ...prev,
@@ -246,7 +274,7 @@ export default function Roles() {
       r.libelle.toLowerCase().includes(search.toLowerCase()),
   );
 
-  //  Render 
+  //  Render
 
   return (
     <div className="p-6 space-y-6">
@@ -330,14 +358,14 @@ export default function Roles() {
                     onClick={() => openInterfacesModal(role)}
                     title="Interfaces"
                     variant="ghost"
-                    className="p-2 rounded hover:bg-blue-100 dark:hover:bg-primary-soft text-text-muted hover:text-blue-700 dark:hover:text-primary transition-colors">
+                    className="p-2 rounded hover:bg-status-blue-bg/30 text-status-blue/60 hover:text-status-blue transition-colors">
                     <LayoutDashboard size={13} />
                   </Button>
                   <Button
                     onClick={() => openPermsModal(role)}
                     title="Permissions"
                     variant="ghost"
-                    className="p-2 rounded hover:bg-emerald-100 dark:hover:bg-emerald-500/10 text-text-muted hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors">
+                    className="p-2 rounded hover:bg-status-green-bg/30 text-status-green/60 hover:text-status-green transition-colors">
                     <Shield size={13} />
                   </Button>
                   <Button
@@ -346,7 +374,7 @@ export default function Roles() {
                       role.est_actif !== false ? "Désactiver" : "Réactiver"
                     }
                     variant="ghost"
-                    className="p-2 rounded hover:bg-orange-100 dark:hover:bg-status-orange/10 text-text-muted hover:text-orange-700 dark:hover:text-status-orange transition-colors">
+                    className="p-2 rounded hover:bg-status-orange-bg/30 text-status-orange/60 hover:text-status-orange transition-colors">
                     {role.est_actif !== false ? (
                       <PowerOff size={13} />
                     ) : (
@@ -360,7 +388,7 @@ export default function Roles() {
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-xs text-text-muted">Niveau :</span>
                 <span
-                  className={`text-xs px-2 py-0.5 rounded-full font-medium ${niveauStyles[role.niveau].bg} ${niveauStyles[role.niveau].text} border ${niveauStyles[role.niveau].border} shadow ${niveauStyles[role.niveau].shadow}`}>
+                  className={`text-xs px-2 py-0.5 rounded-full font-medium ${niveauStyles[role.niveau].bg} ${niveauStyles[role.niveau].text}  shadow ${niveauStyles[role.niveau].shadow}`}>
                   Niveau {role.niveau}
                 </span>
               </div>
@@ -413,14 +441,21 @@ export default function Roles() {
         </div>
       )}
 
-      {/*  Modal Création  */}
-      {openCreate && (
-        <Modal title="Nouveau rôle" onClose={() => setOpenCreate(false)}>
-          <form onSubmit={handleCreate} className="space-y-4">
+      {/*  Dialog Création  */}
+      <Dialog open={openCreate} onOpenChange={setOpenCreate}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <Plus size={20} className="text-blue-500" />
+              Nouveau rôle
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleCreate} className="space-y-4 mt-4">
             <GlobalError errors={errors} />
 
-            <div>
-              <Label>Code</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Code</Label>
               <Input
                 placeholder="ex: TECHNICIEN"
                 className={inputCls("code")}
@@ -433,8 +468,8 @@ export default function Roles() {
               <FieldError errors={errors} field="code" />
             </div>
 
-            <div>
-              <Label>Libellé</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Libellé</Label>
               <Input
                 placeholder="ex: Technicien de maintenance"
                 className={inputCls("libelle")}
@@ -445,8 +480,10 @@ export default function Roles() {
               <FieldError errors={errors} field="libelle" />
             </div>
 
-            <div className="space-y-1">
-              <Label>Niveau hiérarchique</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">
+                Niveau hiérarchique
+              </Label>
               <div className="flex items-center gap-2">
                 {niveaux.map((n) => (
                   <Button
@@ -456,208 +493,193 @@ export default function Roles() {
                       setForm({ ...form, niveau: n });
                       setSelectedNiveau(n);
                     }}
-                    className={`transition-all duration-200 ${niveauStyles[n].bg} ${
+                    className={`transition-all duration-200 h-10 w-10 p-0 rounded-lg ${niveauStyles[n].bg} ${
                       selectedNiveau === n
-                        ? `ring-2 ${niveauStyles[n].text} ring-offset-2 ${niveauStyles[n].border} ring-offset-bg scale-110 opacity-100 shadow-lg ${niveauStyles[n].shadow}`
+                        ? ` ${niveauStyles[n].text} ring-offset-2 ${niveauStyles[n].border} border ${niveauStyles[n].border} scale-110 opacity-100 shadow-lg`
                         : "opacity-50 hover:opacity-80 scale-100"
                     }`}>
                     {n}
                   </Button>
                 ))}
               </div>
-              <p className="text-xs text-text-muted mt-1">
+              <p className="text-xs text-text-muted">
                 1 = plus haut niveau (Admin)
               </p>
               <FieldError errors={errors} field="niveau" />
             </div>
 
-            <div className="flex gap-3 pt-2">
-              <Button type="submit" className="flex-1 py-2" variant="custom">
-                Créer
-              </Button>
+            <DialogFooter className="gap-2 pt-4">
               <Button
                 type="button"
                 onClick={() => setOpenCreate(false)}
-                className="flex-1 py-2"
-                variant="customOutline">
+                variant="outline">
                 Annuler
               </Button>
-            </div>
+              <Button type="submit" variant="custom">
+                <Plus size={15} /> Créer
+              </Button>
+            </DialogFooter>
           </form>
-        </Modal>
-      )}
+        </DialogContent>
+      </Dialog>
 
-      {/*  Modal Permissions  */}
-      {openPerms && (
-        <Modal
-          title={`Permissions — ${selectedRole?.code}`}
-          onClose={() => setOpenPerms(false)}>
-          <div className="space-y-4 max-h-96 overflow-y-auto">
-            {/* Assignées */}
-            <div>
-              <p className="text-xs text-text-secondary mb-2 uppercase tracking-wider">
-                Assignées ({selectedRole?.permissions?.length || 0})
-              </p>
-              <div className="space-y-2">
-                {selectedRole?.permissions?.length > 0 ? (
-                  selectedRole.permissions.map((p) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center justify-between p-2.5 rounded-lg bg-surface">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${actionColor(p.action)}`}>
-                          {p.action}
-                        </span>
-                        <span className="text-xs font-mono text-text-secondary">
-                          {p.code}
+      {/*  Dialog Permissions  */}
+      <Dialog open={openPerms} onOpenChange={setOpenPerms}>
+        <DialogContent className="sm:max-w-[700px] ">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <Shield size={20} className="text-green-500" />
+              Permissions — {selectedRole?.code}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className=" mt-4 ">
+            <div className="max-h-[60vh] overflow-y-auto  space-y-4 rounded-sm [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              {allPermissions && allPermissions.length > 0 ? (
+                Object.entries(groupPermissionsByModule(allPermissions)).map(
+                  ([module, permissions]) => (
+                    <div key={module} className="space-y-2  ">
+                      {/* Module Header */}
+                      <div className="flex items-center px-5  py-3 sticky top-[-3px] bg-surface/95 backdrop-blur-lg rounded-bl-lg rounded-br-lg border-b border-border">
+                        <div className="h-2 w-2 rounded-full bg-green-500" />
+                        <h3 className="text-sm font-bold text-text uppercase tracking-wide">
+                          {module}s
+                        </h3>
+                        <div className="flex-1 h-px bg-border" />
+                        <span className="text-xs text-text-muted">
+                          {
+                            permissions.filter((p) =>
+                              selectedRole?.permissions?.find(
+                                (sp) => sp.id === p.id,
+                              ),
+                            ).length
+                          }
+                          /{permissions.length}
                         </span>
                       </div>
-                      <Button
-                        onClick={() => handleRemovePermission(p.id)}
-                        className="text-text-muted hover:text-danger transition-colors text-lg leading-none"
-                        variant="ghost">
-                        ×
-                      </Button>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-text-muted p-2">
-                    Aucune permission assignée
-                  </p>
-                )}
-              </div>
-            </div>
 
-            {/* Ajouter */}
-            <div>
-              <p className="text-xs text-text-secondary mb-2 uppercase tracking-wider">
-                Ajouter
-              </p>
-              <div className="space-y-2">
-                {allPermissions
-                  .filter(
-                    (p) =>
-                      !selectedRole?.permissions?.find((sp) => sp.id === p.id),
-                  )
-                  .map((p) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center justify-between p-2.5 rounded-lg border border-border">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${actionColor(p.action)}`}>
-                          {p.action}
-                        </span>
-                        <span className="text-xs font-mono text-text-secondary">
-                          {p.code}
-                        </span>
+                      {/* Permissions Grid */}
+                      <div className="grid grid-cols-2 gap-2 px-2">
+                        {permissions.map((p) => {
+                          const isAssigned = selectedRole?.permissions?.find(
+                            (sp) => sp.id === p.id,
+                          );
+                          return (
+                            <div
+                              key={p.id}
+                              onClick={() =>
+                                isAssigned
+                                  ? handleRemovePermission(p.id)
+                                  : handleAssignPermission(p.id)
+                              }
+                              className={`cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-[1.02] ${
+                                isAssigned
+                                  ? "bg-green-500/10 border-green-500 ring-1 ring-green-500/30"
+                                  : "bg-surface border-border hover:border-text-muted"
+                              }`}>
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <span
+                                    className={`text-xs px-2 py-0.5 rounded-full font-semibold inline-block ${actionColor(p.action)}`}>
+                                    {p.action}
+                                  </span>
+                                  <p className="text-xs font-mono text-text-secondary mt-2 truncate">
+                                    {p.code}
+                                  </p>
+                                  {p.ressource && (
+                                    <p className="text-[10px] text-text-muted mt-1 truncate">
+                                      {p.ressource}
+                                    </p>
+                                  )}
+                                </div>
+                                {isAssigned && (
+                                  <Check
+                                    size={16}
+                                    className="text-green-500 flex-shrink-0 mt-0.5"
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                      <Button
-                        onClick={() => handleAssignPermission(p.id)}
-                        variant="custom">
-                        Ajouter
-                      </Button>
                     </div>
-                  ))}
-                {allPermissions.filter(
-                  (p) =>
-                    !selectedRole?.permissions?.find((sp) => sp.id === p.id),
-                ).length === 0 && (
-                  <p className="text-sm text-text-muted p-2">
-                    Toutes les permissions sont assignées
-                  </p>
-                )}
-              </div>
+                  ),
+                )
+              ) : (
+                <p className="text-sm text-text-muted text-center py-8">
+                  Aucune permission disponible
+                </p>
+              )}
             </div>
+            <p className="text-xs text-text-muted mt-3">
+              Cliquez sur une permission pour l'ajouter ou la retirer
+            </p>
           </div>
-        </Modal>
-      )}
+        </DialogContent>
+      </Dialog>
 
-      {/*  Modal Interfaces  */}
-      {openInterfaces && (
-        <Modal
-          title={`Interfaces — ${selectedRole?.code}`}
-          onClose={() => setOpenInterfaces(false)}>
-          <div className="space-y-4 max-h-96 overflow-y-auto">
-            {/* Assignées */}
-            <div>
-              <p className="text-xs text-text-secondary mb-2 uppercase tracking-wider">
-                Assignées ({selectedRole?.interfaces?.length || 0})
-              </p>
-              <div className="space-y-2">
-                {selectedRole?.interfaces?.length > 0 ? (
-                  selectedRole.interfaces.map((iface) => (
+      {/*  Dialog Interfaces  */}
+      <Dialog open={openInterfaces} onOpenChange={setOpenInterfaces}>
+        <DialogContent className="sm:max-w-[650px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <LayoutDashboard size={20} className="text-blue-500" />
+              Interfaces — {selectedRole?.code}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="mt-4">
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+              {allInterfaces && allInterfaces.length > 0 ? (
+                allInterfaces.map((iface) => {
+                  const isAssigned = selectedRole?.interfaces?.find(
+                    (si) => si.id === iface.id,
+                  );
+                  return (
                     <div
                       key={iface.id}
-                      className="flex items-center justify-between p-2.5 rounded-lg bg-surface">
-                      <div>
-                        <span className="text-sm font-medium text-text">
-                          {iface.libelle}
-                        </span>
-                        <span className="text-xs text-text-muted ml-2">
-                          {iface.route}
-                        </span>
+                      onClick={() =>
+                        isAssigned
+                          ? handleRemoveInterface(iface.id)
+                          : handleAssignInterface(iface.id)
+                      }
+                      className={`cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-[1.02] ${
+                        isAssigned
+                          ? "bg-blue-500/10 border-blue-500 ring-1 ring-blue-500/30"
+                          : "bg-surface border-border hover:border-text-muted"
+                      }`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-text truncate">
+                            {iface.libelle}
+                          </p>
+                          <p className="text-xs font-mono text-text-muted mt-1 truncate">
+                            {iface.route}
+                          </p>
+                        </div>
+                        {isAssigned && (
+                          <Check
+                            size={18}
+                            className="text-blue-500 flex-shrink-0 mt-0.5"
+                          />
+                        )}
                       </div>
-                      <Button
-                        onClick={() => handleRemoveInterface(iface.id)}
-                        className="text-text-muted hover:text-danger transition-colors text-lg leading-none"
-                        variant="ghost">
-                        ×
-                      </Button>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-text-muted p-2">
-                    Aucune interface assignée
-                  </p>
-                )}
-              </div>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-text-muted text-center py-8">
+                  Aucune interface disponible
+                </p>
+              )}
             </div>
-
-            {/* Ajouter */}
-            <div>
-              <p className="text-xs text-text-secondary mb-2 uppercase tracking-wider">
-                Ajouter
-              </p>
-              <div className="space-y-2">
-                {allInterfaces
-                  .filter(
-                    (iface) =>
-                      !selectedRole?.interfaces?.find((si) => si.id === iface.id),
-                  )
-                  .map((iface) => (
-                    <div
-                      key={iface.id}
-                      className="flex items-center justify-between p-2.5 rounded-lg border border-border">
-                      <div>
-                        <span className="text-sm font-medium text-text">
-                          {iface.libelle}
-                        </span>
-                        <span className="text-xs text-text-muted ml-2">
-                          {iface.route}
-                        </span>
-                      </div>
-                      <Button
-                        onClick={() => handleAssignInterface(iface.id)}
-                        variant="custom">
-                        Ajouter
-                      </Button>
-                    </div>
-                  ))}
-                {allInterfaces.filter(
-                  (iface) =>
-                    !selectedRole?.interfaces?.find((si) => si.id === iface.id),
-                ).length === 0 && (
-                  <p className="text-sm text-text-muted p-2">
-                    Toutes les interfaces sont assignées
-                  </p>
-                )}
-              </div>
-            </div>
+            <p className="text-xs text-text-muted mt-3">
+              Cliquez sur une interface pour l'ajouter ou la retirer
+            </p>
           </div>
-        </Modal>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
