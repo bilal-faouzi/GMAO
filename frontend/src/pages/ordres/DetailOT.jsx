@@ -13,6 +13,7 @@ import {
 } from "../../services/ordreService";
 import { getJournalAuditv2 } from "../../services/securiteService";
 import { getEquipes } from "../../services/organisationService";
+import useAuthStore from "@/store/authStore";
 
 import {
   Dialog,
@@ -32,9 +33,20 @@ import {
   X,
   Package,
   Clock,
+  ArrowLeft, // FIX 1a : import manquant
+  ChevronRight, // FIX 1b : import manquant
 } from "lucide-react";
 
-//  Statuts affectation
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+// FIX 2 : stripEmojis défini au niveau module (était dans un IIFE, inaccessible depuis l'onglet commentaires)
+const stripEmojis = (str) =>
+  str?.replace(
+    /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu,
+    "",
+  ) || "";
+
+// ─── Statuts affectation ──────────────────────────────────────────────────────
 const STATUT_AFFECTATION_LABEL = {
   en_attente: "En attente",
   en_cours: "En cours",
@@ -42,7 +54,7 @@ const STATUT_AFFECTATION_LABEL = {
   rejeter: "Rejeté",
 };
 
-//  Couleurs d'audit
+// ─── Config audit ─────────────────────────────────────────────────────────────
 const AUDIT_ACTION_CONFIG = {
   CREATE: {
     label: "Création",
@@ -108,14 +120,14 @@ function getAuditConfig(action) {
 
 function formatAuditValue(val) {
   if (!val) return "—";
-  if (typeof val === "object") {
+  if (typeof val === "object")
     return Object.entries(val)
       .map(([k, v]) => `${k}: ${v}`)
       .join(", ");
-  }
   return String(val);
 }
 
+// ─── Timeline Audit ───────────────────────────────────────────────────────────
 function AuditTimelineItem({ entry, isLast }) {
   const cfg = getAuditConfig(entry.action);
   const userName = entry.utilisateur
@@ -130,25 +142,21 @@ function AuditTimelineItem({ entry, isLast }) {
 
   return (
     <div className="flex gap-3">
-      {/* Ligne timeline */}
       <div className="flex flex-col items-center">
         <div
           className={`w-3 h-3 rounded-full ${cfg.dot} ring-4 ring-surface`}
         />
         {!isLast && <div className="w-px flex-1 bg-hover my-1" />}
       </div>
-
-      {/* Contenu */}
-      <div className={`flex-1 pb-5 ${!isLast ? "" : ""}`}>
-        <div className="bg-hover/40 rounded-lg p-3 border border-border/50 hover:border-border transition">
-          {/* Header */}
+      <div className="flex-1 pb-4">
+        <div className="bg-elevated border border-border-subtle rounded-xl p-3 hover:border-border transition-colors">
           <div className="flex items-start justify-between gap-2 mb-2">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold border border-primary/30">
+              <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center text-[10px] font-bold border border-blue-200 dark:border-blue-500/30 flex-shrink-0">
                 {initials || "?"}
               </div>
               <div>
-                <p className="text-sm font-medium text-text">{userName}</p>
+                <p className="text-xs font-semibold text-text">{userName}</p>
                 <p className="text-[10px] text-text-muted">
                   {new Date(entry.horodatage).toLocaleString("fr-FR")}
                 </p>
@@ -159,43 +167,38 @@ function AuditTimelineItem({ entry, isLast }) {
               {cfg.label}
             </span>
           </div>
-
-          {/* Module */}
-          <p className="text-xs text-text-muted mb-1.5">
+          <p className="text-[11px] text-text-muted mb-1.5">
             Module : <span className="text-text-secondary">{entry.module}</span>
             {entry.type_entite && (
               <>
-                {" · "}Entité :{" "}
+                {" "}
+                · Entité :{" "}
                 <span className="text-text-secondary">{entry.type_entite}</span>
               </>
             )}
           </p>
-
-          {/* Valeurs avant/après */}
           {(entry.ancienne_valeur || entry.nouvelle_valeur) && (
             <div className="mt-2 space-y-1.5">
               {entry.ancienne_valeur && (
                 <div className="flex items-start gap-2 text-xs">
-                  <span className="text-text-muted shrink-0 w-14">Avant :</span>
-                  <span className="text-danger bg-danger-soft rounded px-1.5 py-0.5 break-all">
+                  <span className="text-text-muted shrink-0 w-12">Avant :</span>
+                  <span className="text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-500/10 rounded px-1.5 py-0.5 break-all">
                     {formatAuditValue(entry.ancienne_valeur)}
                   </span>
                 </div>
               )}
               {entry.nouvelle_valeur && (
                 <div className="flex items-start gap-2 text-xs">
-                  <span className="text-text-muted shrink-0 w-14">Après :</span>
-                  <span className="text-success bg-success-soft rounded px-1.5 py-0.5 break-all">
+                  <span className="text-text-muted shrink-0 w-12">Après :</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/10 rounded px-1.5 py-0.5 break-all">
                     {formatAuditValue(entry.nouvelle_valeur)}
                   </span>
                 </div>
               )}
             </div>
           )}
-
-          {/* Adresse IP */}
           {entry.adresse_ip && (
-            <p className="text-[10px] text-text-muted mt-2">
+            <p className="text-[10px] text-text-muted mt-2 font-mono">
               IP : {entry.adresse_ip}
             </p>
           )}
@@ -205,19 +208,19 @@ function AuditTimelineItem({ entry, isLast }) {
   );
 }
 
-//  Statuts
+// ─── Statuts OT ───────────────────────────────────────────────────────────────
 const STATUT = {
   EN_COURS: {
     label: "En cours",
-    cls: "bg-warning/20 text-warning border-warning/30",
+    cls: "bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-500/40",
   },
   DEPANNE: {
     label: "Dépanné",
-    cls: "bg-status-orange/20 text-status-orange border-status-orange/30",
+    cls: "bg-orange-100 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-500/40",
   },
   CLOTURE: {
     label: "Clôturé",
-    cls: "bg-success-soft text-success border-success/30",
+    cls: "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-500/40",
   },
   REJETE: {
     label: "Rejeté",
@@ -225,17 +228,20 @@ const STATUT = {
   },
 };
 
-//  Composant
+// ─── Composant principal ──────────────────────────────────────────────────────
 export default function DetailOT() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const user = useAuthStore();
 
   const [ot, setOT] = useState(null);
   const [commentaires, setCommentaires] = useState([]);
   const [historique, setHistorique] = useState([]);
   const [audit, setAudit] = useState([]);
-  const [onglet, setOnglet] = useState("info");
   const [loading, setLoading] = useState(true);
+
+  // FIX 3 : state onglet manquant
+  const [onglet, setOnglet] = useState("affectations");
 
   // Dialog Dépanné
   const [modalDepanne, setModalDepanne] = useState(false);
@@ -264,7 +270,7 @@ export default function DetailOT() {
 
   const estVerrouille = ["DEPANNE", "CLOTURE", "REJETE"].includes(ot?.statut);
 
-  //  Chargement
+  // ─── Chargement ──────────────────────────────────────────────────────────────
   const charger = async () => {
     try {
       const [o, c, h, a] = await Promise.all([
@@ -292,7 +298,7 @@ export default function DetailOT() {
     charger();
   }, [id]);
 
-  //  Action : Affecter / Modifier
+  // ─── Affectation ─────────────────────────────────────────────────────────────
   const openAffectationModal = async (affectation = null) => {
     setEditingAffectation(affectation);
     setModalAffectation(true);
@@ -300,16 +306,13 @@ export default function DetailOT() {
     setMembresEquipe([]);
     setSelectedMembres([]);
     setEditStatut("");
-
     try {
       const r = await getEquipes({ estActif: true, no_page: true });
       setEquipes(r.data.results ?? r.data ?? []);
     } catch (e) {
       console.error(e);
     }
-
     if (affectation) {
-      // Mode édition : pré-remplir
       setEditStatut(affectation.statut || "");
       const eqId = affectation.equipe_detail?.id || affectation.idEquipe;
       if (eqId) {
@@ -318,7 +321,6 @@ export default function DetailOT() {
           const r = await getMembresEquipe(eqId);
           const data = r.data.results ?? r.data ?? [];
           setMembresEquipe(data);
-          // Pré-sélectionner les membres actuels
           const currentIds = (affectation.membres || []).map(
             (m) => m.utilisateur_detail?.id || m.idUtilisateur || m.id,
           );
@@ -339,20 +341,18 @@ export default function DetailOT() {
     }
     try {
       const r = await getMembresEquipe(equipeId);
-      const data = r.data.results ?? r.data ?? [];
-      setMembresEquipe(data);
+      setMembresEquipe(r.data.results ?? r.data ?? []);
     } catch (e) {
       console.error(e);
     }
   };
 
-  const toggleMembre = (userId) => {
+  const toggleMembre = (userId) =>
     setSelectedMembres((prev) =>
       prev.includes(userId)
         ? prev.filter((id) => id !== userId)
         : [...prev, userId],
     );
-  };
 
   const handleAffecter = async () => {
     if (!selectedEquipe || selectedMembres.length === 0) return;
@@ -411,7 +411,7 @@ export default function DetailOT() {
     setEditStatut("");
   };
 
-  //  Action : Dépanner
+  // ─── Actions statut ───────────────────────────────────────────────────────────
   const handleDepanner = async () => {
     setLoadingDepanne(true);
     try {
@@ -426,7 +426,6 @@ export default function DetailOT() {
     }
   };
 
-  //  Action : Clôturer
   const handleCloturer = async () => {
     setLoadingCloture(true);
     try {
@@ -442,7 +441,6 @@ export default function DetailOT() {
     }
   };
 
-  //  Action : Commentaire
   const handleCommentaire = async (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
@@ -452,11 +450,18 @@ export default function DetailOT() {
     charger();
   };
 
-  //  Render
+  // ─── Render ───────────────────────────────────────────────────────────────────
   if (loading) return <div className="p-6 text-text-muted">Chargement…</div>;
   if (!ot) return <div className="p-6 text-danger">OT introuvable.</div>;
 
   const s = STATUT[ot.statut];
+  const vraisCommentaires = commentaires.filter(
+    (c) =>
+      !(c.estInterne && c.commentaire?.includes("COMPTE RENDU INTERVENTION")),
+  );
+  const comptesRendus = commentaires.filter(
+    (c) => c.estInterne && c.commentaire?.includes("COMPTE RENDU INTERVENTION"),
+  );
 
   return (
     <div className="page">
@@ -465,8 +470,9 @@ export default function DetailOT() {
         <div className="hdr-l">
           <button
             onClick={() => navigate("/ordres/ots")}
-            className="text-text-muted hover:text-text text-sm transition">
-            ← Retour
+            className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text transition-colors mb-2">
+            <ArrowLeft size={13} />
+            Retour aux OTs
           </button>
           <h1 className="text-2xl font-semibold font-mono">{ot.numero}</h1>
           <span
@@ -509,9 +515,12 @@ export default function DetailOT() {
 
       {/* ===== Rejet opérateur ===== */}
       {ot.rejetOperateur && (
-        <div className="bg-danger-soft border border-danger/30 rounded-xl p-4 mb-6">
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl p-4">
           <div className="flex items-start gap-3">
-            <AlertTriangle size={18} className="text-danger mt-0.5 shrink-0" />
+            <AlertTriangle
+              size={16}
+              className="text-red-500 mt-0.5 flex-shrink-0"
+            />
             <div className="flex-1">
               <p className="text-sm font-semibold text-danger">
                 Cette intervention a été rejetée par l'opérateur
@@ -521,7 +530,7 @@ export default function DetailOT() {
                   Motif : {ot.motifRejetOperateur}
                 </p>
               )}
-              <div className="flex items-center gap-2 mt-2 text-xs text-text-muted">
+              <div className="flex items-center gap-2 mt-1.5 text-xs text-text-muted">
                 {ot.rejetOperateur_detail && (
                   <span>
                     Par {ot.rejetOperateur_detail.prenom}{" "}
@@ -539,7 +548,7 @@ export default function DetailOT() {
         </div>
       )}
 
-      {/* ===== Tracabilité ===== */}
+      {/* ===== Traçabilité ===== */}
       {ot.demande_detail && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
           <div className="bg-surface rounded-xl p-4 border border-border shadow-card">
@@ -612,7 +621,7 @@ export default function DetailOT() {
         </div>
       )}
 
-      {/* ===== Infos & Delais ===== */}
+      {/* ===== Infos & Délais ===== */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="bg-surface rounded-xl p-5 border border-border shadow-card">
           <h2 className="text-xs text-text-muted uppercase tracking-wider font-semibold mb-4 pb-2 border-b border-border-subtle flex items-center gap-2">
@@ -666,68 +675,57 @@ export default function DetailOT() {
       </div>
 
       {/* ===== Compte rendu ===== */}
-      {(() => {
-        const stripEmojis = (str) =>
-          str?.replace(
-            /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu,
-            "",
-          ) || "";
-        const comptesRendus = commentaires.filter(
-          (c) =>
-            c.estInterne &&
-            c.commentaire?.includes("COMPTE RENDU INTERVENTION"),
-        );
-        return comptesRendus.length > 0 ? (
-          <div className="mb-6">
-            <h2 className="text-xs text-text-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-2">
-              <MessageSquare size={14} /> Compte rendu d'intervention
-            </h2>
-            <div className="space-y-3">
-              {comptesRendus.map((cr) => (
-                <div
-                  key={cr.id}
-                  className="bg-surface rounded-xl p-4 border border-border shadow-card">
-                  <div className="flex items-center gap-3 mb-3 pb-3 border-b border-border-subtle">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold border border-primary/20">
-                      {cr.utilisateur_detail
-                        ? `${cr.utilisateur_detail.prenom?.[0] || ""}${cr.utilisateur_detail.nom?.[0] || ""}`.toUpperCase()
-                        : "?"}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-text">
-                        {cr.utilisateur_detail
-                          ? `${cr.utilisateur_detail.prenom} ${cr.utilisateur_detail.nom}`
-                          : "Technicien"}
-                      </p>
-                      <p className="text-[10px] text-text-muted">
-                        {new Date(cr.dateCreation).toLocaleString("fr-FR")}
-                      </p>
-                    </div>
+      {comptesRendus.length > 0 ? (
+        <div className="mb-6">
+          <h2 className="text-xs text-text-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-2">
+            <MessageSquare size={14} /> Compte rendu d'intervention
+          </h2>
+          <div className="space-y-3">
+            {comptesRendus.map((cr) => (
+              <div
+                key={cr.id}
+                className="bg-surface rounded-xl p-4 border border-border shadow-card">
+                <div className="flex items-center gap-3 mb-3 pb-3 border-b border-border-subtle">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold border border-primary/20">
+                    {cr.utilisateur_detail
+                      ? `${cr.utilisateur_detail.prenom?.[0] || ""}${cr.utilisateur_detail.nom?.[0] || ""}`.toUpperCase()
+                      : "?"}
                   </div>
-                  <div className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
-                    {stripEmojis(cr.commentaire)}
+                  <div>
+                    <p className="text-sm font-semibold text-text">
+                      {cr.utilisateur_detail
+                        ? `${cr.utilisateur_detail.prenom} ${cr.utilisateur_detail.nom}`
+                        : "Technicien"}
+                    </p>
+                    <p className="text-[10px] text-text-muted">
+                      {new Date(cr.dateCreation).toLocaleString("fr-FR")}
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
+                <div className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
+                  {stripEmojis(cr.commentaire)}
+                </div>
+              </div>
+            ))}
           </div>
-        ) : (
-          <div className="bg-surface rounded-xl p-5 border border-border shadow-card mb-6">
-            <h2 className="text-xs text-text-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-2">
-              <MessageSquare size={14} /> Compte rendu d'intervention
-            </h2>
-            <p className="text-sm text-text-muted mb-3">
-              Aucun compte rendu n'a été rédigé pour cet OT.
-            </p>
-            <button
-              onClick={() => navigate(`/ordres/ots/${id}/rapport`)}
-              className="btn btn-outline flex items-center gap-1.5"
-              style={{ fontSize: "12px", padding: "5px 10px" }}>
-              <MessageSquare size={12} /> Rédiger le compte rendu
-            </button>
-          </div>
-        );
-      })()}
+        </div>
+      ) : (
+        // FIX 4 : </Button> → </button> + <Button> → <button>
+        <div className="bg-surface rounded-xl p-5 border border-border shadow-card mb-6">
+          <h2 className="text-xs text-text-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-2">
+            <MessageSquare size={14} /> Compte rendu d'intervention
+          </h2>
+          <p className="text-sm text-text-muted mb-3">
+            Aucun compte rendu n'a été rédigé pour cet OT.
+          </p>
+          <button
+            onClick={() => navigate(`/ordres/ots/${id}/rapport`)}
+            className="btn btn-outline flex items-center gap-1.5"
+            style={{ fontSize: "12px", padding: "5px 10px" }}>
+            <MessageSquare size={12} /> Rédiger le compte rendu
+          </button>
+        </div>
+      )}
 
       {/* ===== Actifs corrigés ===== */}
       {ot.actifs_corriges?.length > 0 && (
@@ -761,15 +759,14 @@ export default function DetailOT() {
       )}
 
       {/* ===== Onglets ===== */}
+      {/* FIX 5 : Tabs/TabsList/TabsContent supprimés → <div> natifs cohérents */}
       <div className="bg-surface rounded-xl border border-border shadow-card overflow-hidden">
+        {/* Barre d'onglets */}
         <div className="flex border-b border-border overflow-x-auto">
           {[
             ["affectations", `Affectations (${ot.affectations?.length || 0})`],
             ["pieces", `Pièces (${ot.nb_pieces_utilisees || 0})`],
-            [
-              "commentaires",
-              `Commentaires (${commentaires.filter((c) => !(c.estInterne && c.commentaire?.includes("COMPTE RENDU INTERVENTION"))).length})`,
-            ],
+            ["commentaires", `Commentaires (${vraisCommentaires.length})`],
             ["historique", `Historique (${historique.length})`],
             ["audit", `Audit (${audit.length})`],
           ].map(([k, l]) => (
@@ -786,8 +783,9 @@ export default function DetailOT() {
           ))}
         </div>
 
+        {/* Contenu des onglets */}
         <div className="p-5">
-          {/* Affectations */}
+          {/* ── Affectations ── */}
           {onglet === "affectations" && (
             <div className="space-y-3">
               {!estVerrouille && (
@@ -895,7 +893,7 @@ export default function DetailOT() {
             </div>
           )}
 
-          {/* Pièces */}
+          {/* ── Pièces ── */}
           {onglet === "pieces" && (
             <div>
               {ot.pieces_utilisees_detail?.length === 0 ? (
@@ -959,60 +957,49 @@ export default function DetailOT() {
             </div>
           )}
 
-          {/* Commentaires */}
+          {/* ── Commentaires ── */}
           {onglet === "commentaires" && (
             <div>
               <div className="space-y-3 mb-4">
-                {(() => {
-                  const vraisCommentaires = commentaires.filter(
-                    (c) =>
-                      !(
-                        c.estInterne &&
-                        c.commentaire?.includes("COMPTE RENDU INTERVENTION")
-                      ),
-                  );
-                  return vraisCommentaires.length === 0 ? (
-                    <p className="text-text-muted text-sm text-center py-4">
-                      Aucun commentaire
-                    </p>
-                  ) : (
-                    vraisCommentaires.map((c) => (
-                      <div
-                        key={c.id}
-                        className={`rounded-xl p-4 border ${c.estInterne ? "bg-warning-soft border-warning/20" : "bg-elevated border-border-subtle"}`}>
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold border border-primary/20 shrink-0">
+                {vraisCommentaires.length === 0 ? (
+                  <p className="text-text-muted text-sm text-center py-4">
+                    Aucun commentaire
+                  </p>
+                ) : (
+                  vraisCommentaires.map((c) => (
+                    <div
+                      key={c.id}
+                      className={`rounded-xl p-4 border ${c.estInterne ? "bg-warning-soft border-warning/20" : "bg-elevated border-border-subtle"}`}>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold border border-primary/20 shrink-0">
+                            {c.utilisateur_detail
+                              ? `${c.utilisateur_detail.prenom?.[0] || ""}${c.utilisateur_detail.nom?.[0] || ""}`.toUpperCase()
+                              : "?"}
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-text">
                               {c.utilisateur_detail
-                                ? `${c.utilisateur_detail.prenom?.[0] || ""}${c.utilisateur_detail.nom?.[0] || ""}`.toUpperCase()
-                                : "?"}
-                            </div>
-                            <div>
-                              <p className="text-xs font-semibold text-text">
-                                {c.utilisateur_detail
-                                  ? `${c.utilisateur_detail.prenom} ${c.utilisateur_detail.nom}`
-                                  : "Utilisateur"}
-                                {c.estInterne && (
-                                  <span className="ml-2 text-warning text-[10px]">
-                                    [Interne]
-                                  </span>
-                                )}
-                              </p>
-                              <p className="text-[10px] text-text-muted">
-                                {new Date(c.dateCreation).toLocaleString(
-                                  "fr-FR",
-                                )}
-                              </p>
-                            </div>
+                                ? `${c.utilisateur_detail.prenom} ${c.utilisateur_detail.nom}`
+                                : "Utilisateur"}
+                              {c.estInterne && (
+                                <span className="ml-2 text-warning text-[10px]">
+                                  [Interne]
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-[10px] text-text-muted">
+                              {new Date(c.dateCreation).toLocaleString("fr-FR")}
+                            </p>
                           </div>
                         </div>
-                        <p className="text-sm text-text-secondary whitespace-pre-wrap">
-                          {stripEmojis(c.commentaire)}
-                        </p>
                       </div>
-                    ))
-                  );
-                })()}
+                      <p className="text-sm text-text-secondary whitespace-pre-wrap">
+                        {stripEmojis(c.commentaire)}
+                      </p>
+                    </div>
+                  ))
+                )}
               </div>
               <form onSubmit={handleCommentaire} className="flex gap-2">
                 <input
@@ -1039,7 +1026,7 @@ export default function DetailOT() {
             </div>
           )}
 
-          {/* Historique */}
+          {/* ── Historique ── */}
           {onglet === "historique" &&
             (historique.length === 0 ? (
               <p className="text-text-muted text-sm text-center py-8">
@@ -1055,14 +1042,14 @@ export default function DetailOT() {
                       {h.ancienStatut && (
                         <>
                           <span
-                            className={`px-2 py-0.5 rounded text-xs border ${STATUT[h.ancienStatut]?.cls}`}>
+                            className={`text-[11px] font-medium px-2 py-0.5 rounded border ${STATUT[h.ancienStatut]?.cls}`}>
                             {STATUT[h.ancienStatut]?.label}
                           </span>
-                          <span className="text-text-muted text-xs">→</span>
+                          <ChevronRight size={12} className="text-text-muted" />
                         </>
                       )}
                       <span
-                        className={`px-2 py-0.5 rounded text-xs border ${STATUT[h.nouveauStatut]?.cls}`}>
+                        className={`text-[11px] font-medium px-2 py-0.5 rounded border ${STATUT[h.nouveauStatut]?.cls}`}>
                         {STATUT[h.nouveauStatut]?.label}
                       </span>
                     </div>
@@ -1081,14 +1068,14 @@ export default function DetailOT() {
               </div>
             ))}
 
-          {/* Audit */}
+          {/* ── Audit ── */}
           {onglet === "audit" &&
             (audit.length === 0 ? (
               <p className="text-text-muted text-sm text-center py-8">
                 Aucune entrée d'audit pour cet OT
               </p>
             ) : (
-              <div className="space-y-0">
+              <div className="space-y-0 pt-1">
                 {audit.map((entry, idx) => (
                   <AuditTimelineItem
                     key={entry.id}
@@ -1099,18 +1086,20 @@ export default function DetailOT() {
               </div>
             ))}
         </div>
+        {/* fin p-5 */}
       </div>
+      {/* fin bg-surface onglets */}
 
       {/* ===== Dialog Dépanné ===== */}
       <Dialog open={modalDepanne} onOpenChange={setModalDepanne}>
-        <DialogContent className="bg-elevated border border-border text-text max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-warning">
               <Wrench size={18} /> Marquer comme Dépanné
             </DialogTitle>
             <DialogDescription className="text-text-muted text-sm">
               L'OT <span className="font-mono text-text">{ot.numero}</span> sera
-              marqué comme dépanné temporairement. L'actif sera rétabli.
+              marqué comme dépanné temporairement.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -1128,6 +1117,7 @@ export default function DetailOT() {
               />
             </div>
           </div>
+          {/* FIX 4 : balises button cohérentes dans tous les DialogFooter */}
           <DialogFooter className="gap-2 mt-2">
             <button
               onClick={() => {
@@ -1149,14 +1139,14 @@ export default function DetailOT() {
 
       {/* ===== Dialog Clôturer ===== */}
       <Dialog open={modalCloture} onOpenChange={setModalCloture}>
-        <DialogContent className="bg-elevated border border-border text-text max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-success">
               <CheckCircle size={18} /> Clôturer l'ordre de travail
             </DialogTitle>
             <DialogDescription className="text-text-muted text-sm">
               L'OT <span className="font-mono text-text">{ot.numero}</span> sera
-              clôturé définitivement. Cette action est irréversible.
+              clôturé définitivement.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -1185,16 +1175,16 @@ export default function DetailOT() {
               </div>
             </div>
             <div>
-              <label className="text-xs text-text-muted mb-1.5 block">
-                Motif / Rapport de clôture{" "}
-                <span className="text-text-muted">(optionnel)</span>
+              <label className="text-xs font-medium mb-1.5 block">
+                Rapport de clôture{" "}
+                <span className="text-text-muted font-normal">(optionnel)</span>
               </label>
               <textarea
                 value={motifCloture}
                 onChange={(e) => setMotifCloture(e.target.value)}
                 placeholder="Décrivez les travaux effectués et le résultat final…"
                 rows={4}
-                className="w-full bg-surface text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-success resize-none transition"
+                className="w-full bg-elevated border border-border text-text placeholder:text-text-muted rounded-lg px-3 py-2 text-sm outline-none resize-none focus:border-emerald-400 dark:focus:border-emerald-500 transition-colors"
               />
             </div>
           </div>
@@ -1220,7 +1210,7 @@ export default function DetailOT() {
 
       {/* ===== Dialog Affectation ===== */}
       <Dialog open={modalAffectation} onOpenChange={setModalAffectation}>
-        <DialogContent className="bg-elevated border border-border text-text max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-primary">
               <User size={18} />
@@ -1230,25 +1220,24 @@ export default function DetailOT() {
             </DialogTitle>
             <DialogDescription className="text-text-muted text-sm">
               {editingAffectation
-                ? "Modifiez le statut et les membres de l'affectation"
-                : "Sélectionnez l'équipe et les membres qui interviendront sur l'OT"}{" "}
-              <span className="font-mono text-text">{ot?.numero}</span>
+                ? "Modifiez le statut et les membres de l'affectation."
+                : "Sélectionnez l'équipe et les membres qui interviendront sur cet OT."}
             </DialogDescription>
           </DialogHeader>
           <div className="py-2 space-y-4">
             <div>
-              <label className="text-xs text-text-muted mb-1.5 block">
-                Équipe <span className="text-danger">*</span>
+              <label className="text-xs font-medium mb-1.5 block">
+                Équipe <span className="text-red-500">*</span>
               </label>
               {editingAffectation ? (
-                <p className="text-sm text-text bg-surface rounded-lg px-3 py-2 border border-border">
+                <p className="text-sm text-text bg-elevated rounded-lg px-3 py-2 border border-border">
                   {editingAffectation.equipe_detail?.libelle ?? "—"}
                 </p>
               ) : (
                 <select
                   value={selectedEquipe}
                   onChange={(e) => handleSelectEquipe(e.target.value)}
-                  className="w-full bg-surface text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-primary transition">
+                  className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors">
                   <option value="">— Sélectionner une équipe —</option>
                   {equipes.map((eq) => (
                     <option key={eq.id} value={eq.id}>
@@ -1265,13 +1254,13 @@ export default function DetailOT() {
             </div>
             {editingAffectation && (
               <div>
-                <label className="text-xs text-text-muted mb-1.5 block">
+                <label className="text-xs font-medium mb-1.5 block">
                   Statut
                 </label>
                 <select
                   value={editStatut}
                   onChange={(e) => setEditStatut(e.target.value)}
-                  className="w-full bg-surface text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-primary transition">
+                  className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors">
                   <option value="en_attente">En attente</option>
                   <option value="en_cours">En cours</option>
                   <option value="termine">Terminé</option>
@@ -1281,10 +1270,10 @@ export default function DetailOT() {
             )}
             {(selectedEquipe || editingAffectation) && (
               <div>
-                <label className="text-xs text-text-muted mb-1.5 block">
-                  Membres participants <span className="text-danger">*</span>
+                <label className="text-xs font-medium mb-1.5 block">
+                  Membres participants <span className="text-red-500">*</span>
                 </label>
-                <div className="max-h-48 overflow-y-auto space-y-1 bg-surface rounded-lg border border-border p-2">
+                <div className="max-h-48 overflow-y-auto space-y-1 bg-elevated rounded-lg border border-border p-2">
                   {membresEquipe.length === 0 ? (
                     <p className="text-xs text-text-muted py-2">
                       Aucun membre dans cette équipe.
@@ -1319,35 +1308,38 @@ export default function DetailOT() {
                       return (
                         <label
                           key={uid}
-                          className={`flex items-center gap-2 px-2 py-1.5 rounded transition ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-hover"} ${checked && !disabled ? "bg-primary-soft" : ""}`}>
+                          className={`flex items-center gap-2 px-2 py-1.5 rounded transition ${
+                            disabled
+                              ? "opacity-50 cursor-not-allowed"
+                              : "cursor-pointer hover:bg-surface"
+                          } ${checked && !disabled ? "bg-blue-50 dark:bg-blue-500/10" : ""}`}>
                           <input
                             type="checkbox"
                             checked={checked}
                             onChange={() => !disabled && toggleMembre(uid)}
                             disabled={disabled}
-                            className="accent-primary w-4 h-4"
+                            className="accent-blue-500 w-4 h-4"
                           />
                           <span
                             className={`text-sm ${disabled ? "text-text-muted" : "text-text"}`}>
                             {nom}
                           </span>
-                          {alreadyInOther && (
-                            <span className="text-[10px] text-warning uppercase ml-auto">
+                          {alreadyInOther ? (
+                            <span className="text-[10px] text-amber-600 dark:text-amber-400 uppercase ml-auto">
                               Déjà affecté
                             </span>
-                          )}
-                          {!alreadyInOther && m.niveauRole && (
+                          ) : m.niveauRole ? (
                             <span className="text-[10px] text-text-muted uppercase ml-auto">
                               {m.niveauRole}
                             </span>
-                          )}
+                          ) : null}
                         </label>
                       );
                     })
                   )}
                 </div>
                 {selectedMembres.length > 0 && (
-                  <p className="text-[10px] text-primary mt-1">
+                  <p className="text-[10px] text-blue-600 dark:text-blue-400 mt-1">
                     {selectedMembres.length} sélectionné(s)
                   </p>
                 )}
@@ -1364,7 +1356,7 @@ export default function DetailOT() {
               <button
                 onClick={handleUpdateAffectation}
                 disabled={loadingAffectation || selectedMembres.length === 0}
-                className="btn btn-primary">
+                className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg transition text-white font-medium">
                 {loadingAffectation ? "Enregistrement…" : "Enregistrer"}
               </button>
             ) : (
@@ -1375,7 +1367,7 @@ export default function DetailOT() {
                   !selectedEquipe ||
                   selectedMembres.length === 0
                 }
-                className="btn btn-primary">
+                className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg transition text-white font-medium">
                 {loadingAffectation ? "Affectation en cours…" : "Affecter"}
               </button>
             )}
@@ -1384,4 +1376,5 @@ export default function DetailOT() {
       </Dialog>
     </div>
   );
+  s;
 }

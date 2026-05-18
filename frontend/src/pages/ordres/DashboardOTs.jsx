@@ -83,17 +83,13 @@ const KPI_CARD = ({ icon: Icon, label, value, sub, colorVar, alert }) => (
     className="rounded-xl border p-5 transition hover:shadow-md"
     style={{
       background: alert ? "var(--status-red-bg)" : "var(--bg-surface)",
-      borderColor: alert
-        ? "var(--status-red-dot)22"
-        : "var(--border-subtle)",
+      borderColor: alert ? "var(--status-red-dot)22" : "var(--border-subtle)",
     }}>
     <div className="flex items-center gap-2 mb-3">
       <div
         className="w-8 h-8 rounded-lg flex items-center justify-center"
         style={{
-          background: alert
-            ? "var(--status-red-dot)18"
-            : `${colorVar}18`,
+          background: alert ? "var(--status-red-dot)18" : `${colorVar}18`,
         }}>
         <Icon
           size={16}
@@ -171,10 +167,7 @@ export default function DashboardOTs() {
       </div>
     );
 
-  const maxStatut = Math.max(
-    ...(data.par_statut?.map((s) => s.nb) || [1]),
-    1,
-  );
+  const maxStatut = Math.max(...(data.par_statut?.map((s) => s.nb) || [1]), 1);
   const maxPriorite = Math.max(
     ...(data.par_priorite?.map((s) => s.nb) || [1]),
     1,
@@ -256,11 +249,8 @@ export default function DashboardOTs() {
           </div>
           <div className="flex flex-col gap-4">
             {Object.entries(STATUT_CONFIG).map(([k, v]) => {
-              const nb =
-                data.par_statut?.find((s) => s.statut === k)?.nb || 0;
-              const pct = data.total
-                ? Math.round((nb / data.total) * 100)
-                : 0;
+              const nb = data.par_statut?.find((s) => s.statut === k)?.nb || 0;
+              const pct = data.total ? Math.round((nb / data.total) * 100) : 0;
               return (
                 <div key={k}>
                   <div className="flex justify-between items-center mb-1.5 text-xs">
@@ -309,7 +299,7 @@ export default function DashboardOTs() {
               return (
                 <div
                   key={k}
-                  className="rounded-lg border p-3 transition hover:shadow-sm cursor-pointer"
+                  className="rounded-lg  p-3 transition hover:shadow-sm cursor-pointer"
                   style={{
                     background: v.bg,
                     borderColor: v.dot + "30",
@@ -323,9 +313,7 @@ export default function DashboardOTs() {
                       {v.label}
                     </span>
                   </div>
-                  <p
-                    className="text-2xl font-bold"
-                    style={{ color: v.text }}>
+                  <p className="text-2xl font-bold" style={{ color: v.text }}>
                     {nb}
                   </p>
                   <p className="text-[11px] mt-0.5" style={{ color: v.text }}>
@@ -397,9 +385,7 @@ export default function DashboardOTs() {
             </button>
           </div>
           {data.ots_recents?.length === 0 ? (
-            <p className="text-text-muted text-sm text-center py-8">
-              Aucun OT
-            </p>
+            <p className="text-text-muted text-sm text-center py-8">Aucun OT</p>
           ) : (
             <div className="flex flex-col gap-2">
               {data.ots_recents?.map((ot) => {
@@ -423,8 +409,7 @@ export default function DashboardOTs() {
                           {ot.numero}
                         </p>
                         <p className="text-xs text-text-muted truncate">
-                          {ot.actif_detail?.code} —{" "}
-                          {ot.actif_detail?.libelle}
+                          {ot.actif_detail?.code} — {ot.actif_detail?.libelle}
                         </p>
                       </div>
                     </div>
@@ -513,10 +498,7 @@ export default function DashboardOTs() {
                       <div
                         className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                         style={{ background: ur.bg }}>
-                        <AlertTriangle
-                          size={14}
-                          style={{ color: ur.text }}
-                        />
+                        <AlertTriangle size={14} style={{ color: ur.text }} />
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-text truncate">
@@ -563,9 +545,7 @@ export default function DashboardOTs() {
             <div className="flex flex-col gap-3">
               {data.par_unite?.map((u, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <span className="text-xs text-text-muted w-4">
-                    {i + 1}
-                  </span>
+                  <span className="text-xs text-text-muted w-4">{i + 1}</span>
                   <div className="flex-1 h-2 bg-elevated rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-500"
@@ -596,19 +576,27 @@ export default function DashboardOTs() {
             </h3>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-lg border bg-elevated text-center">
+            <div className="p-4 rounded-lg  bg-elevated text-center">
               <p className="text-2xl font-bold text-text">{data.ot_jour}</p>
-              <p className="text-xs text-text-muted mt-1">OT créés aujourd'hui</p>
+              <p className="text-xs text-text-muted mt-1">
+                OT créés aujourd'hui
+              </p>
             </div>
-            <div className="p-4 rounded-lg border bg-elevated text-center">
+            <div className="p-4 rounded-lg  bg-elevated text-center">
               <p className="text-2xl font-bold text-text">{data.ot_semaine}</p>
-              <p className="text-xs text-text-muted mt-1">OT créés cette semaine</p>
+              <p className="text-xs text-text-muted mt-1">
+                OT créés cette semaine
+              </p>
             </div>
-            <div className="p-4 rounded-lg border bg-elevated text-center">
-              <p className="text-2xl font-bold text-text">{data.demandes_attente}</p>
-              <p className="text-xs text-text-muted mt-1">Demandes en attente</p>
+            <div className="p-4 rounded-lg  bg-elevated text-center">
+              <p className="text-2xl font-bold text-text">
+                {data.demandes_attente}
+              </p>
+              <p className="text-xs text-text-muted mt-1">
+                Demandes en attente
+              </p>
             </div>
-            <div className="p-4 rounded-lg border bg-elevated text-center">
+            <div className="p-4 rounded-lg  bg-elevated text-center">
               <p className="text-2xl font-bold text-danger">{data.rejetes}</p>
               <p className="text-xs text-text-muted mt-1">OT rejetés</p>
             </div>
