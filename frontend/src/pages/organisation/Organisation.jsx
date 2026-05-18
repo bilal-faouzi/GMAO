@@ -11,17 +11,33 @@ import {
 import { getSocietes, getArborescence } from "@/services/organisationService";
 import { Button } from "@/components/ui/button";
 
-//  Nœud de l'arbre 
+//  Nœud de l'arbre
 function TreeNode({ node, level = 0, icon: Icon, color }) {
   const [open, setOpen] = useState(level < 2);
   const children = node.sites || node.secteurs || node.unites || [];
   const hasChildren = children.length > 0;
 
   const icons = {
-    0: { Icon: Building2, color: "text-blue-700 dark:text-primary", bg: "bg-blue-100 dark:bg-primary-soft" },
-    1: { Icon: MapPin, color: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-100 dark:bg-emerald-500/10" },
-    2: { Icon: Grid3x3, color: "text-violet-700 dark:text-violet-400", bg: "bg-violet-100 dark:bg-violet-500/10" },
-    3: { Icon: Factory, color: "text-amber-700 dark:text-warning", bg: "bg-amber-100 dark:bg-warning/10" },
+    0: {
+      Icon: Building2,
+      color: "text-blue-700 dark:text-primary",
+      bg: "bg-blue-100 dark:bg-primary-soft",
+    },
+    1: {
+      Icon: MapPin,
+      color: "text-emerald-700 dark:text-emerald-400",
+      bg: "bg-emerald-100 dark:bg-emerald-500/10",
+    },
+    2: {
+      Icon: Grid3x3,
+      color: "text-violet-700 dark:text-violet-400",
+      bg: "bg-violet-100 dark:bg-violet-500/10",
+    },
+    3: {
+      Icon: Factory,
+      color: "text-amber-700 dark:text-warning",
+      bg: "bg-amber-100 dark:bg-warning/10",
+    },
   };
   const { Icon: NodeIcon, color: nodeColor, bg } = icons[level] || icons[3];
 
@@ -67,7 +83,7 @@ function TreeNode({ node, level = 0, icon: Icon, color }) {
   );
 }
 
-//  Page principale 
+//  Page principale
 export default function Organisation() {
   const [societes, setSocietes] = useState([]);
   const [arbres, setArbres] = useState({});
@@ -167,8 +183,8 @@ export default function Organisation() {
             label: "Unités",
             value: stats.unites,
             icon: Factory,
-            color: "text-amber-700 dark:text-warning",
-            bg: "bg-amber-100 dark:bg-warning/10",
+            color: "text-amber-700 dark:text-amber-400",
+            bg: "bg-amber-100 dark:bg-amber-500/10",
           },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <div

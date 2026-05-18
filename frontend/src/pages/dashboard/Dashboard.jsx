@@ -64,8 +64,8 @@ export default function Dashboard() {
       title: "Statut API",
       value: "En ligne",
       icon: Activity,
-      color: "text-orange-700 dark:text-status-orange",
-      bg: "bg-orange-100 dark:bg-status-orange/10",
+      color: "text-orange-700 dark:text-orange-400",
+      bg: "bg-orange-100 dark:bg-orange-500/10",
     },
   ];
 
@@ -74,7 +74,7 @@ export default function Dashboard() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-text">
-          Bonjour, {user?.prenom} 
+          Bonjour, {user?.prenom}
         </h1>
         <p className="text-text-secondary mt-1">
           Bienvenue sur le tableau de bord GMAO

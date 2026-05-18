@@ -39,9 +39,7 @@ import {
 function FieldError({ name, errors }) {
   if (!errors[name]) return null;
   return (
-    <p className="text-red-700 dark:text-danger text-xs mt-1">
-      {errors[name]}
-    </p>
+    <p className="text-red-700 dark:text-danger text-xs mt-1">{errors[name]}</p>
   );
 }
 
@@ -266,9 +264,13 @@ function AddAppartenanceModal({ onClose, onSaved }) {
           </Label>
           <div className="bg-surface border border-border rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
             {!form.secteur ? (
-              <span className="text-xs text-text-muted">Sélectionnez d'abord un secteur</span>
+              <span className="text-xs text-text-muted">
+                Sélectionnez d'abord un secteur
+              </span>
             ) : unites.length === 0 ? (
-              <span className="text-xs text-text-muted">Aucune unité pour ce secteur</span>
+              <span className="text-xs text-text-muted">
+                Aucune unité pour ce secteur
+              </span>
             ) : (
               unites.map((u) => {
                 const checked = form.unites.includes(u.id);
@@ -286,7 +288,9 @@ function AddAppartenanceModal({ onClose, onSaved }) {
                         }));
                       }}
                     />
-                    <Label htmlFor={`unite-${u.id}`} className="text-sm font-medium">
+                    <Label
+                      htmlFor={`unite-${u.id}`}
+                      className="text-sm font-medium">
                       {u.libelle}
                     </Label>
                   </div>
@@ -432,13 +436,13 @@ export default function Appartenances() {
                     {a.secteur_libelle || "—"}
                   </td>
                   <td className="px-4 py-3 text-text-secondary">
-                    {a.unites_libelles && a.unites_libelles.length > 0 
-                      ? a.unites_libelles.join(", ") 
+                    {a.unites_libelles && a.unites_libelles.length > 0
+                      ? a.unites_libelles.join(", ")
                       : "—"}
                   </td>
                   <td className="px-4 py-3">
                     {a.estPrincipale ? (
-                      <span className="flex items-center gap-1 text-xs text-amber-700 dark:text-warning bg-amber-100 dark:bg-warning/10 px-2 py-0.5 rounded-full w-fit">
+                      <span className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400  dark:bg-amber-500/10 px-2 py-0.5 rounded-full w-fit">
                         <Star size={10} fill="currentColor" /> Principale
                       </span>
                     ) : (

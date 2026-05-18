@@ -35,14 +35,6 @@ import {
 import { FieldError, GlobalError } from "@/components/FieldError";
 import { useFormErrors } from "@/hooks/useFormErrors";
 
-const labelCls = {
-  fontSize: 11,
-  fontWeight: 600,
-  color: "var(--text-muted)",
-  marginBottom: 6,
-  display: "block",
-};
-
 /**
  * AppartenanceManager
  * -------------------
@@ -51,20 +43,20 @@ const labelCls = {
  *   onAppartenanceChange {Function}   — callback après chaque modification
  */
 export function AppartenanceManager({ userId, onAppartenanceChange }) {
-  //  Data 
+  //  Data
   const [appartenances, setAppartenances] = useState([]);
   const [societes, setSocietes] = useState([]);
   const [sites, setSites] = useState([]);
   const [secteurs, setSecteurs] = useState([]);
   const [unites, setUnites] = useState([]);
 
-  //  UI state 
+  //  UI state
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
 
-  //  Form 
+  //  Form
   const [form, setForm] = useState({
     societe: "",
     site: "",
@@ -75,7 +67,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
 
   const { errors, setApiErrors, clearErrors } = useFormErrors();
 
-  //  Load appartenances 
+  //  Load appartenances
   const loadAppartenances = async () => {
     try {
       const res = await getAppartenances({ utilisateur: userId });
@@ -85,7 +77,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
     }
   };
 
-  //  Initial load 
+  //  Initial load
   useEffect(() => {
     if (!userId) return;
     const init = async () => {
@@ -106,7 +98,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
     init();
   }, [userId]);
 
-  //  Cascading selects 
+  //  Cascading selects
   useEffect(() => {
     if (!form.societe) {
       setSites([]);
@@ -143,7 +135,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
     );
   }, [form.secteur]);
 
-  //  Add 
+  //  Add
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!form.societe || !form.site) return;
@@ -175,7 +167,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
     }
   };
 
-  //  Delete 
+  //  Delete
   const handleDelete = async (id) => {
     setPendingDelete(id);
     try {
@@ -189,7 +181,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
     }
   };
 
-  //  Helpers 
+  //  Helpers
   const resetForm = () => {
     setForm({
       societe: "",
@@ -202,21 +194,12 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
     setShowForm(false);
   };
 
-  //  Render 
+  //  Render
   if (loading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "20px 0",
-          color: "var(--text-muted)",
-          fontSize: 13,
-        }}>
-        <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+      <div className="flex items-center gap-2 py-5 text-xs text-gray-500">
+        <Loader2 size={14} className="animate-spin" />
         Chargement…
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
@@ -225,60 +208,26 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
   const secondaires = appartenances.filter((a) => !a.estPrincipale);
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 16,
-        paddingTop: 8,
-      }}>
+    <div className="flex flex-col gap-4 pt-2">
       {/*  Liste existante  */}
       {appartenances.length === 0 ? (
-        <p
-          style={{
-            fontSize: 13,
-            color: "var(--text-muted)",
-            fontStyle: "italic",
-          }}>
+        <p className="text-xs text-gray-500 italic">
           Aucune appartenance organisationnelle
         </p>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div className="flex flex-col gap-1.5">
           {appartenances.map((a) => (
             <div
               key={a.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "10px 12px",
-                borderRadius: "var(--r-sm)",
-                background: a.estPrincipale
-                  ? "var(--color-primary-soft)"
-                  : "var(--bg-elevated)",
-                border: a.estPrincipale
-                  ? "1px solid rgba(79,70,229,.1)"
-                  : "1px solid var(--border-subtle)",
-              }}>
+              className={`flex items-center justify-between px-3 py-2.5 rounded-sm border ${
+                a.estPrincipale
+                  ? "bg-indigo-50 border-indigo-100"
+                  : "bg-gray-50 border-gray-200"
+              }`}>
               {/* Cascade labels */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  flexWrap: "wrap",
-                  flex: 1,
-                  minWidth: 0,
-                }}>
+              <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
                 {a.estPrincipale && (
-                  <span
-                    className="badge"
-                    style={{
-                      background: "var(--status-amber-bg, rgba(245,158,11,.1))",
-                      color: "var(--status-amber-text, #b45309)",
-                      fontSize: 10,
-                      flexShrink: 0,
-                    }}>
+                  <span className="badge bg-amber-100 text-amber-900 dark:text-amber-400  dark:bg-amber-500/10 text-xs flex-shrink-0 px-2 py-1 rounded inline-flex items-center gap-1">
                     <Star size={9} style={{ fill: "currentColor" }} />{" "}
                     Principale
                   </span>
@@ -287,32 +236,25 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
                   a.societe_libelle,
                   a.site_libelle,
                   a.secteur_libelle,
-                  a.unites_libelles && a.unites_libelles.length > 0 ? a.unites_libelles.join(", ") : null,
+                  a.unites_libelles && a.unites_libelles.length > 0
+                    ? a.unites_libelles.join(", ")
+                    : null,
                 ]
                   .filter(Boolean)
                   .map((label, i, arr) => (
-                    <span
-                      key={i}
-                      style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <span key={i} className="flex items-center gap-1">
                       <span
-                        style={{
-                          fontSize: 12,
-                          fontWeight: i === 0 ? 600 : 400,
-                          color:
-                            i === 0
-                              ? "var(--text-primary)"
-                              : "var(--text-secondary)",
-                        }}>
+                        className={`text-xs ${
+                          i === 0
+                            ? "font-semibold text-gray-900"
+                            : "font-normal text-gray-700"
+                        }`}>
                         {label}
                       </span>
                       {i < arr.length - 1 && (
                         <ChevronRight
                           size={10}
-                          style={{
-                            color: "var(--text-muted)",
-                            opacity: 0.5,
-                            flexShrink: 0,
-                          }}
+                          className="text-gray-400 opacity-50 flex-shrink-0"
                         />
                       )}
                     </span>
@@ -326,17 +268,9 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
                     variant="ghost"
                     disabled={pendingDelete === a.id}
                     title="Supprimer cette appartenance"
-                    style={{
-                      padding: "4px 8px",
-                      height: "auto",
-                      flexShrink: 0,
-                    }}
-                    className="text-text-muted hover:text-danger transition-colors ml-2">
+                    className="p-1 h-auto flex-shrink-0 ml-2 text-gray-500 hover:text-red-600 transition-colors">
                     {pendingDelete === a.id ? (
-                      <Loader2
-                        size={13}
-                        style={{ animation: "spin 1s linear infinite" }}
-                      />
+                      <Loader2 size={13} className="animate-spin" />
                     ) : (
                       <Trash2 size={13} />
                     )}
@@ -373,20 +307,14 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
       {showForm ? (
         <form
           onSubmit={handleAdd}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 10,
-            padding: "14px",
-            borderRadius: "var(--r-sm)",
-            border: "1px solid var(--border)",
-            background: "var(--bg-elevated)",
-          }}>
+          className="flex flex-col gap-2.5 p-3.5 rounded-sm border border-gray-300 bg-gray-50">
           <GlobalError errors={errors} />
 
           {/* Société */}
           <div>
-            <span style={labelCls}>Société *</span>
+            <span className="block text-xs font-semibold text-gray-500 mb-1.5">
+              Société *
+            </span>
             <Select
               value={form.societe}
               onValueChange={(v) => setForm({ ...form, societe: v })}>
@@ -408,7 +336,9 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
 
           {/* Site */}
           <div>
-            <span style={labelCls}>Site *</span>
+            <span className="block text-xs font-semibold text-gray-500 mb-1.5">
+              Site *
+            </span>
             <Select
               value={form.site}
               onValueChange={(v) => setForm({ ...form, site: v })}
@@ -437,9 +367,9 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
 
           {/* Secteur */}
           <div>
-            <span style={labelCls}>
+            <span className="block text-xs font-semibold text-gray-500 mb-1.5">
               Secteur{" "}
-              <span style={{ fontWeight: 400, opacity: 0.7 }}>(optionnel)</span>
+              <span className="font-normal opacity-70">(optionnel)</span>
             </span>
             <Select
               value={form.secteur}
@@ -467,34 +397,23 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
 
           {/* Unités (multiples) */}
           <div>
-            <span style={labelCls}>
-              Unités <span style={{ fontWeight: 400, opacity: 0.7 }}>(optionnel)</span>
+            <span className="block text-xs font-semibold text-gray-500 mb-1.5">
+              Unités <span className="font-normal opacity-70">(optionnel)</span>
             </span>
-            <div
-              style={{
-                background: "var(--bg-elevated)",
-                border: "1px solid var(--border)",
-                borderRadius: "var(--r-sm)",
-                padding: "10px",
-                maxHeight: "150px",
-                overflowY: "auto",
-                display: "flex",
-                flexDirection: "column",
-                gap: "8px",
-              }}>
+            <div className="bg-gray-50 border border-gray-300 rounded-sm p-2.5 max-h-36 overflow-y-auto flex flex-col gap-2">
               {!form.secteur ? (
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                <span className="text-xs text-gray-500">
                   Sélectionnez d'abord un secteur
                 </span>
               ) : unites.length === 0 ? (
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                <span className="text-xs text-gray-500">
                   Aucune unité pour ce secteur
                 </span>
               ) : (
                 unites.map((u) => {
                   const checked = form.unites.includes(u.id);
                   return (
-                    <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <div key={u.id} className="flex items-center gap-1.5">
                       <Checkbox
                         id={`unite-mgr-${u.id}`}
                         checked={checked}
@@ -507,7 +426,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
                           }));
                         }}
                       />
-                      <Label htmlFor={`unite-mgr-${u.id}`} style={{ fontSize: 13 }}>
+                      <Label htmlFor={`unite-mgr-${u.id}`} className="text-xs">
                         {u.libelle}
                       </Label>
                     </div>
@@ -519,13 +438,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
           </div>
 
           {/* Principale */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              paddingTop: 2,
-            }}>
+          <div className="flex items-center gap-2 pt-0.5">
             <Checkbox
               id="estPrincipale"
               checked={form.estPrincipale}
@@ -538,19 +451,15 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
           <FieldError errors={errors} field="estPrincipale" />
 
           {/* Actions */}
-          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+          <div className="flex gap-2 mt-1">
             <Button
               type="submit"
               disabled={!form.societe || !form.site || saving}
               variant="custom"
-              style={{ flex: 1 }}>
+              className="flex-1">
               {saving ? (
                 <>
-                  <Loader2
-                    size={13}
-                    style={{ animation: "spin 1s linear infinite" }}
-                  />{" "}
-                  Enregistrement…
+                  <Loader2 size={13} className="animate-spin" /> Enregistrement…
                 </>
               ) : (
                 <>
@@ -562,7 +471,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
               type="button"
               onClick={resetForm}
               variant="customOutline"
-              style={{ flex: 1 }}>
+              className="flex-1">
               Annuler
             </Button>
           </div>
@@ -571,18 +480,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
         <Button
           onClick={() => setShowForm(true)}
           variant="ghost"
-          style={{
-            alignSelf: "flex-start",
-            fontSize: 12,
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            color: "var(--color-primary)",
-            padding: "6px 10px",
-            borderRadius: "var(--r-sm)",
-            border: "1px dashed var(--border)",
-            background: "transparent",
-          }}>
+          className="self-start text-xs flex items-center gap-1.5 text-indigo-600 px-2.5 py-1.5 rounded-sm border border-dashed border-gray-300 bg-transparent hover:bg-gray-50">
           <Plus size={13} /> Ajouter une appartenance
         </Button>
       )}

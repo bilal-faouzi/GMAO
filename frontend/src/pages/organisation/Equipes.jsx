@@ -64,12 +64,12 @@ import { FieldError, GlobalError } from "@/components/FieldError";
 import { useFormErrors } from "@/hooks/useFormErrors";
 import { cn } from "@/lib/utils";
 
-//  RoleBadge 
+//  RoleBadge
 
 function RoleBadge({ role }) {
   const styles = {
-    CHEF: "bg-amber-100 dark:bg-warning/10 text-amber-700 dark:text-warning",
-    MEMBRE: "bg-blue-100 dark:bg-primary-soft text-blue-700 dark:text-primary",
+    CHEF: "bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400",
+    MEMBRE: "bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400",
     REMPLACANT: "bg-gray-100 dark:bg-gray-500/10 text-text-secondary",
   };
   return (
@@ -80,7 +80,7 @@ function RoleBadge({ role }) {
   );
 }
 
-//  MembresPanel 
+//  MembresPanel
 
 function MembresPanel({ equipe, onClose }) {
   const [membres, setMembres] = useState([]);
@@ -334,7 +334,7 @@ function MembresPanel({ equipe, onClose }) {
   );
 }
 
-//  EquipeModal 
+//  EquipeModal
 
 function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
   const [form, setForm] = useState({
@@ -465,7 +465,7 @@ function EquipeModal({ equipe, sites, specialites, onClose, onSaved }) {
   );
 }
 
-//  Page principale 
+//  Page principale
 
 export default function Equipes() {
   const [equipes, setEquipes] = useState([]);

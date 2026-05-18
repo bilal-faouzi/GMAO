@@ -21,9 +21,9 @@ const actionColor = (action) => {
   if (action === "CREATE")
     return "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
   if (action === "UPDATE")
-    return "bg-orange-100 dark:bg-status-orange/10 text-orange-700 dark:text-status-orange";
+    return "bg-orange-100 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400";
   if (action === "DELETE")
-    return "bg-red-100 dark:bg-danger-soft text-red-700 dark:text-danger";
+    return "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400";
   return "bg-surface text-text-secondary";
 };
 
@@ -31,8 +31,8 @@ const moduleColors = [
   "bg-purple-100 dark:bg-primary-soft text-purple-700 dark:text-primary",
   "bg-pink-100 dark:bg-primary-soft text-pink-700 dark:text-primary",
   "bg-indigo-100 dark:bg-primary-soft text-indigo-700 dark:text-primary",
-  "bg-cyan-100 dark:bg-status-cyan/10 text-cyan-700 dark:text-status-cyan",
-  "bg-teal-100 dark:bg-status-cyan/10 text-teal-700 dark:text-status-cyan",
+  "bg-cyan-100 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-400",
+  "bg-teal-100 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400",
 ];
 
 export default function Permissions() {
