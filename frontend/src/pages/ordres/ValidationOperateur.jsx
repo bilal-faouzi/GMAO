@@ -1,11 +1,48 @@
 import { useState, useEffect } from "react";
+import { CheckCircle, XCircle, Wrench, ChevronRight, X } from "lucide-react";
 import { getOTs, validerOT } from "../../services/ordreService";
-import useAuthStore from "../../store/authStore";
-import { motion, AnimatePresence } from "framer-motion";
-import { Wrench, MessageCircle, Package, Clock, User, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const prioriteStyles = {
+  critique: {
+    bg: "bg-red-100 dark:bg-red-500/10",
+    text: "text-red-700 dark:text-red-400",
+    border: "border-red-300 dark:border-red-500/40",
+    dot: "bg-red-500",
+  },
+  haute: {
+    bg: "bg-orange-100 dark:bg-orange-500/10",
+    text: "text-orange-700 dark:text-orange-400",
+    border: "border-orange-300 dark:border-orange-500/40",
+    dot: "bg-orange-500",
+  },
+  normale: {
+    bg: "bg-blue-100 dark:bg-blue-500/10",
+    text: "text-blue-700 dark:text-blue-400",
+    border: "border-blue-300 dark:border-blue-500/40",
+    dot: "bg-blue-500",
+  },
+};
+
+const statutLabel = {
+  CLOTURE: "Clôturé",
+  DEPANNE: "Dépanné",
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ValidationOperateur() {
-  const user = useAuthStore((s) => s.user);
   const [ots, setOTs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null); // { ot, type: 'ok'|'panne' }
@@ -13,20 +50,13 @@ export default function ValidationOperateur() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [erreur, setErreur] = useState("");
-  const [expandedOT, setExpandedOT] = useState(null);
 
   const charger = async () => {
     setLoading(true);
     try {
-      const filters = { isvalide: "false", no_page: "true" };
-      const idUnite = user?.unite_principale?.id;
-      if (idUnite) {
-        filters.idUnite = idUnite;
-      }
-      const res = await getOTs(filters);
+      const res = await getOTs({ isvalide: "false" });
       const data = res.data.results || res.data || [];
       const liste = Array.isArray(data) ? data : [];
-      // Ne garder que les OT clôturés ou dépannés en attente de validation
       const filtres = liste.filter(
         (ot) =>
           ot.isvalide === false &&
@@ -45,15 +75,8 @@ export default function ValidationOperateur() {
   }, []);
 
   const handleConfirmer = async () => {
-    setErreur("");
-
-    // Motif obligatoire pour le rejet
-    if (modal.type === "panne" && !motif.trim()) {
-      setErreur("Veuillez décrire le problème persistant avant de rejeter.");
-      return;
-    }
-
     setSubmitting(true);
+    setErreur("");
     try {
       if (modal.type === "ok") {
         await validerOT(
@@ -61,14 +84,15 @@ export default function ValidationOperateur() {
           true,
           motif || "Intervention validée par opérateur, équipement fonctionnel",
         );
-        setMessage(" Intervention validée. L'équipement est remis en service.");
+        setMessage("Intervention validée. Merci pour votre confirmation.");
       } else {
         await validerOT(
           modal.ot.id,
           false,
-          motif.trim(),
+          motif ||
+            "Problème persistant signalé par opérateur, intervention à reprendre",
         );
-        setMessage(" Signalement enregistré. La demande a été ré-ouverte et le responsable notifié.");
+        setMessage("Signalement enregistré. Le responsable a été notifié.");
       }
       setModal(null);
       setMotif("");
@@ -83,339 +107,296 @@ export default function ValidationOperateur() {
     }
   };
 
-  const formatDate = (d) =>
-    d ? new Date(d).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "—";
-
   return (
-    <div className="page max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold">Validation des interventions</h1>
-        <p className="text-text-secondary text-sm mt-1">
-          Confirmez que l'équipement fonctionne correctement après intervention
-        </p>
+    <div className="p-6 space-y-6 max-w-3xl">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-text">
+            Validation des interventions
+          </h1>
+          <p className="text-text-secondary text-sm mt-1">
+            Confirmez le bon fonctionnement des équipements après intervention
+          </p>
+        </div>
+        {!loading && ots.length > 0 && (
+          <span className="text-xs font-medium px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/40">
+            {ots.length} en attente
+          </span>
+        )}
       </div>
 
+      {/* Toasts */}
       {message && (
-        <div className="bg-success-soft border border-success/40 text-success rounded-xl p-4 mb-6 text-sm flex items-start gap-3">
-          <CheckCircle size={18} className="mt-0.5 shrink-0" />
-          <span className="flex-1">{message}</span>
+        <div className="flex items-center justify-between gap-3 bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-400 rounded-xl px-4 py-3 text-sm">
+          <div className="flex items-center gap-2">
+            <CheckCircle size={15} />
+            <span>{message}</span>
+          </div>
           <button
             onClick={() => setMessage("")}
-            className="text-success hover:text-text shrink-0">
-            
+            className="text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors">
+            <X size={14} />
           </button>
         </div>
       )}
 
-      {erreur && !modal && (
-        <div className="bg-danger-soft border border-danger/40 text-danger rounded-xl p-4 mb-6 text-sm flex items-start gap-3">
-          <AlertTriangle size={18} className="mt-0.5 shrink-0" />
-          <span className="flex-1">{erreur}</span>
+      {erreur && (
+        <div className="flex items-center justify-between gap-3 bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/40 text-red-700 dark:text-red-400 rounded-xl px-4 py-3 text-sm">
+          <div className="flex items-center gap-2">
+            <XCircle size={15} />
+            <span>{erreur}</span>
+          </div>
           <button
             onClick={() => setErreur("")}
-            className="text-danger hover:text-text shrink-0">
-            
+            className="text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors">
+            <X size={14} />
           </button>
         </div>
       )}
 
+      {/* Content */}
       {loading ? (
-        <div className="text-text-secondary text-center py-12">Chargement...</div>
+        <p className="text-center text-text-muted py-16">Chargement...</p>
       ) : ots.length === 0 ? (
-        <div className="bg-surface rounded-2xl border border-border p-12 text-center">
-          <p className="text-5xl mb-4"></p>
-          <p className="text-text font-medium">
+        <div className="bg-surface border border-border rounded-xl p-12 text-center">
+          <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle
+              size={26}
+              className="text-emerald-600 dark:text-emerald-400"
+            />
+          </div>
+          <p className="font-semibold text-text">Tout est à jour</p>
+          <p className="text-text-muted text-sm mt-1">
             Aucune intervention en attente de validation
-          </p>
-          <p className="text-text-muted text-sm mt-2">
-            Les interventions terminées apparaîtront ici pour votre confirmation
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          <p className="text-sm text-warning font-medium flex items-center gap-2">
-            <Clock size={14} />
-            {ots.length} intervention{ots.length > 1 ? "s" : ""} en attente de votre confirmation
-          </p>
+        <div className="space-y-3">
           {ots.map((ot) => {
-            const isExpanded = expandedOT === ot.id;
-            const di = ot.demande_detail;
-            const pieces = ot.pieces_utilisees_detail || [];
-            const commentaires = ot.commentaires_detail || [];
-            const historiques = ot.historiques_statut || [];
-            const dernierStatut = historiques.length > 0 ? historiques[historiques.length - 1] : null;
-
+            const prio = prioriteStyles[ot.priorite] || prioriteStyles.normale;
             return (
-              <motion.div
+              <div
                 key={ot.id}
-                layout
-                className="bg-surface rounded-2xl border border-primary/30 overflow-hidden">
-                {/* Header */}
-                <div className="p-5">
-                  <div className="flex justify-between items-start mb-3">
+                className="bg-surface border border-border rounded-xl p-5 hover:bg-hover transition-colors">
+                {/* Card header */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Wrench
+                        size={17}
+                        className="text-amber-600 dark:text-amber-400"
+                      />
+                    </div>
                     <div>
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="font-mono text-primary font-semibold">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-sm font-semibold text-text">
                           {ot.numero}
                         </span>
-                        <span className="text-xs bg-primary-soft text-primary border border-primary/30 px-2 py-0.5 rounded-full">
-                          En validation
-                        </span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
-                          ot.priorite === "critique"
-                            ? "bg-danger-soft text-danger border-danger/40"
-                            : ot.priorite === "haute"
-                              ? "bg-status-orange/20 text-status-orange border-status-orange/40"
-                              : "bg-primary-soft text-primary border-primary/40"
-                        }`}>
-                          {ot.priorite}
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30 font-medium">
+                          {statutLabel[ot.statut] || ot.statut}
                         </span>
                       </div>
-                      <p className="text-lg font-medium">
+                      <p className="text-sm font-medium text-text mt-0.5">
                         {ot.actif_detail?.libelle}
                       </p>
-                      <p className="text-sm text-text-secondary font-mono">
+                      <p className="text-xs text-text-muted font-mono">
                         {ot.actif_detail?.code}
                       </p>
                     </div>
-                    <button
-                      onClick={() => setExpandedOT(isExpanded ? null : ot.id)}
-                      className="text-text-secondary hover:text-text text-sm underline underline-offset-2">
-                      {isExpanded ? "Réduire" : "Voir le détail complet"}
-                    </button>
                   </div>
 
-                  {/* Résumé compact */}
-                  <div className="bg-elevated/30 rounded-xl p-3 mb-3 space-y-1.5 text-sm">
-                    {di?.titre && (
-                      <p className="text-text font-medium">{di.titre}</p>
-                    )}
-                    {di?.description && (
-                      <p className="text-text-secondary line-clamp-2">{di.description}</p>
-                    )}
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-muted">
-                      {ot.dureeReelleMin && (
-                        <span className="flex items-center gap-1"><Clock size={12} /> {ot.dureeReelleMin} min</span>
-                      )}
-                      {ot.nb_pieces_utilisees > 0 && (
-                        <span className="flex items-center gap-1"><Package size={12} /> {ot.nb_pieces_utilisees} pièce(s)</span>
-                      )}
-                      {ot.nb_commentaires > 0 && (
-                        <span className="flex items-center gap-1"><MessageCircle size={12} /> {ot.nb_commentaires} commentaire(s)</span>
-                      )}
-                      {ot.affectations?.length > 0 && (
-                        <span className="flex items-center gap-1"><User size={12} /> {ot.affectations.map(a => a.equipe_detail?.libelle || a.soustraitant_detail?.raisonSociale).filter(Boolean).join(", ")}</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Détail complet (expandable) */}
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden">
-                        <div className="space-y-4 pt-3 border-t border-border/50">
-                          {/* Description complète DI */}
-                          {di?.description && (
-                            <div>
-                              <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-1.5 flex items-center gap-1">
-                                <AlertTriangle size={10} /> Problème initial signalé
-                              </p>
-                              <div className="bg-[var(--color-bg)]/50 rounded-lg p-3 text-sm text-text border border-border/50">
-                                {di.description}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Travail effectué — historique statut */}
-                          {dernierStatut && (
-                            <div>
-                              <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-1.5 flex items-center gap-1">
-                                <Wrench size={10} /> Dernier compte rendu
-                              </p>
-                              <div className="bg-[var(--color-bg)]/50 rounded-lg p-3 text-sm text-text border border-border/50">
-                                <p className="font-medium text-text">{dernierStatut.nouveauStatut}</p>
-                                {dernierStatut.motif && <p className="text-text-secondary mt-1">{dernierStatut.motif}</p>}
-                                <p className="text-[11px] text-text-muted mt-1">{formatDate(dernierStatut.dateChangement)}</p>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Pièces utilisées */}
-                          {pieces.length > 0 && (
-                            <div>
-                              <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-1.5 flex items-center gap-1">
-                                <Package size={10} /> Pièces utilisées ({pieces.length})
-                              </p>
-                              <div className="space-y-1.5">
-                                {pieces.map((p, i) => (
-                                  <div key={i} className="flex justify-between bg-[var(--color-bg)]/50 rounded-lg px-3 py-2 text-sm border border-border/50">
-                                    <span className="text-text">{p.piece_detail?.reference || p.piece_detail?.libelle || "Pièce"}</span>
-                                    <span className="text-text-muted">× {p.quantite}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Commentaires */}
-                          {commentaires.length > 0 && (
-                            <div>
-                              <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-1.5 flex items-center gap-1">
-                                <MessageCircle size={10} /> Commentaires ({commentaires.length})
-                              </p>
-                              <div className="space-y-2">
-                                {commentaires.map((c, i) => (
-                                  <div key={i} className="bg-[var(--color-bg)]/50 rounded-lg px-3 py-2 text-sm border border-border/50">
-                                    <p className="text-text">{c.commentaire}</p>
-                                    <p className="text-[11px] text-text-muted mt-1">{formatDate(c.dateCreation)}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Affectations */}
-                          {ot.affectations?.length > 0 && (
-                            <div>
-                              <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-1.5 flex items-center gap-1">
-                                <User size={10} /> Intervenant(s)
-                              </p>
-                              <div className="flex flex-wrap gap-2">
-                                {ot.affectations.map((a, i) => (
-                                  <span key={i} className="bg-[var(--color-bg)]/50 rounded-lg px-3 py-1.5 text-sm border border-border/50 text-text">
-                                    {a.equipe_detail?.libelle || a.soustraitant_detail?.raisonSociale || "Intervenant"}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Question à l'opérateur */}
-                  <div className="bg-warning/10 border border-warning/30 rounded-xl p-4 my-4">
-                    <p className="text-warning font-medium text-sm flex items-center gap-2">
-                      <AlertTriangle size={14} />
-                      Avez-vous vérifié que <strong>{ot.actif_detail?.libelle}</strong> fonctionne correctement ?
-                    </p>
-                    <p className="text-warning/70 text-xs mt-1">
-                      Testez l'équipement avant de confirmer. Votre validation est importante pour la traçabilité.
-                    </p>
-                  </div>
-
-                  {/* Boutons validation */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => {
-                        setModal({ ot, type: "ok" });
-                        setMotif("");
-                        setErreur("");
-                      }}
-                      className="py-3 bg-green-600 hover:bg-green-700 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2">
-                      <CheckCircle size={16} />
-                      <span>Machine OK — Valider</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setModal({ ot, type: "panne" });
-                        setMotif("");
-                        setErreur("");
-                      }}
-                      className="py-3 bg-red-600/20 hover:bg-red-600/40 text-danger border border-danger/40 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2">
-                      <XCircle size={16} />
-                      <span>Toujours en panne</span>
-                    </button>
-                  </div>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${prio.bg} ${prio.text} ${prio.border}`}>
+                    {ot.priorite}
+                  </span>
                 </div>
-              </motion.div>
+
+                {/* Intervention details */}
+                <div className="bg-elevated rounded-lg border border-border-subtle p-3.5 mb-4 space-y-2">
+                  <p className="text-[10px] uppercase tracking-widest text-text-muted font-semibold mb-2">
+                    Résumé de l'intervention
+                  </p>
+
+                  {ot.description && (
+                    <Row label="Description" value={ot.description} />
+                  )}
+                  {ot.dureeReelleMin && (
+                    <Row
+                      label="Durée réelle"
+                      value={`${ot.dureeReelleMin} min`}
+                    />
+                  )}
+                  {ot.affectations?.length > 0 && (
+                    <Row
+                      label="Intervenant(s)"
+                      value={ot.affectations
+                        .map(
+                          (a) =>
+                            a.equipe_detail?.libelle ||
+                            a.soustraitant_detail?.raisonSociale,
+                        )
+                        .filter(Boolean)
+                        .join(", ")}
+                    />
+                  )}
+                  {ot.nb_pieces_utilisees > 0 && (
+                    <Row
+                      label="Pièces utilisées"
+                      value={`${ot.nb_pieces_utilisees} pièce(s)`}
+                    />
+                  )}
+                  {ot.typeCloture && (
+                    <Row
+                      label="Type clôture"
+                      value={
+                        ot.typeCloture === "corrige"
+                          ? "Corrigé définitivement"
+                          : "Dépanné temporairement"
+                      }
+                    />
+                  )}
+                </div>
+
+                {/* Operator notice */}
+                <div className="bg-blue-50 dark:bg-blue-500/5 border border-blue-200 dark:border-blue-500/20 rounded-lg px-4 py-3 mb-4">
+                  <p className="text-blue-700 dark:text-blue-400 text-xs font-medium">
+                    Veuillez tester <strong>{ot.actif_detail?.libelle}</strong>{" "}
+                    avant de confirmer. Votre validation est requise pour la
+                    traçabilité.
+                  </p>
+                </div>
+
+                {/* Actions */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    onClick={() => {
+                      setModal({ ot, type: "ok" });
+                      setMotif("");
+                    }}
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold
+                      bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400
+                      border border-emerald-300 dark:border-emerald-500/40
+                      hover:bg-emerald-200 dark:hover:bg-emerald-500/20 transition-colors">
+                    <CheckCircle size={15} />
+                    Équipement OK
+                  </button>
+                  <button
+                    onClick={() => {
+                      setModal({ ot, type: "panne" });
+                      setMotif("");
+                    }}
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold
+                      bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400
+                      border border-red-300 dark:border-red-500/40
+                      hover:bg-red-200 dark:hover:bg-red-500/20 transition-colors">
+                    <XCircle size={15} />
+                    Toujours en panne
+                  </button>
+                </div>
+              </div>
             );
           })}
         </div>
       )}
 
-      {/* Modal confirmation */}
-      <AnimatePresence>
-        {modal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-[var(--color-bg)] rounded-2xl border border-border p-6 w-full max-w-md">
-              <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                {modal.type === "ok" ? (
-                  <><CheckCircle size={20} className="text-success" /> Confirmer la remise en service</>
+      {/* ── Dialog shadcn ── */}
+      <Dialog open={!!modal} onOpenChange={(open) => !open && setModal(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <div
+                className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                  modal?.type === "ok"
+                    ? "bg-emerald-100 dark:bg-emerald-500/10"
+                    : "bg-red-100 dark:bg-red-500/10"
+                }`}>
+                {modal?.type === "ok" ? (
+                  <CheckCircle
+                    size={16}
+                    className="text-emerald-600 dark:text-emerald-400"
+                  />
                 ) : (
-                  <><XCircle size={20} className="text-danger" /> Signaler une panne persistante</>
+                  <XCircle
+                    size={16}
+                    className="text-red-600 dark:text-red-400"
+                  />
                 )}
-              </h2>
-              <p className="text-text-secondary text-sm mb-4">
-                {modal.type === "ok"
-                  ? `L'OT ${modal.ot.numero} sera validé définitivement et l'équipement remis en service.`
-                  : `L'OT ${modal.ot.numero} sera rejeté. La demande d'intervention sera ré-ouverte pour un nouvel ordre de travail.`}
-              </p>
-
-              {modal.type === "panne" && (
-                <div className="bg-danger-soft border border-danger/30 rounded-lg p-3 mb-4 text-xs text-danger">
-                  <strong>Obligatoire :</strong> décrivez le problème persistant observé. Cette information sera transmise au responsable.
-                </div>
-              )}
-
-              <textarea
-                value={motif}
-                onChange={(e) => setMotif(e.target.value)}
-                placeholder={
-                  modal.type === "ok"
-                    ? "Observations (optionnel) — ex: machine testée 10 min, fonctionnement normal"
-                    : "Décrivez le problème persistant — ex: bruit toujours présent au démarrage"
-                }
-                className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none mb-4 resize-none h-24"
-              />
-
-              {erreur && modal && (
-                <div className="bg-danger-soft border border-danger/40 text-danger rounded-lg p-3 mb-4 text-sm flex items-start gap-2">
-                  <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-                  {erreur}
-                </div>
-              )}
-
-              <div className="flex gap-3 justify-end">
-                <button
-                  onClick={() => { setModal(null); setErreur(""); }}
-                  className="px-4 py-2 text-sm bg-elevated hover:bg-active rounded-lg transition text-text">
-                  Annuler
-                </button>
-                <button
-                  onClick={handleConfirmer}
-                  disabled={submitting}
-                  className={`px-4 py-2 text-sm rounded-lg transition text-text disabled:opacity-50 flex items-center gap-2 ${
-                    modal.type === "ok"
-                      ? "bg-green-600 hover:bg-green-700"
-                      : "bg-red-600 hover:bg-red-700"
-                  }`}>
-                  {submitting ? (
-                    <span className="animate-spin"></span>
-                  ) : modal.type === "ok" ? (
-                    <><CheckCircle size={14} /> Confirmer OK</>
-                  ) : (
-                    <><XCircle size={14} /> Signaler panne</>
-                  )}
-                </button>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <div>
+                <DialogTitle className="text-sm font-semibold leading-tight">
+                  {modal?.type === "ok"
+                    ? "Confirmer la remise en service"
+                    : "Signaler une panne persistante"}
+                </DialogTitle>
+                <p className="text-xs text-text-muted font-mono mt-0.5">
+                  {modal?.ot?.numero}
+                </p>
+              </div>
+            </div>
+            <DialogDescription className="text-xs">
+              {modal?.type === "ok"
+                ? `L'OT ${modal?.ot?.numero} sera clôturé définitivement après confirmation.`
+                : `L'OT ${modal?.ot?.numero} sera renvoyé en intervention et le responsable notifié.`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-1.5 py-1">
+            <Label className="text-xs font-medium">
+              {modal?.type === "ok"
+                ? "Observations (optionnel)"
+                : "Description du problème"}
+            </Label>
+            <textarea
+              value={motif}
+              onChange={(e) => setMotif(e.target.value)}
+              placeholder={
+                modal?.type === "ok"
+                  ? "Ex : machine testée 10 min, fonctionnement normal"
+                  : "Ex : bruit toujours présent au démarrage"
+              }
+              rows={3}
+              className="w-full bg-elevated border border-border text-text placeholder:text-text-muted
+                rounded-lg px-3 py-2 text-sm outline-none resize-none
+                focus:border-blue-400 dark:focus:border-blue-500 transition-colors"
+            />
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="customOutline" onClick={() => setModal(null)}>
+              Annuler
+            </Button>
+            <Button
+              onClick={handleConfirmer}
+              disabled={submitting}
+              className={`flex items-center gap-2 disabled:opacity-50 ${
+                modal?.type === "ok"
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  : "bg-red-600 hover:bg-red-700 text-white"
+              }`}>
+              {!submitting && <ChevronRight size={14} />}
+              {submitting
+                ? "Enregistrement..."
+                : modal?.type === "ok"
+                  ? "Confirmer OK"
+                  : "Signaler la panne"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// ─── Sub-component ─────────────────────────────────────────────────────────────
+
+function Row({ label, value }) {
+  return (
+    <div className="flex gap-3 text-xs">
+      <span className="text-text-muted min-w-[110px] flex-shrink-0">
+        {label}
+      </span>
+      <span className="text-text-secondary">{value}</span>
     </div>
   );
 }

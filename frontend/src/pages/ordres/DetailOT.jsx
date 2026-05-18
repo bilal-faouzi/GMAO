@@ -16,7 +16,7 @@ import { getEquipes } from "../../services/organisationService";
 import useAuthStore from "@/store/authStore";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 
 import {
   Dialog,
@@ -496,23 +496,23 @@ export default function DetailOT() {
           )}
         </div>
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={() => navigate(`/ordres/ots/${id}/rapport`)}
             className="btn btn-primary flex items-center gap-1.5">
             <MessageSquare size={16} /> Compte rendu
-          </button>
+          </Button>
           {!estVerrouille && (
             <>
-              <button
+              <Button
                 onClick={() => setModalDepanne(true)}
-                className="btn btn-warning">
+                className="btn btn-warning bg-orange-500">
                 Dépanné
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => setModalCloture(true)}
-                className="btn btn-success">
+                className="btn btn-success bg-green-600">
                 Clôturer
-              </button>
+              </Button>
             </>
           )}
         </div>
@@ -722,12 +722,12 @@ export default function DetailOT() {
           <p className="text-sm text-text-muted mb-3">
             Aucun compte rendu n'a été rédigé pour cet OT.
           </p>
-          <button
+          <Button
             onClick={() => navigate(`/ordres/ots/${id}/rapport`)}
             className="btn btn-outline flex items-center gap-1.5"
             style={{ fontSize: "12px", padding: "5px 10px" }}>
             <MessageSquare size={12} /> Rédiger le compte rendu
-          </button>
+          </Button>
         </div>
       )}
 
@@ -797,10 +797,10 @@ export default function DetailOT() {
           <TabsContent value="affectations" className="p-5">
             <div className="space-y-3">
               {!estVerrouille && (
-                <div className="flex justify-end">
+                <div className="flex justify-center">
                   <button
                     onClick={() => openAffectationModal()}
-                    className="btn btn-outline flex items-center gap-1.5"
+                    className="btn btn-outline  gap-1.5"
                     style={{ fontSize: "12px", padding: "5px 10px" }}>
                     <Plus size={14} /> Affecter une équipe
                   </button>
@@ -848,16 +848,16 @@ export default function DetailOT() {
                         </span>
                         {!estVerrouille && (
                           <div className="flex gap-1">
-                            <button
+                            <Button
                               onClick={() => openAffectationModal(a)}
                               className="text-[10px] px-2 py-0.5 rounded bg-primary-soft text-primary border border-primary/20 hover:bg-primary/20 transition">
                               Modifier
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               onClick={() => handleDeleteAffectation(a.id)}
                               className="text-[10px] px-2 py-0.5 rounded bg-danger-soft text-danger border border-danger/20 hover:bg-danger/20 transition">
                               Supprimer
-                            </button>
+                            </Button>
                           </div>
                         )}
                       </div>
@@ -1121,20 +1121,20 @@ export default function DetailOT() {
             </div>
           </div>
           <DialogFooter className="gap-2 mt-2">
-            <button
+            <Button
               onClick={() => {
                 setModalDepanne(false);
                 setMotifDepanne("");
               }}
               className="px-4 py-2 text-sm bg-hover hover:bg-active rounded-lg transition text-text">
               Annuler
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleDepanner}
               disabled={loadingDepanne}
-              className="btn btn-warning">
+              className="btn btn-warning bg-orange-500">
               {loadingDepanne ? "Enregistrement…" : "Confirmer le dépannage"}
-            </button>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1153,30 +1153,6 @@ export default function DetailOT() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <label className="text-xs text-text-muted mb-1.5 block">
-                Type de clôture
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { value: "corrige", label: "Corrigé", icon: CheckCircle },
-                  { value: "depanne", label: "Dépanné", icon: Wrench },
-                  { value: "annule", label: "Annulé", icon: X },
-                ].map(({ value, label, icon: BtnIcon }) => (
-                  <button
-                    key={value}
-                    onClick={() => setTypeCloture(value)}
-                    className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg border text-xs font-medium transition ${
-                      typeCloture === value
-                        ? "border-success bg-success-soft text-success"
-                        : "border-border bg-surface text-text-muted hover:border-border-strong"
-                    }`}>
-                    <BtnIcon size={16} />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
               <label className="text-xs font-medium mb-1.5 block">
                 Rapport de clôture{" "}
                 <span className="text-text-muted font-normal">(optionnel)</span>
@@ -1191,21 +1167,21 @@ export default function DetailOT() {
             </div>
           </div>
           <DialogFooter className="gap-2 mt-2">
-            <button
+            <Button
               onClick={() => {
                 setModalCloture(false);
                 setMotifCloture("");
                 setTypeCloture("corrige");
               }}
-              className="px-4 py-2 text-sm bg-hover hover:bg-active rounded-lg transition text-text">
+              className="px-4 py-2 text-sm bg-hover hover:bg-active rounded-md transition text-text">
               Annuler
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleCloturer}
               disabled={loadingCloture}
-              className="btn btn-success">
+              className="btn btn-success bg-green-600">
               {loadingCloture ? "Clôture en cours…" : "Clôturer définitivement"}
-            </button>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1349,20 +1325,20 @@ export default function DetailOT() {
             )}
           </div>
           <DialogFooter className="gap-2 mt-2">
-            <button
+            <Button
               onClick={closeAffectationModal}
               className="px-4 py-2 text-sm bg-hover hover:bg-active rounded-lg transition text-text">
               Annuler
-            </button>
+            </Button>
             {editingAffectation ? (
-              <button
+              <Button
                 onClick={handleUpdateAffectation}
                 disabled={loadingAffectation || selectedMembres.length === 0}
                 className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg transition text-white font-medium">
                 {loadingAffectation ? "Enregistrement…" : "Enregistrer"}
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
                 onClick={handleAffecter}
                 disabled={
                   loadingAffectation ||
@@ -1371,7 +1347,7 @@ export default function DetailOT() {
                 }
                 className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg transition text-white font-medium">
                 {loadingAffectation ? "Affectation en cours…" : "Affecter"}
-              </button>
+              </Button>
             )}
           </DialogFooter>
         </DialogContent>
