@@ -15,6 +15,9 @@ import { getJournalAuditv2 } from "../../services/securiteService";
 import { getEquipes } from "../../services/organisationService";
 import useAuthStore from "@/store/authStore";
 
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+
 import {
   Dialog,
   DialogContent,
@@ -33,13 +36,13 @@ import {
   X,
   Package,
   Clock,
-  ArrowLeft, // FIX 1a : import manquant
-  ChevronRight, // FIX 1b : import manquant
+  ArrowLeft,
+  ChevronRight,
+  Send,
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// FIX 2 : stripEmojis défini au niveau module (était dans un IIFE, inaccessible depuis l'onglet commentaires)
 const stripEmojis = (str) =>
   str?.replace(
     /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu,
@@ -228,6 +231,11 @@ const STATUT = {
   },
 };
 
+// ─── Empty State helper ────────────────────────────────────────────────────────
+function EmptyState({ message }) {
+  return <p className="text-text-muted text-sm text-center py-8">{message}</p>;
+}
+
 // ─── Composant principal ──────────────────────────────────────────────────────
 export default function DetailOT() {
   const { id } = useParams();
@@ -239,9 +247,6 @@ export default function DetailOT() {
   const [historique, setHistorique] = useState([]);
   const [audit, setAudit] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // FIX 3 : state onglet manquant
-  const [onglet, setOnglet] = useState("affectations");
 
   // Dialog Dépanné
   const [modalDepanne, setModalDepanne] = useState(false);
@@ -710,7 +715,6 @@ export default function DetailOT() {
           </div>
         </div>
       ) : (
-        // FIX 4 : </Button> → </button> + <Button> → <button>
         <div className="bg-surface rounded-xl p-5 border border-border shadow-card mb-6">
           <h2 className="text-xs text-text-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-2">
             <MessageSquare size={14} /> Compte rendu d'intervention
@@ -758,35 +762,39 @@ export default function DetailOT() {
         </div>
       )}
 
-      {/* ===== Onglets ===== */}
-      {/* FIX 5 : Tabs/TabsList/TabsContent supprimés → <div> natifs cohérents */}
+      {/* ===== Onglets (shadcn Tabs) ===== */}
       <div className="bg-surface rounded-xl border border-border shadow-card overflow-hidden">
-        {/* Barre d'onglets */}
-        <div className="flex border-b border-border overflow-x-auto">
-          {[
-            ["affectations", `Affectations (${ot.affectations?.length || 0})`],
-            ["pieces", `Pièces (${ot.nb_pieces_utilisees || 0})`],
-            ["commentaires", `Commentaires (${vraisCommentaires.length})`],
-            ["historique", `Historique (${historique.length})`],
-            ["audit", `Audit (${audit.length})`],
-          ].map(([k, l]) => (
-            <button
-              key={k}
-              onClick={() => setOnglet(k)}
-              className={`py-3 px-4 text-sm font-medium transition border-b-2 -mb-px whitespace-nowrap ${
-                onglet === k
-                  ? "text-primary border-primary"
-                  : "text-text-muted border-transparent hover:text-text"
-              }`}>
-              {l}
-            </button>
-          ))}
-        </div>
+        <Tabs defaultValue="affectations">
+          <TabsList className="w-full justify-start rounded-none border-b border-border bg-transparent h-auto p-0 gap-0 overflow-x-auto">
+            <TabsTrigger
+              value="affectations"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent text-text-muted px-4 py-3 text-sm font-medium transition-colors hover:text-text whitespace-nowrap">
+              Affectations ({ot.affectations?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger
+              value="pieces"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent text-text-muted px-4 py-3 text-sm font-medium transition-colors hover:text-text whitespace-nowrap">
+              Pièces ({ot.nb_pieces_utilisees || 0})
+            </TabsTrigger>
+            <TabsTrigger
+              value="commentaires"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent text-text-muted px-4 py-3 text-sm font-medium transition-colors hover:text-text whitespace-nowrap">
+              Commentaires ({vraisCommentaires.length})
+            </TabsTrigger>
+            <TabsTrigger
+              value="historique"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent text-text-muted px-4 py-3 text-sm font-medium transition-colors hover:text-text whitespace-nowrap">
+              Historique ({historique.length})
+            </TabsTrigger>
+            <TabsTrigger
+              value="audit"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent text-text-muted px-4 py-3 text-sm font-medium transition-colors hover:text-text whitespace-nowrap">
+              Audit ({audit.length})
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Contenu des onglets */}
-        <div className="p-5">
           {/* ── Affectations ── */}
-          {onglet === "affectations" && (
+          <TabsContent value="affectations" className="p-5">
             <div className="space-y-3">
               {!estVerrouille && (
                 <div className="flex justify-end">
@@ -799,9 +807,7 @@ export default function DetailOT() {
                 </div>
               )}
               {ot.affectations?.length === 0 ? (
-                <p className="text-text-muted text-sm text-center py-8">
-                  Aucune affectation
-                </p>
+                <EmptyState message="Aucune affectation" />
               ) : (
                 ot.affectations?.map((a) => (
                   <div
@@ -891,147 +897,146 @@ export default function DetailOT() {
                 ))
               )}
             </div>
-          )}
+          </TabsContent>
 
           {/* ── Pièces ── */}
-          {onglet === "pieces" && (
-            <div>
-              {ot.pieces_utilisees_detail?.length === 0 ? (
-                <p className="text-text-muted text-sm text-center py-8">
-                  Aucune pièce utilisée
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-text-muted border-b border-border">
-                        <th className="pb-2 font-medium">Référence</th>
-                        <th className="pb-2 font-medium">Désignation</th>
-                        <th className="pb-2 font-medium text-right">
-                          Quantité
-                        </th>
-                        <th className="pb-2 font-medium">
-                          Technicien bénéficiaire
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {ot.pieces_utilisees_detail?.map((p) => (
-                        <tr key={p.id} className="hover:bg-hover/30 transition">
-                          <td className="py-2.5 font-mono text-primary text-xs">
-                            {p.piece_detail?.reference}
-                          </td>
-                          <td className="py-2.5 text-text">
-                            {p.piece_detail?.designation}
-                          </td>
-                          <td className="py-2.5 text-right font-semibold text-text">
-                            {p.quantite}{" "}
-                            <span className="text-text-muted font-normal text-xs">
-                              {p.idPiece_unite || "pc"}
-                            </span>
-                          </td>
-                          <td className="py-2.5">
-                            {p.technicien_detail ? (
-                              <span className="inline-flex items-center gap-1.5 text-xs">
-                                <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[9px] font-bold border border-primary/20">
-                                  {`${p.technicien_detail.prenom?.[0] || ""}${p.technicien_detail.nom?.[0] || ""}`.toUpperCase()}
-                                </span>
-                                {p.technicien_detail.nom_complet}
+          <TabsContent value="pieces" className="p-5">
+            {ot.pieces_utilisees_detail?.length === 0 ? (
+              <EmptyState message="Aucune pièce utilisée" />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-text-muted border-b border-border">
+                      <th className="pb-2 font-medium">Référence</th>
+                      <th className="pb-2 font-medium">Désignation</th>
+                      <th className="pb-2 font-medium text-right">Quantité</th>
+                      <th className="pb-2 font-medium">
+                        Technicien bénéficiaire
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {ot.pieces_utilisees_detail?.map((p) => (
+                      <tr key={p.id} className="hover:bg-hover/30 transition">
+                        <td className="py-2.5 font-mono text-primary text-xs">
+                          {p.piece_detail?.reference}
+                        </td>
+                        <td className="py-2.5 text-text">
+                          {p.piece_detail?.designation}
+                        </td>
+                        <td className="py-2.5 text-right font-semibold text-text">
+                          {p.quantite}{" "}
+                          <span className="text-text-muted font-normal text-xs">
+                            {p.idPiece_unite || "pc"}
+                          </span>
+                        </td>
+                        <td className="py-2.5">
+                          {p.technicien_detail ? (
+                            <span className="inline-flex items-center gap-1.5 text-xs">
+                              <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[9px] font-bold border border-primary/20">
+                                {`${p.technicien_detail.prenom?.[0] || ""}${p.technicien_detail.nom?.[0] || ""}`.toUpperCase()}
                               </span>
-                            ) : (
-                              <span className="text-text-muted text-xs">—</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <div className="mt-3 pt-3 border-t border-border">
-                    <p className="text-xs text-text-muted flex items-center gap-1.5">
-                      <Package size={12} /> {ot.nb_pieces_utilisees} pièce(s)
-                      utilisée(s)
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── Commentaires ── */}
-          {onglet === "commentaires" && (
-            <div>
-              <div className="space-y-3 mb-4">
-                {vraisCommentaires.length === 0 ? (
-                  <p className="text-text-muted text-sm text-center py-4">
-                    Aucun commentaire
+                              {p.technicien_detail.nom_complet}
+                            </span>
+                          ) : (
+                            <span className="text-text-muted text-xs">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="mt-3 pt-3 border-t border-border">
+                  <p className="text-xs text-text-muted flex items-center gap-1.5">
+                    <Package size={12} /> {ot.nb_pieces_utilisees} pièce(s)
+                    utilisée(s)
                   </p>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* ── Commentaires (style bulles) ── */}
+          <TabsContent value="commentaires" className="mt-3">
+            <div className="bg-surface border border-border rounded-xl p-4 space-y-4 mx-5 mb-5">
+              {/* Liste */}
+              <div className="flex flex-col gap-3">
+                {vraisCommentaires.length === 0 ? (
+                  <EmptyState message="Aucun commentaire" />
                 ) : (
-                  vraisCommentaires.map((c) => (
-                    <div
-                      key={c.id}
-                      className={`rounded-xl p-4 border ${c.estInterne ? "bg-warning-soft border-warning/20" : "bg-elevated border-border-subtle"}`}>
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold border border-primary/20 shrink-0">
-                            {c.utilisateur_detail
-                              ? `${c.utilisateur_detail.prenom?.[0] || ""}${c.utilisateur_detail.nom?.[0] || ""}`.toUpperCase()
-                              : "?"}
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold text-text">
-                              {c.utilisateur_detail
-                                ? `${c.utilisateur_detail.prenom} ${c.utilisateur_detail.nom}`
-                                : "Utilisateur"}
-                              {c.estInterne && (
-                                <span className="ml-2 text-warning text-[10px]">
-                                  [Interne]
-                                </span>
-                              )}
-                            </p>
-                            <p className="text-[10px] text-text-muted">
-                              {new Date(c.dateCreation).toLocaleString("fr-FR")}
-                            </p>
-                          </div>
+                  vraisCommentaires.map((c) => {
+                    const isOwn = c.idUtilisateur == user.user?.id;
+                    return (
+                      <div
+                        key={c.id}
+                        className={`flex flex-col gap-1 ${isOwn ? "items-start" : "items-end"}`}>
+                        {/* Nom + heure */}
+                        <div
+                          className={`flex items-center gap-2 px-1 ${isOwn ? "flex-row" : "flex-row-reverse"}`}>
+                          <span className="text-[11px] font-medium text-text-muted">
+                            {isOwn
+                              ? "Vous"
+                              : `${c.utilisateur_detail?.prenom} ${c.utilisateur_detail?.nom}`}
+                          </span>
+                          <span className="text-[10px] text-text-muted">
+                            {new Date(c.dateCreation).toLocaleString("fr-FR")}
+                          </span>
+                          {c.estInterne && (
+                            <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 px-1.5 py-0 rounded">
+                              Interne
+                            </span>
+                          )}
                         </div>
+                        {/* Bulle */}
+                        {isOwn ? (
+                          <div className="max-w-[75%] px-4 py-2.5 text-sm leading-relaxed rounded-2xl rounded-tl-sm border bg-blue-600 text-white border-blue-700">
+                            {stripEmojis(c.commentaire)}
+                          </div>
+                        ) : (
+                          <div className="max-w-[75%] px-4 py-2.5 text-sm leading-relaxed rounded-2xl rounded-tr-sm border bg-elevated text-text border-border-subtle">
+                            {stripEmojis(c.commentaire)}
+                          </div>
+                        )}
                       </div>
-                      <p className="text-sm text-text-secondary whitespace-pre-wrap">
-                        {stripEmojis(c.commentaire)}
-                      </p>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
-              <form onSubmit={handleCommentaire} className="flex gap-2">
+              {/* Formulaire */}
+              <form
+                onSubmit={handleCommentaire}
+                className="flex items-center gap-2 pt-2 border-t border-border">
                 <input
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Ajouter un commentaire…"
-                  className="flex-1 bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-primary"
+                  className="flex-1 bg-elevated border border-border text-text placeholder:text-text-muted rounded-full px-4 py-2 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors"
                 />
-                <label className="flex items-center gap-1 text-xs text-text-muted cursor-pointer shrink-0">
+                <label className="flex items-center gap-1.5 text-xs text-text-muted cursor-pointer whitespace-nowrap">
                   <input
                     type="checkbox"
                     checked={estInterne}
                     onChange={(e) => setEstInterne(e.target.checked)}
-                    className="accent-warning"
+                    className="accent-amber-500 w-3.5 h-3.5"
                   />
                   Interne
                 </label>
-                <button
+                <Button
                   type="submit"
-                  className="btn btn-primary px-3 py-2 text-sm">
+                  size="sm"
+                  className="gap-1.5 rounded-full">
+                  <Send size={13} />
                   Envoyer
-                </button>
+                </Button>
               </form>
             </div>
-          )}
+          </TabsContent>
 
           {/* ── Historique ── */}
-          {onglet === "historique" &&
-            (historique.length === 0 ? (
-              <p className="text-text-muted text-sm text-center py-8">
-                Aucun historique
-              </p>
+          <TabsContent value="historique" className="p-5">
+            {historique.length === 0 ? (
+              <EmptyState message="Aucun historique" />
             ) : (
               <div className="space-y-2">
                 {historique.map((h) => (
@@ -1066,14 +1071,13 @@ export default function DetailOT() {
                   </div>
                 ))}
               </div>
-            ))}
+            )}
+          </TabsContent>
 
           {/* ── Audit ── */}
-          {onglet === "audit" &&
-            (audit.length === 0 ? (
-              <p className="text-text-muted text-sm text-center py-8">
-                Aucune entrée d'audit pour cet OT
-              </p>
+          <TabsContent value="audit" className="p-5">
+            {audit.length === 0 ? (
+              <EmptyState message="Aucune entrée d'audit pour cet OT" />
             ) : (
               <div className="space-y-0 pt-1">
                 {audit.map((entry, idx) => (
@@ -1084,11 +1088,10 @@ export default function DetailOT() {
                   />
                 ))}
               </div>
-            ))}
-        </div>
-        {/* fin p-5 */}
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
-      {/* fin bg-surface onglets */}
 
       {/* ===== Dialog Dépanné ===== */}
       <Dialog open={modalDepanne} onOpenChange={setModalDepanne}>
@@ -1117,7 +1120,6 @@ export default function DetailOT() {
               />
             </div>
           </div>
-          {/* FIX 4 : balises button cohérentes dans tous les DialogFooter */}
           <DialogFooter className="gap-2 mt-2">
             <button
               onClick={() => {
@@ -1376,5 +1378,4 @@ export default function DetailOT() {
       </Dialog>
     </div>
   );
-  s;
 }
