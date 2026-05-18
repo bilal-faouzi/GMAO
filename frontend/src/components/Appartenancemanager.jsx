@@ -221,11 +221,11 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
               key={a.id}
               className={`flex items-center justify-between px-3 py-2.5 rounded-sm border ${
                 a.estPrincipale
-                  ? "bg-indigo-50 border-indigo-100"
-                  : "bg-gray-50 border-gray-200"
+                  ? "bg-surface border-primary"
+                  : "bg-gray-500 border-gray-400"
               }`}>
               {/* Cascade labels */}
-              <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
+              <div className="flex  items-center gap-1.5 flex-wrap flex-1 min-w-0">
                 {a.estPrincipale && (
                   <span className="badge bg-amber-100 text-amber-900 dark:text-amber-400  dark:bg-amber-500/10 text-xs flex-shrink-0 px-2 py-1 rounded inline-flex items-center gap-1">
                     <Star size={9} style={{ fill: "currentColor" }} />{" "}
@@ -246,8 +246,8 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
                       <span
                         className={`text-xs ${
                           i === 0
-                            ? "font-semibold text-gray-900"
-                            : "font-normal text-gray-700"
+                            ? "font-semibold text-gray-600"
+                            : "font-normal text-gray-400"
                         }`}>
                         {label}
                       </span>
@@ -307,7 +307,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
       {showForm ? (
         <form
           onSubmit={handleAdd}
-          className="flex flex-col gap-2.5 p-3.5 rounded-sm border border-gray-300 bg-gray-50">
+          className="flex flex-col gap-2.5 p-3.5 rounded-sm border border-gray-300 bg-gray-50 dark:bg-surface dark:border-gray-700">
           <GlobalError errors={errors} />
 
           {/* Société */}
@@ -400,7 +400,7 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
             <span className="block text-xs font-semibold text-gray-500 mb-1.5">
               Unités <span className="font-normal opacity-70">(optionnel)</span>
             </span>
-            <div className="bg-gray-50 border border-gray-300 rounded-sm p-2.5 max-h-36 overflow-y-auto flex flex-col gap-2">
+            <div className="bg-gray-50 border border-gray-300 rounded-sm p-2.5 max-h-36 overflow-y-auto flex flex-col gap-2 dark:bg-surface dark:border-gray-700">
               {!form.secteur ? (
                 <span className="text-xs text-gray-500">
                   Sélectionnez d'abord un secteur
@@ -413,7 +413,9 @@ export function AppartenanceManager({ userId, onAppartenanceChange }) {
                 unites.map((u) => {
                   const checked = form.unites.includes(u.id);
                   return (
-                    <div key={u.id} className="flex items-center gap-1.5">
+                    <div
+                      key={u.id}
+                      className="flex items-center gap-1.5 dark:bg-surface">
                       <Checkbox
                         id={`unite-mgr-${u.id}`}
                         checked={checked}

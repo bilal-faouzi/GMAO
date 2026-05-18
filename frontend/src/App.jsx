@@ -74,72 +74,422 @@ export default function App() {
             <Route path="login" element={<Login />} />
             <Route path="/" element={<Layout />}>
               <Route index element={<DefaultRedirect />} />
-              <Route path="dashboard" element={<ProtectedRoute requiredInterface="DASHBOARD"><Dashboard /></ProtectedRoute>} />
-              <Route path="utilisateurs" element={<ProtectedRoute requiredInterface="SEC_UTILISATEURS"><Utilisateurs /></ProtectedRoute>} />
-              <Route path="utilisateurs/:id" element={<ProtectedRoute requiredInterface="SEC_UTILISATEURS"><UserDetail /></ProtectedRoute>} />
-              <Route path="roles" element={<ProtectedRoute requiredInterface="SEC_ROLES"><Roles /></ProtectedRoute>} />
-              <Route path="permissions" element={<ProtectedRoute requiredInterface="SEC_PERMISSIONS"><Permissions /></ProtectedRoute>} />
-              <Route path="sessions" element={<ProtectedRoute requiredInterface="SEC_SESSIONS"><Sessions /></ProtectedRoute>} />
-              <Route path="journal-audit" element={<ProtectedRoute requiredInterface="SEC_JOURNAL_AUDIT"><JournalAudit /></ProtectedRoute>} />
-              <Route path="organisation" element={<ProtectedRoute requiredInterface="ORGANISATION"><Organisation /></ProtectedRoute>} />
-              <Route path="societes" element={<ProtectedRoute requiredInterface="ORG_SOCIETES"><Societes /></ProtectedRoute>} />
-              <Route path="sites" element={<ProtectedRoute requiredInterface="ORG_SITES"><Sites /></ProtectedRoute>} />
-              <Route path="secteurs" element={<ProtectedRoute requiredInterface="ORG_SECTEURS"><Secteurs /></ProtectedRoute>} />
-              <Route path="unites" element={<ProtectedRoute requiredInterface="ORG_UNITES"><Unites /></ProtectedRoute>} />
-              <Route path="specialites" element={<ProtectedRoute requiredInterface="ORG_SPECIALITES"><Specialites /></ProtectedRoute>} />
-              <Route path="equipes" element={<ProtectedRoute requiredInterface="ORG_EQUIPES"><Equipes /></ProtectedRoute>} />
-              <Route path="appartenances" element={<ProtectedRoute requiredInterface="ORG_APPARTENANCES"><Appartenances /></ProtectedRoute>} />
+              <Route
+                path="dashboard"
+                element={
+                  <ProtectedRoute requiredInterface="DASHBOARD">
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="utilisateurs"
+                element={
+                  <ProtectedRoute requiredInterface="SEC_UTILISATEURS">
+                    <Utilisateurs />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="utilisateurs/:id"
+                element={
+                  <ProtectedRoute requiredInterface="SEC_UTILISATEURS">
+                    <UserDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="roles"
+                element={
+                  <ProtectedRoute requiredInterface="SEC_ROLES">
+                    <Roles />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="permissions"
+                element={
+                  <ProtectedRoute requiredInterface="SEC_PERMISSIONS">
+                    <Permissions />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="sessions"
+                element={
+                  <ProtectedRoute requiredInterface="SEC_SESSIONS">
+                    <Sessions />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="journal-audit"
+                element={
+                  <ProtectedRoute requiredInterface="SEC_JOURNAL_AUDIT">
+                    <JournalAudit />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="organisation"
+                element={
+                  <ProtectedRoute requiredInterface="ORGANISATION">
+                    <Organisation />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="societes"
+                element={
+                  <ProtectedRoute requiredInterface="ORG_SOCIETES">
+                    <Societes />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="sites"
+                element={
+                  <ProtectedRoute requiredInterface="ORG_SITES">
+                    <Sites />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="secteurs"
+                element={
+                  <ProtectedRoute requiredInterface="ORG_SECTEURS">
+                    <Secteurs />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="unites"
+                element={
+                  <ProtectedRoute requiredInterface="ORG_UNITES">
+                    <Unites />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="specialites"
+                element={
+                  <ProtectedRoute requiredInterface="ORG_SPECIALITES">
+                    <Specialites />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="equipes"
+                element={
+                  <ProtectedRoute requiredInterface="ORG_EQUIPES">
+                    <Equipes />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="appartenances"
+                element={
+                  <ProtectedRoute requiredInterface="ORG_APPARTENANCES">
+                    <Appartenances />
+                  </ProtectedRoute>
+                }
+              />
 
               {/*  Routes statiques AVANT :id  */}
-              <Route path="actifs" element={<ProtectedRoute requiredInterface="ACTIFS_LISTE"><ListeActifs /></ProtectedRoute>} />
-              <Route path="actifs/dashboard" element={<ProtectedRoute requiredInterface="ACTIFS_DASHBOARD"><DashboardActifs /></ProtectedRoute>} />
-              <Route path="actifs/nouveau" element={<ProtectedRoute requiredInterface="ACTIFS_LISTE"><FormulaireActif /></ProtectedRoute>} />
-              <Route path="actifs/arborescence" element={<ProtectedRoute requiredInterface="ACTIFS_ARBORESCENCE"><ArborescenceActifs /></ProtectedRoute>} />
-              <Route path="actifs-racines" element={<ProtectedRoute requiredInterface="ACTIFS_RACINES"><ActifsRacines /></ProtectedRoute>} />
-              <Route path="actifs/unite" element={<ProtectedRoute requiredInterface="ACTIFS_UNITE"><ActifUnite /></ProtectedRoute>} />
+              <Route
+                path="actifs"
+                element={
+                  <ProtectedRoute requiredInterface="ACTIFS_LISTE">
+                    <ListeActifs />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="actifs/dashboard"
+                element={
+                  <ProtectedRoute requiredInterface="ACTIFS_DASHBOARD">
+                    <DashboardActifs />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="actifs/nouveau"
+                element={
+                  <ProtectedRoute requiredInterface="ACTIFS_LISTE">
+                    <FormulaireActif />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="actifs/arborescence"
+                element={
+                  <ProtectedRoute requiredInterface="ACTIFS_ARBORESCENCE">
+                    <ArborescenceActifs />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="actifs-racines"
+                element={
+                  <ProtectedRoute requiredInterface="ACTIFS_RACINES">
+                    <ActifsRacines />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="actifs/unite"
+                element={
+                  <ProtectedRoute requiredInterface="ACTIFS_UNITE">
+                    <ActifUnite />
+                  </ProtectedRoute>
+                }
+              />
 
               {/*  Routes dynamiques APRÈS  */}
-              <Route path="actifs/:id" element={<ProtectedRoute requiredInterface="ACTIFS_LISTE"><DetailActif /></ProtectedRoute>} />
-              <Route path="actifs/:id/modifier" element={<ProtectedRoute requiredInterface="ACTIFS_LISTE"><FormulaireActif /></ProtectedRoute>} />
-              <Route path="actifs/:id/arborescence" element={<ProtectedRoute requiredInterface="ACTIFS_ARBORESCENCE"><ActifArborescencePage /></ProtectedRoute>} />
-              <Route path="magasin" element={<ProtectedRoute requiredInterface="MAGASIN_CATALOGUE"><CataloguePieces /></ProtectedRoute>} />
-              <Route path="magasin/dashboard" element={<ProtectedRoute requiredInterface="MAGASIN_DASHBOARD"><DashboardMagasin /></ProtectedRoute>} />
-              <Route path="magasin/nouveau" element={<ProtectedRoute requiredInterface="MAGASIN_CATALOGUE"><FormulairePiece /></ProtectedRoute>} />
-              <Route path="magasin/:id" element={<ProtectedRoute requiredInterface="MAGASIN_CATALOGUE"><DetailPiece /></ProtectedRoute>} />
-              <Route path="magasin/:id/modifier" element={<ProtectedRoute requiredInterface="MAGASIN_CATALOGUE"><FormulairePiece /></ProtectedRoute>} />
+              <Route
+                path="actifs/:id"
+                element={
+                  <ProtectedRoute requiredInterface="ACTIFS_LISTE">
+                    <DetailActif />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="actifs/:id/modifier"
+                element={
+                  <ProtectedRoute requiredInterface="ACTIFS_LISTE">
+                    <FormulaireActif />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="actifs/:id/arborescence"
+                element={
+                  <ProtectedRoute requiredInterface="ACTIFS_ARBORESCENCE">
+                    <ActifArborescencePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="magasin"
+                element={
+                  <ProtectedRoute requiredInterface="MAGASIN_CATALOGUE">
+                    <CataloguePieces />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="magasin/dashboard"
+                element={
+                  <ProtectedRoute requiredInterface="MAGASIN_DASHBOARD">
+                    <DashboardMagasin />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="magasin/nouveau"
+                element={
+                  <ProtectedRoute requiredInterface="MAGASIN_CATALOGUE">
+                    <FormulairePiece />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="magasin/:id"
+                element={
+                  <ProtectedRoute requiredInterface="MAGASIN_CATALOGUE">
+                    <DetailPiece />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="magasin/:id/modifier"
+                element={
+                  <ProtectedRoute requiredInterface="MAGASIN_CATALOGUE">
+                    <FormulairePiece />
+                  </ProtectedRoute>
+                }
+              />
 
               {/*  Sous-Traitants — statiques AVANT :id  */}
-              <Route path="soustraitants" element={<ProtectedRoute requiredInterface="SOUS_TRAITANTS_LISTE"><ListeSousTraitants /></ProtectedRoute>} />
-              <Route path="soustraitants/dashboard" element={<ProtectedRoute requiredInterface="SOUS_TRAITANTS_DASHBOARD"><DashboardSousTraitants /></ProtectedRoute>} />
-              <Route path="soustraitants/nouveau" element={<ProtectedRoute requiredInterface="SOUS_TRAITANTS_LISTE"><FormulaireSousTraitant /></ProtectedRoute>} />
+              <Route
+                path="soustraitants"
+                element={
+                  <ProtectedRoute requiredInterface="SOUS_TRAITANTS_LISTE">
+                    <ListeSousTraitants />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="soustraitants/dashboard"
+                element={
+                  <ProtectedRoute requiredInterface="SOUS_TRAITANTS_DASHBOARD">
+                    <DashboardSousTraitants />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="soustraitants/nouveau"
+                element={
+                  <ProtectedRoute requiredInterface="SOUS_TRAITANTS_LISTE">
+                    <FormulaireSousTraitant />
+                  </ProtectedRoute>
+                }
+              />
               {/*  Sous-Traitants — dynamiques APRÈS  */}
-              <Route path="soustraitants/:id" element={<ProtectedRoute requiredInterface="SOUS_TRAITANTS_LISTE"><DetailSousTraitant /></ProtectedRoute>} />
-              <Route path="soustraitants/:id/modifier" element={<ProtectedRoute requiredInterface="SOUS_TRAITANTS_LISTE"><FormulaireSousTraitant /></ProtectedRoute>} />
+              <Route
+                path="soustraitants/:id"
+                element={
+                  <ProtectedRoute requiredInterface="SOUS_TRAITANTS_LISTE">
+                    <DetailSousTraitant />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="soustraitants/:id/modifier"
+                element={
+                  <ProtectedRoute requiredInterface="SOUS_TRAITANTS_LISTE">
+                    <FormulaireSousTraitant />
+                  </ProtectedRoute>
+                }
+              />
 
               {/*  Interventions (Ordres) — statiques AVANT :id  */}
-              <Route path="ordres/demandes" element={<ProtectedRoute requiredInterface="ORDRES_DEMANDES"><ListeDemandes /></ProtectedRoute>} />
-              <Route path="ordres/demandes/nouveau" element={<ProtectedRoute requiredInterface="ORDRES_DEMANDES"><FormulaireDemande /></ProtectedRoute>} />
-              <Route path="ordres/ots/dashboard" element={<ProtectedRoute requiredInterface="ORDRES_DASHBOARD_OT"><DashboardOTs /></ProtectedRoute>} />
-              <Route path="ordres/ots/nouveau" element={<ProtectedRoute requiredInterface="ORDRES_OTS"><FormulaireOT /></ProtectedRoute>} />
-              <Route path="ordres/ots" element={<ProtectedRoute requiredInterface="ORDRES_OTS"><ListeOTs /></ProtectedRoute>} />
+              <Route
+                path="ordres/demandes"
+                element={
+                  <ProtectedRoute requiredInterface="ORDRES_DEMANDES">
+                    <ListeDemandes />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="ordres/demandes/nouveau"
+                element={
+                  <ProtectedRoute requiredInterface="ORDRES_DEMANDES">
+                    <FormulaireDemande />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="ordres/ots/dashboard"
+                element={
+                  <ProtectedRoute requiredInterface="ORDRES_DASHBOARD_OT">
+                    <DashboardOTs />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="ordres/ots/nouveau"
+                element={
+                  <ProtectedRoute requiredInterface="ORDRES_OTS">
+                    <FormulaireOT />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="ordres/ots"
+                element={
+                  <ProtectedRoute requiredInterface="ORDRES_OTS">
+                    <ListeOTs />
+                  </ProtectedRoute>
+                }
+              />
               {/*  Interventions — dynamiques APRÈS  */}
-              <Route path="ordres/ots/:id" element={<ProtectedRoute requiredInterface="ORDRES_OTS"><DetailOT /></ProtectedRoute>} />
-              <Route path="ordres/ots/:id/modifier" element={<ProtectedRoute requiredInterface="ORDRES_OTS"><FormulaireOT /></ProtectedRoute>} />
-              <Route path="ordres/ots/:id/rapport" element={<ProtectedRoute requiredInterface="ORDRES_OTS"><CompteRenduOT /></ProtectedRoute>} />
+              <Route
+                path="ordres/ots/:id"
+                element={
+                  <ProtectedRoute requiredInterface="ORDRES_OTS">
+                    <DetailOT />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="ordres/ots/:id/modifier"
+                element={
+                  <ProtectedRoute requiredInterface="ORDRES_OTS">
+                    <FormulaireOT />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="ordres/ots/:id/rapport"
+                element={
+                  <ProtectedRoute requiredInterface="ORDRES_OTS">
+                    <CompteRenduOT />
+                  </ProtectedRoute>
+                }
+              />
 
               {/*  Interventions supplémentaires  */}
-              <Route path="ordres/declarer" element={<ProtectedRoute requiredInterface="ORDRES_DECLARER"><DeclarerPanne /></ProtectedRoute>} />
-              <Route path="ordres/gestion" element={<ProtectedRoute requiredInterface="ORDRES_GESTION"><GestionOTs /></ProtectedRoute>} />
-              <Route path="ordres/validation" element={<ProtectedRoute requiredInterface="ORDRES_VALIDATION"><ValidationOperateur /></ProtectedRoute>} />
+              <Route
+                path="ordres/declarer"
+                element={
+                  <ProtectedRoute requiredInterface="ORDRES_DECLARER">
+                    <DeclarerPanne />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="ordres/gestion"
+                element={
+                  <ProtectedRoute requiredInterface="ORDRES_GESTION">
+                    <GestionOTs />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="ordres/validation"
+                element={
+                  <ProtectedRoute requiredInterface="ORDRES_VALIDATION">
+                    <ValidationOperateur />
+                  </ProtectedRoute>
+                }
+              />
 
               {/*  Magasin supplémentaire  */}
-              <Route path="magasin/sortie" element={<ProtectedRoute requiredInterface="MAGASIN_SORTIE"><InterfaceMagasinier /></ProtectedRoute>} />
+              <Route
+                path="magasin/sortie"
+                element={
+                  <ProtectedRoute requiredInterface="MAGASIN_SORTIE">
+                    <InterfaceMagasinier />
+                  </ProtectedRoute>
+                }
+              />
 
               {/*  Paramétrage  */}
-              <Route path="parametrage" element={<ProtectedRoute requiredInterface="PARAMETRAGE"><ParametrageHome /></ProtectedRoute>} />
-              <Route path="parametrage/actifs" element={<ProtectedRoute requiredInterface="PARAMETRAGE"><ParametrageActifs /></ProtectedRoute>} />
-              <Route path="parametrage/actifs/types" element={<ProtectedRoute requiredInterface="PARAMETRAGE"><TypeActifsPage /></ProtectedRoute>} />
-              <Route path="parametrage/backup" element={<ProtectedRoute requiredInterface="PARAMETRAGE_BACKUP"><BackupPage /></ProtectedRoute>} />
+              <Route
+                path="parametrage"
+                element={
+                  <ProtectedRoute requiredInterface="PARAMETRAGE">
+                    <ParametrageHome />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="parametrage/actifs"
+                element={
+                  <ProtectedRoute requiredInterface="PARAMETRAGE">
+                    <ParametrageActifs />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="parametrage/actifs/types"
+                element={
+                  <ProtectedRoute requiredInterface="PARAMETRAGE">
+                    <TypeActifsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="parametrage/backup"
+                element={
+                  <ProtectedRoute requiredInterface="PARAMETRAGE_BACKUP">
+                    <BackupPage />
+                  </ProtectedRoute>
+                }
+              />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
