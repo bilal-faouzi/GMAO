@@ -1,27 +1,58 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, X, Shield, Loader2, AlertTriangle } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 import {
   getRoles,
   assignRoleToUser,
   removeRoleFromUser,
 } from "@/services/securiteService";
 import { getUserRolesAndPermissions } from "@/services/userDetailService";
-import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+
+const ROLE_COLORS = [
+  {
+    bg: "bg-[var(--status-blue-bg)]",
+    text: "text-[var(--status-blue-text)]",
+    dot: "bg-[var(--status-blue-dot)]",
+    border: "border-[var(--status-blue-dot)]",
+  },
+  {
+    bg: "bg-[var(--status-purple-bg)]",
+    text: "text-[var(--status-purple-text)]",
+    dot: "bg-[var(--status-purple-dot)]",
+    border: "border-[var(--status-purple-dot)]",
+  },
+  {
+    bg: "bg-[var(--status-cyan-bg)]",
+    text: "text-[var(--status-cyan-text)]",
+    dot: "bg-[var(--status-cyan-dot)]",
+    border: "border-[var(--status-cyan-dot)]",
+  },
+  {
+    bg: "bg-[var(--status-orange-bg)]",
+    text: "text-[var(--status-orange-text)]",
+    dot: "bg-[var(--status-orange-dot)]",
+    border: "border-[var(--status-orange-dot)]",
+  },
+  {
+    bg: "bg-[var(--status-green-bg)]",
+    text: "text-[var(--status-green-text)]",
+    dot: "bg-[var(--status-green-dot)]",
+    border: "border-[var(--status-green-dot)]",
+  },
+];
 
 /**
  * RoleManager
  * -----------
  * Props:
- *   userId  {string|number}  — ID de l'utilisateur ciblé
- *   onRolesChange {Function} — callback optionnel appelé après chaque changement
- *                              avec la liste mise à jour des rôles
+ *   userId        {string|number}  — ID de l'utilisateur ciblé
+ *   onRolesChange {Function}       — callback appelé après chaque changement
  */
 export function RoleManager({ userId, onRolesChange }) {
   const [assignedRoles, setAssignedRoles] = useState([]);
   const [allRoles, setAllRoles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [pendingAdd, setPendingAdd] = useState(null);
-  const [pendingRemove, setPendingRemove] = useState(null);
+  const [pendingId, setPendingId] = useState(null);
   const [error, setError] = useState(null);
 
   const loadData = useCallback(async () => {
@@ -50,246 +81,149 @@ export function RoleManager({ userId, onRolesChange }) {
     loadData();
   }, [loadData]);
 
-  const handleAssign = async (role) => {
-    setPendingAdd(role.id);
+  const handleToggle = async (role) => {
+    if (pendingId === role.id) return; // déjà en cours
+    const isActive = assignedRoles.some((r) => r.id === role.id);
+    setPendingId(role.id);
     setError(null);
+
+    // Optimistic update
+    const updated = isActive
+      ? assignedRoles.filter((r) => r.id !== role.id)
+      : [...assignedRoles, role];
+    setAssignedRoles(updated);
+    onRolesChange?.(updated);
+
     try {
-      await assignRoleToUser(userId, { id_role: role.id });
-      const updated = [...assignedRoles, role];
-      setAssignedRoles(updated);
-      onRolesChange?.(updated);
+      if (isActive) {
+        await removeRoleFromUser(userId, { id_role: role.id });
+      } else {
+        await assignRoleToUser(userId, { id_role: role.id });
+      }
     } catch (e) {
       console.error(e);
-      setError("Échec de l'assignation du rôle.");
+      // Rollback
+      const rolled = isActive
+        ? [...updated, role]
+        : updated.filter((r) => r.id !== role.id);
+      setAssignedRoles(rolled);
+      onRolesChange?.(rolled);
+      setError(
+        isActive
+          ? "Échec de la suppression du rôle."
+          : "Échec de l'assignation du rôle.",
+      );
     } finally {
-      setPendingAdd(null);
+      setPendingId(null);
     }
   };
-
-  const handleRemove = async (roleId) => {
-    setPendingRemove(roleId);
-    setError(null);
-    try {
-      await removeRoleFromUser(userId, { id_role: roleId });
-      const updated = assignedRoles.filter((r) => r.id !== roleId);
-      setAssignedRoles(updated);
-      onRolesChange?.(updated);
-    } catch (e) {
-      console.error(e);
-      setError("Échec de la suppression du rôle.");
-    } finally {
-      setPendingRemove(null);
-    }
-  };
-
-  const availableRoles = allRoles.filter(
-    (r) => !assignedRoles.find((ar) => ar.id === r.id),
-  );
 
   if (loading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "24px 0",
-          color: "var(--text-muted)",
-          fontSize: 13,
-        }}>
-        <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+      <div className="flex items-center gap-2 py-6 text-text-muted text-xs">
+        <Loader2 size={13} className="animate-spin" />
         Chargement des rôles…
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
+  // Assignés en premier, puis les autres
+  const sorted = [
+    ...allRoles.filter((r) => assignedRoles.some((ar) => ar.id === r.id)),
+    ...allRoles.filter((r) => !assignedRoles.some((ar) => ar.id === r.id)),
+  ];
+
+  // Couleur stable par index dans la liste assignée
+  const colorMap = {};
+  assignedRoles.forEach((r, i) => {
+    colorMap[r.id] = ROLE_COLORS[i % ROLE_COLORS.length];
+  });
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div className="flex flex-col gap-3">
       {error && (
-        <div
-          style={{
-            background: "var(--status-red-bg)",
-            color: "var(--status-red-text)",
-            borderRadius: "var(--r-sm)",
-            padding: "10px 14px",
-            fontSize: 12,
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            border: "1px solid rgba(239,68,68,.12)",
-          }}>
-          <AlertTriangle size={13} />
+        <div className="flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium bg-[var(--status-red-bg)] text-[var(--status-red-text)] border border-red-200/10">
+          <AlertTriangle size={12} />
           {error}
         </div>
       )}
 
-      {/*  Rôles assignés  */}
-      <div>
-        <p
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: "var(--text-muted)",
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            marginBottom: 8,
-          }}>
-          Rôles assignés
-        </p>
+      <div className="flex flex-col gap-1.5">
+        {sorted.map((role) => {
+          const isActive = assignedRoles.some((r) => r.id === role.id);
+          const isPending = pendingId === role.id;
+          const c = isActive ? colorMap[role.id] : null;
+          const disabled = !role.est_actif || isPending;
 
-        {assignedRoles.length === 0 ? (
-          <p
-            style={{
-              fontSize: 13,
-              color: "var(--text-muted)",
-              fontStyle: "italic",
-              padding: "8px 0",
-            }}>
-            Aucun rôle assigné
-          </p>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {assignedRoles.map((r) => (
-              <div
-                key={r.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "10px 12px",
-                  background: "var(--bg-surface)",
-                  borderRadius: "var(--r-sm)",
-                  border: "1px solid var(--border-subtle)",
-                }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Shield
-                    size={13}
-                    style={{ color: "var(--color-primary)", opacity: 0.8 }}
-                  />
-                  <span
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      padding: "2px 8px",
-                      borderRadius: 20,
-                      background: "var(--status-blue-bg, rgba(59,130,246,.1))",
-                      color: "var(--status-blue-text, #2563eb)",
-                    }}>
-                    {r.code}
+          return (
+            <button
+              key={role.id}
+              type="button"
+              disabled={disabled}
+              onClick={() => handleToggle(role)}
+              className={`
+                w-full flex items-center justify-between px-3 py-2.5 rounded-lg border
+                text-left transition-all duration-150
+                ${
+                  isActive
+                    ? `${c.bg} ${c.border} border`
+                    : "bg-transparent border-border border-dashed hover:border-border-subtle"
+                }
+                ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
+              `}>
+              <div className="flex items-center gap-2 min-w-0">
+                {/* Dot indicateur */}
+                <span
+                  className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${
+                    isActive ? c.dot : "bg-text-muted opacity-40"
+                  }`}
+                />
+
+                {/* Libellé */}
+                <span
+                  className={`text-[11px] font-medium truncate transition-colors ${
+                    isActive ? c.text : "text-text-muted"
+                  }`}>
+                  {role.libelle}
+                </span>
+
+                {/* Code */}
+                <span className="code-mono text-[9px] opacity-50 shrink-0">
+                  {role.code}
+                </span>
+
+                {/* Niveau si assigné */}
+                {isActive && role.niveau && (
+                  <span className={`text-[9px] opacity-60 shrink-0 ${c.text}`}>
+                    N{role.niveau}
                   </span>
-                  {r.libelle && (
-                    <span
-                      style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-                      {r.libelle}
-                    </span>
-                  )}
-                </div>
-                <Button
-                  variant="ghost"
-                  disabled={pendingRemove === r.id}
-                  onClick={() => handleRemove(r.id)}
-                  title="Retirer ce rôle"
-                  style={{ padding: "4px 8px", height: "auto" }}
-                  className="text-text-muted hover:text-danger transition-colors">
-                  {pendingRemove === r.id ? (
-                    <Loader2
-                      size={13}
-                      style={{ animation: "spin 1s linear infinite" }}
-                    />
-                  ) : (
-                    <X size={13} />
-                  )}
-                </Button>
+                )}
               </div>
-            ))}
-          </div>
+
+              {/* Switch ou spinner — pointer-events:none car le clic est géré par le bouton parent */}
+              <div
+                className="shrink-0 ml-3 flex items-center"
+                onClick={(e) => e.stopPropagation()}>
+                {isPending ? (
+                  <Loader2 size={13} className="animate-spin text-text-muted" />
+                ) : (
+                  <Switch
+                    checked={isActive}
+                    disabled={disabled}
+                    onCheckedChange={() => handleToggle(role)}
+                  />
+                )}
+              </div>
+            </button>
+          );
+        })}
+
+        {sorted.length === 0 && (
+          <p className="text-xs text-text-muted italic py-3 text-center">
+            Aucun rôle disponible.
+          </p>
         )}
       </div>
-
-      {/*  Rôles disponibles  */}
-      {availableRoles.length > 0 && (
-        <div>
-          <p
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: "var(--text-muted)",
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              marginBottom: 8,
-            }}>
-            Assigner un rôle
-          </p>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {availableRoles.map((r) => (
-              <div
-                key={r.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "10px 12px",
-                  borderRadius: "var(--r-sm)",
-                  border: "1px solid var(--border)",
-                  opacity: r.est_actif ? 1 : 0.45,
-                }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: r.est_actif
-                        ? "var(--text-primary)"
-                        : "var(--text-muted)",
-                      textDecoration: r.est_actif ? "none" : "line-through",
-                    }}>
-                    {r.code}
-                  </span>
-                  {r.libelle && (
-                    <span
-                      style={{
-                        fontSize: 12,
-                        color: "var(--text-muted)",
-                        textDecoration: r.est_actif ? "none" : "line-through",
-                      }}>
-                      {r.libelle}
-                    </span>
-                  )}
-                </div>
-                <Button
-                  variant="ghost"
-                  disabled={!r.est_actif || pendingAdd === r.id}
-                  onClick={() => handleAssign(r)}
-                  title="Assigner ce rôle"
-                  style={{ padding: "4px 8px", height: "auto" }}
-                  className="text-green-600 hover:text-green-700 transition-colors disabled:text-text-muted">
-                  {pendingAdd === r.id ? (
-                    <Loader2
-                      size={13}
-                      style={{ animation: "spin 1s linear infinite" }}
-                    />
-                  ) : (
-                    <Plus size={13} />
-                  )}
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {availableRoles.length === 0 && assignedRoles.length > 0 && (
-        <p
-          style={{
-            fontSize: 12,
-            color: "var(--text-muted)",
-            fontStyle: "italic",
-          }}>
-          Tous les rôles disponibles sont déjà assignés.
-        </p>
-      )}
     </div>
   );
 }
