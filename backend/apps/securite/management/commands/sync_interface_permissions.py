@@ -4,7 +4,7 @@ Usage : python manage.py sync_interface_permissions
 """
 from django.core.management.base import BaseCommand
 from apps.securite.models import RoleInterface, RolePermission, Permission
-from apps.securite.views import INTERFACE_PERMISSIONS
+from apps.securite.interface_registry import INTERFACE_PERMISSIONS
 
 
 class Command(BaseCommand):

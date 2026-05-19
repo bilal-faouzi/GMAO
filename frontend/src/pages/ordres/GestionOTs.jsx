@@ -259,7 +259,7 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
         <Button
           type="button"
           onClick={() => { setType("interne"); setErreur(""); }}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition ${
+          className={`flex-1 h-9 rounded-lg text-xs font-medium border transition ${
             type === "interne"
               ? "btn btn-primary"
               : "btn btn-ghost"
@@ -269,7 +269,7 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
         <Button
           type="button"
           onClick={() => { setType("externe"); setErreur(""); }}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition ${
+          className={`flex-1 h-9 rounded-lg text-xs font-medium border transition ${
             type === "externe"
               ? "btn btn-warning"
               : "btn btn-ghost"
@@ -287,7 +287,7 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
             </p>
 
             <Select value={equipeCourante} onValueChange={(v) => { setEquipeCourante(v); chargerMembres(v); }}>
-              <SelectTrigger>
+              <SelectTrigger className="h-9 bg-elevated border-border-subtle text-text text-xs focus:border-primary focus:ring-1 focus:ring-primary/20">
                 <SelectValue placeholder="— Choisir une équipe —" />
               </SelectTrigger>
               <SelectContent>
@@ -383,7 +383,7 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
 
       {type === "externe" && (
         <Select value={soustraitantSelectionne} onValueChange={setSoustraitantSelectionne}>
-          <SelectTrigger>
+          <SelectTrigger className="h-9 bg-elevated border-border-subtle text-text text-xs focus:border-primary focus:ring-1 focus:ring-primary/20">
             <SelectValue placeholder="— Sélectionner un sous-traitant —" />
           </SelectTrigger>
           <SelectContent>
@@ -404,7 +404,7 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
           type="datetime-local"
           value={dateDebut}
           onChange={(e) => setDateDebut(e.target.value)}
-          className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-xs border border-border-subtle outline-none"
+          className="w-full h-9 bg-elevated text-text rounded-lg px-3 text-xs border border-border-subtle outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
         />
       </div>
 
@@ -422,7 +422,7 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
           disabled={loading || (type === "interne" && selections.length === 0 && !prefillData)}
           className={`py-2.5 btn btn-primary rounded-lg text-sm font-medium transition disabled:opacity-50 flex items-center justify-center gap-2 ${prefillData ? "flex-1" : "w-full"}`}>
           {loading ? (
-            <><span className="animate-spin"></span> Enregistrement...</>
+            <><div className="w-4 h-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin" /> Enregistrement...</>
           ) : prefillData ? (
             <><Users size={16} /> Modifier l'affectation</>
           ) : (
@@ -770,7 +770,7 @@ export default function GestionOTs() {
   });
 
   return (
-    <div className="page">
+    <div className="page" style={{ flexDirection: "row", gap: 0, padding: 0, overflow: "hidden" }}>
       {/*  Liste principale  */}
       <div
         className={`flex flex-col ${otSelectionne ? "w-1/2" : "w-full"} transition-all duration-300 min-h-0 border-r border-border`}>
@@ -825,13 +825,12 @@ export default function GestionOTs() {
           </div>
 
           {onglet === "ots" && (
-            <div className="flex gap-2 mb-4 ">
+            <div className="flex gap-2 mb-4 items-center">
               {/* Filtre Statut */}
               <Select value={filtreStatut} onValueChange={setFiltreStatut}>
-                <SelectTrigger className="bg-surface text-text text-xs  focus:border-border-strong">
+                <SelectTrigger className="bg-surface text-text text-xs h-9 border border-border-subtle focus:border-primary focus:ring-1 focus:ring-primary/20">
                   <SelectValue placeholder="Tous statuts" />
                 </SelectTrigger>
-
                 <SelectContent>
                   <SelectItem value="all">Tous statuts</SelectItem>
                   {Object.entries(STATUT_LABEL).map(([k, v]) => (
@@ -844,10 +843,9 @@ export default function GestionOTs() {
 
               {/* Filtre Priorité */}
               <Select value={filtrePriorite} onValueChange={setFiltrePriorite}>
-                <SelectTrigger className="bg-surface text-text text-xs  focus:border-border-strong">
+                <SelectTrigger className="bg-surface text-text text-xs h-9 border border-border-subtle focus:border-primary focus:ring-1 focus:ring-primary/20">
                   <SelectValue placeholder="Toutes priorités" />
                 </SelectTrigger>
-
                 <SelectContent>
                   <SelectItem value="all">Toutes priorités</SelectItem>
                   <SelectItem value="critique">Critique</SelectItem>
@@ -858,7 +856,8 @@ export default function GestionOTs() {
               </Select>
               <Button
                 onClick={charger}
-                className="bg-surface hover:bg-active px-3 py-2 rounded-md text-sm transition font-medium">
+                variant="outline"
+                className="h-9 px-3 bg-surface hover:bg-hover border border-border-subtle rounded-md text-sm transition font-medium">
                 ↺
               </Button>
             </div>
@@ -1232,15 +1231,15 @@ export default function GestionOTs() {
 
                         {/* Actions rapides (visible quand fermé) */}
                         {!isExpanded && (
-                          <div className="flex gap-2 mt-3">
+                          <div className="grid grid-cols-3 gap-2 mt-3">
                             <button
                               onClick={() => viewDemandeDetail(d)}
-                              className="flex-1 py-2 btn btn-primary rounded-lg text-sm font-medium transition">
+                              className="py-2 btn btn-primary rounded-lg text-sm font-medium transition">
                               Voir détails
                             </button>
                             <button
                               onClick={() => handleValider(d.id)}
-                              className="flex-1 py-2 btn btn-success rounded-lg text-sm font-medium transition text-text">
+                              className="py-2 btn btn-success rounded-lg text-sm font-medium transition text-text">
                               Valider
                             </button>
                             <button
@@ -1248,7 +1247,7 @@ export default function GestionOTs() {
                                 setModalRejet(d.id);
                                 setMotifRejet("");
                               }}
-                              className="flex-1 py-2 btn btn-danger rounded-lg text-sm font-medium transition">
+                              className="py-2 btn btn-danger rounded-lg text-sm font-medium transition">
                               Rejeter
                             </button>
                           </div>
@@ -1273,7 +1272,7 @@ export default function GestionOTs() {
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="w-1/2 flex flex-col bg-elevated min-h-0 border-l border-border">
             {/* Header panneau */}
-            <div className="p-4 border-b border-border bg-elevated flex-shrink-0">
+            <div className="p-5 border-b border-border bg-surface flex-shrink-0">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -1296,21 +1295,21 @@ export default function GestionOTs() {
                 </div>
                 <button
                   onClick={() => setOtSelectionne(null)}
-                  className="text-text-muted hover:text-text ml-2 p-1 rounded-lg hover:bg-elevated transition">
-                  
+                  className="text-text-muted hover:text-text ml-2 p-1.5 rounded-lg hover:bg-hover transition">
+                  <X size={20} />
                 </button>
               </div>
 
               {/* Tabs panneau */}
-              <div className="flex gap-1 mt-3 bg-surface p-1 rounded-md">
+              <div className="flex gap-1 mt-3 bg-elevated p-1 rounded-md">
                 {["actions", "infos", "historique"].map((o) => (
                   <button
                     key={o}
                     onClick={() => setPanneauOnglet(o)}
                     className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium capitalize transition ${
                       panneauOnglet === o
-                        ? "bg-elevated text-text shadow"
-                        : "text-text-secondary hover:text-text"
+                        ? "bg-surface text-text shadow-sm"
+                        : "text-text-secondary hover:text-text hover:bg-hover"
                     }`}>
                     {o}
                   </button>
@@ -1318,7 +1317,7 @@ export default function GestionOTs() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-surface">
+            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-elevated">
               {/*  Actions  */}
               {panneauOnglet === "actions" && (
                 <motion.div
@@ -1331,11 +1330,11 @@ export default function GestionOTs() {
 
                   {/* Changer statut */}
                   {TRANSITIONS[otSelectionne.statut] && (
-                    <div className="bg-surface rounded-xl p-4 border border-border shadow-card">
-                      <p className="text-xs text-text-secondary mb-3 font-semibold">
+                    <div className="bg-surface rounded-xl p-5 border border-border shadow-card">
+                      <p className="text-xs text-text-secondary mb-3 font-semibold uppercase tracking-wider">
                         Changer le statut
                       </p>
-                      <div className="space-y-2 gap-2 ">
+                      <div className="flex flex-col gap-2">
                         {TRANSITIONS[otSelectionne.statut].map((s) => (
                           <button
                             key={s}
@@ -1344,7 +1343,7 @@ export default function GestionOTs() {
                               setMotifStatut("");
                               setModalStatut(true);
                             }}
-                            className={` py-2 px-5 mx-2 rounded-lg text-sm font-medium border transition text-left hover:opacity-80 ${STATUT_CLS[s]}`}>
+                            className={`w-full py-2.5 px-4 rounded-lg text-sm font-medium border transition text-left hover:opacity-80 ${STATUT_CLS[s]}`}>
                             {STATUT_LABEL[s]}
                           </button>
                         ))}
@@ -1354,8 +1353,8 @@ export default function GestionOTs() {
 
                   {/* Affecter équipe */}
                   {["EN_COURS"].includes(otSelectionne.statut) && (
-                    <div className="bg-surface rounded-xl p-4 border border-border shadow-card">
-                      <p className="text-xs text-text-secondary mb-3 font-semibold">
+                    <div className="bg-surface rounded-xl p-5 border border-border shadow-card">
+                      <p className="text-xs text-text-secondary mb-3 font-semibold uppercase tracking-wider">
                         {editAffectation ? "Modifier l'affectation" : "Affecter une équipe / sous-traitant"}
                       </p>
                       <AffectationForm
@@ -1369,31 +1368,40 @@ export default function GestionOTs() {
 
                   {/* Affectations existantes */}
                   {otSelectionne.affectations?.length > 0 && (
-                    <div className="bg-surface rounded-xl p-4 border border-border shadow-card">
-                      <p className="text-xs text-text-secondary mb-2 font-semibold">
-                        Affectations en cours (
-                        {otSelectionne.affectations.length})
+                    <div className="bg-surface rounded-xl p-5 border border-border shadow-card">
+                      <p className="text-xs text-text-secondary mb-3 font-semibold uppercase tracking-wider">
+                        Affectations en cours ({otSelectionne.affectations.length})
                       </p>
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         {otSelectionne.affectations.map((a) => (
                           <div
                             key={a.id}
-                            className="flex items-center justify-between p-2 bg-elevated rounded-lg border border-border-subtle">
+                            className="flex items-start justify-between p-3 bg-elevated rounded-lg border border-border-subtle gap-3">
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium text-text">
-                                {a.equipe_detail?.libelle ||
-                                  a.soustraitant_detail?.raisonSociale ||
-                                  "—"}
-                              </p>
-                              <p className="text-xs text-text-muted">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <p className="text-xs font-semibold text-text">
+                                  {a.equipe_detail?.libelle || a.soustraitant_detail?.raisonSociale || "—"}
+                                </p>
+                                <span
+                                  className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                                    a.statut === "termine"
+                                      ? "bg-success-soft text-success border-success/30"
+                                      : a.statut === "en_cours"
+                                        ? "bg-warning-soft text-warning border-warning/30"
+                                        : "bg-hover text-text-secondary border-border-subtle"
+                                  }`}>
+                                  {a.statut}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-text-muted mb-2">
                                 {new Date(a.dateDebut).toLocaleString("fr-FR")}
                               </p>
                               {/* Membres */}
-                              <div className="flex flex-wrap gap-1 mt-1 items-center">
+                              <div className="flex flex-wrap gap-1.5 items-center">
                                 {a.membres?.length > 0 ? (
                                   a.membres.map((m) => (
-                                    <span key={m.id} className="text-[9px] bg-primary-soft text-primary px-1.5 py-0.5 rounded border border-primary/20 flex items-center gap-1">
-                                      <span className="w-3 h-3 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[7px] font-bold border border-primary/30">
+                                    <span key={m.id} className="text-[10px] bg-primary-soft text-primary px-2 py-0.5 rounded-full border border-primary/20 flex items-center gap-1">
+                                      <span className="w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[8px] font-bold border border-primary/30">
                                         {m.utilisateur_detail
                                           ? `${m.utilisateur_detail.prenom?.[0] || ""}${m.utilisateur_detail.nom?.[0] || ""}`.toUpperCase()
                                           : "?"}
@@ -1404,7 +1412,7 @@ export default function GestionOTs() {
                                     </span>
                                   ))
                                 ) : (
-                                  <span className="text-[9px] text-text-muted italic">Aucun technicien</span>
+                                  <span className="text-[10px] text-text-muted italic">Aucun technicien</span>
                                 )}
                                 {["EN_COURS"].includes(otSelectionne.statut) && (
                                   <button
@@ -1418,60 +1426,48 @@ export default function GestionOTs() {
                                         dateDebut: a.dateDebut,
                                       });
                                     }}
-                                    className="text-[9px] bg-success-soft text-success px-1.5 py-0.5 rounded border border-success/30 hover:bg-success-soft transition flex items-center gap-0.5"
+                                    className="text-[10px] bg-success-soft text-success px-2 py-0.5 rounded-full border border-success/30 hover:bg-success/20 transition flex items-center gap-0.5"
                                     title="Ajouter un technicien">
-                                    <Plus size={8} /> Ajouter
+                                    <Plus size={10} /> Ajouter
                                   </button>
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`text-xs px-2 py-0.5 rounded-full border ${
-                                  a.statut === "termine"
-                                    ? "bg-success-soft text-success border-success/30"
-                                    : a.statut === "en_cours"
-                                      ? "bg-warning-soft text-warning border-warning/30"
-                                      : "bg-hover text-text-secondary border-border-subtle"
-                                }`}>
-                                {a.statut}
-                              </span>
-                              {["EN_COURS"].includes(otSelectionne.statut) && (
-                                <div className="flex gap-1">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setEditAffectation({
-                                        id: a.id,
-                                        equipeId: a.equipe_detail?.id || a.idEquipe,
-                                        membres: a.membres || [],
-                                        dateDebut: a.dateDebut,
-                                      });
-                                    }}
-                                    className="p-1 text-text-secondary hover:text-primary hover:bg-primary-soft rounded transition"
-                                    title="Modifier">
-                                    <Wrench size={12} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      if (!confirm("Supprimer cette affectation ?")) return;
-                                      try {
-                                        await deleteAffectation(a.id);
-                                        charger();
-                                      } catch (err) {
-                                        console.error(err);
-                                      }
-                                    }}
-                                    className="p-1 text-text-secondary hover:text-danger hover:bg-danger-soft rounded transition"
-                                    title="Supprimer">
-                                    <Trash2 size={12} />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
+                            {["EN_COURS"].includes(otSelectionne.statut) && (
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditAffectation({
+                                      id: a.id,
+                                      equipeId: a.equipe_detail?.id || a.idEquipe,
+                                      membres: a.membres || [],
+                                      dateDebut: a.dateDebut,
+                                    });
+                                  }}
+                                  className="p-1.5 text-text-secondary hover:text-primary hover:bg-primary-soft rounded-lg transition"
+                                  title="Modifier">
+                                  <Wrench size={14} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (!confirm("Supprimer cette affectation ?")) return;
+                                    try {
+                                      await deleteAffectation(a.id);
+                                      charger();
+                                    } catch (err) {
+                                      console.error(err);
+                                    }
+                                  }}
+                                  className="p-1.5 text-text-secondary hover:text-danger hover:bg-danger-soft rounded-lg transition"
+                                  title="Supprimer">
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -1479,23 +1475,25 @@ export default function GestionOTs() {
                   )}
 
                   {/* Commentaire */}
-                  <div className="bg-surface rounded-xl p-4 border border-border shadow-card">
-                    <p className="text-xs text-text-secondary mb-3 font-semibold">
+                  <div className="bg-surface rounded-xl p-5 border border-border shadow-card">
+                    <p className="text-xs text-text-secondary mb-3 font-semibold uppercase tracking-wider">
                       Compte rendu / Commentaire
                     </p>
                     <Button
                       onClick={() => setModalComment(true)}
-                      className="w-full py-2 btn btn-ghost rounded-lg text-sm transition">
+                      className="w-full py-2.5 btn btn-ghost rounded-lg text-sm transition">
                        Saisir compte rendu
                     </Button>
                   </div>
 
                   {/* Voir détail */}
-                  <Button
-                    onClick={() => navigate(`/ordres/ots/${otSelectionne.id}`)}
-                    className="w-full py-2 btn btn-primary rounded-xl text-sm transition">
-                    Voir détail complet →
-                  </Button>
+                  <div className="bg-surface rounded-xl p-5 border border-border shadow-card">
+                    <Button
+                      onClick={() => navigate(`/ordres/ots/${otSelectionne.id}`)}
+                      className="w-full py-2.5 btn btn-primary rounded-xl text-sm transition">
+                      Voir détail complet →
+                    </Button>
+                  </div>
                 </motion.div>
               )}
 
@@ -1504,7 +1502,7 @@ export default function GestionOTs() {
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="space-y-0">
+                  className="space-y-1">
                   {[
                     [
                       "Actif",

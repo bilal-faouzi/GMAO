@@ -43,7 +43,7 @@ def get_user_roles(user):
 def check_roles(user, allowed_roles):
     """Vérifie que l'utilisateur a au moins un des rôles autorisés.
     Les superutilisateurs et staff ont accès à tout."""
-    if user.is_superuser or user.is_staff:
+    if getattr(user, 'is_superuser', False) or getattr(user, 'is_staff', False):
         return True
     user_roles = get_user_roles(user)
     return any(role in allowed_roles for role in user_roles)
@@ -120,7 +120,7 @@ class SousTraitantViewSet(viewsets.ModelViewSet):
     # ─── LIST ─────────────────────────────────────────────────────────────
 
     def list(self, request, *args, **kwargs):
-        if not check_roles(request.user, ['RESP_TECH', 'RESP_MAINT', 'DIR_TECH']):
+        if not check_roles(request.user, ['RESP_TECH', 'RESP_MAINT', 'DIR_TECH', 'ADMIN', 'AD']):
             return forbidden_response()
 
         qs = self.filter_queryset(self.get_queryset())
@@ -171,7 +171,7 @@ class SousTraitantViewSet(viewsets.ModelViewSet):
     # ─── CREATE ───────────────────────────────────────────────────────────
 
     def create(self, request, *args, **kwargs):
-        if not check_roles(request.user, ['RESP_MAINT']):
+        if not check_roles(request.user, ['RESP_MAINT', 'ADMIN', 'AD']):
             return forbidden_response()
 
         if not request.data:
@@ -250,7 +250,7 @@ class SousTraitantViewSet(viewsets.ModelViewSet):
         pk = kwargs.get('pk')
         if not validate_uuid(pk):
             return bad_uuid_response()
-        if not check_roles(request.user, ['RESP_TECH', 'RESP_MAINT', 'DIR_TECH']):
+        if not check_roles(request.user, ['RESP_TECH', 'RESP_MAINT', 'DIR_TECH', 'ADMIN', 'AD']):
             return forbidden_response()
 
         try:
@@ -269,7 +269,7 @@ class SousTraitantViewSet(viewsets.ModelViewSet):
         pk = kwargs.get('pk')
         if not validate_uuid(pk):
             return bad_uuid_response()
-        if not check_roles(request.user, ['RESP_MAINT']):
+        if not check_roles(request.user, ['RESP_MAINT', 'ADMIN', 'AD']):
             return forbidden_response()
 
         if not request.data:
@@ -392,7 +392,7 @@ class SousTraitantViewSet(viewsets.ModelViewSet):
         pk = kwargs.get('pk')
         if not validate_uuid(pk):
             return bad_uuid_response()
-        if not check_roles(request.user, ['RESP_MAINT']):
+        if not check_roles(request.user, ['RESP_MAINT', 'ADMIN', 'AD']):
             return forbidden_response()
 
         try:
@@ -429,7 +429,7 @@ class SousTraitantViewSet(viewsets.ModelViewSet):
         """POST /api/v1/soustraitants/{id}/changer_statut/"""
         if not validate_uuid(pk):
             return bad_uuid_response()
-        if not check_roles(request.user, ['RESP_MAINT']):
+        if not check_roles(request.user, ['RESP_MAINT', 'ADMIN', 'AD']):
             return forbidden_response()
 
         try:
@@ -545,7 +545,7 @@ class SousTraitantViewSet(viewsets.ModelViewSet):
             })
 
         # POST
-        if not check_roles(request.user, ['RESP_MAINT']):
+        if not check_roles(request.user, ['RESP_MAINT', 'ADMIN', 'AD']):
             return forbidden_response()
 
         try:
@@ -612,7 +612,7 @@ class SousTraitantViewSet(viewsets.ModelViewSet):
         """DELETE /api/v1/soustraitants/{id}/specialites/{id_specialite}/"""
         if not validate_uuid(pk) or not validate_uuid(id_specialite):
             return bad_uuid_response()
-        if not check_roles(request.user, ['RESP_MAINT']):
+        if not check_roles(request.user, ['RESP_MAINT', 'ADMIN', 'AD']):
             return forbidden_response()
 
         try:
@@ -792,7 +792,7 @@ class SousTraitantViewSet(viewsets.ModelViewSet):
         """GET /api/v1/soustraitants/{id}/historique-interventions/"""
         if not validate_uuid(pk):
             return bad_uuid_response()
-        if not check_roles(request.user, ['RESP_TECH', 'RESP_MAINT', 'DIR_TECH']):
+        if not check_roles(request.user, ['RESP_TECH', 'RESP_MAINT', 'DIR_TECH', 'ADMIN', 'AD']):
             return forbidden_response()
 
         if not SousTraitant.objects.filter(id=pk).exists():
@@ -834,7 +834,7 @@ class SousTraitantViewSet(viewsets.ModelViewSet):
         """GET /api/v1/soustraitants/{id}/statistiques/"""
         if not validate_uuid(pk):
             return bad_uuid_response()
-        if not check_roles(request.user, ['RESP_MAINT', 'DIR_TECH']):
+        if not check_roles(request.user, ['RESP_MAINT', 'DIR_TECH', 'ADMIN', 'AD']):
             return forbidden_response()
 
         if not SousTraitant.objects.filter(id=pk).exists():
