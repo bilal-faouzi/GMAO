@@ -23,7 +23,6 @@ export default function Sessions() {
       setLoading(true);
       const res = await getSessions();
       setSessions(Array.isArray(res.data) ? res.data : res.data.results || []);
-      console.log(res.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -39,7 +38,6 @@ export default function Sessions() {
     if (!confirm(`Forcer la déconnexion de ${session.utilisateur} ?`)) return;
     try {
       setForcing(session.id);
-      console.log(session);
       await forcedLogout(session.id);
       fetchSessions();
     } catch (err) {
@@ -64,7 +62,10 @@ export default function Sessions() {
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 px-4 py-2 bg-emerald-100 dark:bg-emerald-500/10 rounded-lg border border-emerald-300/20 dark:border-emerald-300 dark:border-emerald-500/20">
-            <Wifi size={15} className="text-emerald-700 dark:text-emerald-400" />
+            <Wifi
+              size={15}
+              className="text-emerald-700 dark:text-emerald-400"
+            />
             <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
               {actives.length} actives
             </span>
@@ -125,7 +126,10 @@ export default function Sessions() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 bg-blue-100 dark:bg-primary-soft rounded-full flex items-center justify-center flex-shrink-0">
-                        <Monitor size={12} className="text-blue-700 dark:text-primary" />
+                        <Monitor
+                          size={12}
+                          className="text-blue-700 dark:text-primary"
+                        />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-text">

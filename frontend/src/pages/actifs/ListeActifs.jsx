@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-//  Config statuts & types 
+//  Config statuts & types
 
 const STATUTS = {
   actif: {
@@ -59,8 +59,6 @@ const STATUTS = {
     dot: "var(--status-gray-dot)",
   },
 };
-
-
 
 const ALL = "__all__";
 const PAGE_SIZE = 10;
@@ -93,9 +91,9 @@ function TypeBadge({ type, typesMap }) {
   );
 }
 
-//  Composant Pagination 
+//  Composant Pagination
 
-//  Main 
+//  Main
 
 export default function ListeActifs() {
   const navigate = useNavigate();
@@ -136,7 +134,7 @@ export default function ListeActifs() {
         const types = res.data.results || res.data;
         setTypesActifs(types);
         const map = {};
-        const colors = ['blue','purple','cyan','amber','emerald','rose'];
+        const colors = ["blue", "purple", "cyan", "amber", "emerald", "rose"];
         types.forEach((t, i) => {
           const c = colors[i % colors.length];
           map[t.code] = {
@@ -189,7 +187,6 @@ export default function ListeActifs() {
     getDashboard()
       .then((res) => {
         setData(res.data);
-        console.log("Dashboard data:", res.data);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -594,9 +591,9 @@ export default function ListeActifs() {
           <div className="modal modal-sm">
             <div className="m-hdr">
               <span className="m-title">Changer le statut</span>
-              <button className="m-close" onClick={() => setModalStatut(null)}>
-                
-              </button>
+              <button
+                className="m-close"
+                onClick={() => setModalStatut(null)}></button>
             </div>
             <div
               className="m-body-plain"

@@ -38,6 +38,12 @@ class PieceViewSet(viewsets.ModelViewSet):
         sous_seuil = self.request.query_params.get('sous_seuil')
         if sous_seuil is not None and sous_seuil.lower() in ('true', '1'):
             qs = qs.filter(quantiteStock__lte=F('seuilMinimum'))
+        
+        # Filtre pour pièces avec stock non nul
+        quantite_non_zero = self.request.query_params.get('quantite_non_zero')
+        if quantite_non_zero is not None and quantite_non_zero.lower() in ('true', '1'):
+            qs = qs.filter(quantiteStock__gt=0)
+        
         return qs
 
     def perform_create(self, serializer):

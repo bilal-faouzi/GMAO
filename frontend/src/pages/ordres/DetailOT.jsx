@@ -17,6 +17,13 @@ import useAuthStore from "@/store/authStore";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/Button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import {
   Dialog,
@@ -798,12 +805,12 @@ export default function DetailOT() {
             <div className="space-y-3">
               {!estVerrouille && (
                 <div className="flex justify-center">
-                  <button
+                  <Button
                     onClick={() => openAffectationModal()}
                     className="btn btn-outline  gap-1.5"
                     style={{ fontSize: "12px", padding: "5px 10px" }}>
                     <Plus size={14} /> Affecter une équipe
-                  </button>
+                  </Button>
                 </div>
               )}
               {ot.affectations?.length === 0 ? (
@@ -850,12 +857,12 @@ export default function DetailOT() {
                           <div className="flex gap-1">
                             <Button
                               onClick={() => openAffectationModal(a)}
-                              className="text-[10px] px-2 py-0.5 rounded bg-primary-soft text-primary border border-primary/20 hover:bg-primary/20 transition">
+                              className="text-[10px] px-2 py-0.5 rounded bg-primary-soft text-primary hover:bg-primary/20 transition">
                               Modifier
                             </Button>
                             <Button
                               onClick={() => handleDeleteAffectation(a.id)}
-                              className="text-[10px] px-2 py-0.5 rounded bg-danger-soft text-danger border border-danger/20 hover:bg-danger/20 transition">
+                              className="text-[10px] px-2 py-0.5 rounded bg-danger-soft text-danger hover:bg-danger/20 transition">
                               Supprimer
                             </Button>
                           </div>
@@ -994,7 +1001,7 @@ export default function DetailOT() {
                             {stripEmojis(c.commentaire)}
                           </div>
                         ) : (
-                          <div className="max-w-[75%] px-4 py-2.5 text-sm leading-relaxed rounded-2xl rounded-tr-sm border bg-elevated text-text border-border-subtle">
+                          <div className="max-w-[75%] px-4 py-2.5 text-sm leading-relaxed rounded-2xl rounded-tr-sm border bg-slate-300 dark:bg-slate-700 text-text border-border-subtle">
                             {stripEmojis(c.commentaire)}
                           </div>
                         )}
@@ -1025,7 +1032,7 @@ export default function DetailOT() {
                 <Button
                   type="submit"
                   size="sm"
-                  className="gap-1.5 rounded-full">
+                  className="gap-1.5 rounded-full text-white">
                   <Send size={13} />
                   Envoyer
                 </Button>
@@ -1212,17 +1219,20 @@ export default function DetailOT() {
                   {editingAffectation.equipe_detail?.libelle ?? "—"}
                 </p>
               ) : (
-                <select
+                <Select
                   value={selectedEquipe}
-                  onChange={(e) => handleSelectEquipe(e.target.value)}
-                  className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors">
-                  <option value="">— Sélectionner une équipe —</option>
-                  {equipes.map((eq) => (
-                    <option key={eq.id} value={eq.id}>
-                      {eq.libelle} {eq.chef_nom ? `(${eq.chef_nom})` : ""}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={handleSelectEquipe}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="— Sélectionner une équipe —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {equipes.map((eq) => (
+                      <SelectItem key={eq.id} value={String(eq.id)}>
+                        {eq.libelle} {eq.chef_nom ? `(${eq.chef_nom})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
               {!editingAffectation && equipes.length === 0 && (
                 <p className="text-xs text-text-muted mt-2">
@@ -1235,15 +1245,20 @@ export default function DetailOT() {
                 <label className="text-xs font-medium mb-1.5 block">
                   Statut
                 </label>
-                <select
+                <Select
                   value={editStatut}
-                  onChange={(e) => setEditStatut(e.target.value)}
+                  onValueChange={(value) => setEditStatut(value)}
                   className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors">
-                  <option value="en_attente">En attente</option>
-                  <option value="en_cours">En cours</option>
-                  <option value="termine">Terminé</option>
-                  <option value="rejeter">Rejeté</option>
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="— Sélectionner un statut —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en_attente">En attente</SelectItem>
+                    <SelectItem value="en_cours">En cours</SelectItem>
+                    <SelectItem value="termine">Terminé</SelectItem>
+                    <SelectItem value="rejeter">Rejeté</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             )}
             {(selectedEquipe || editingAffectation) && (

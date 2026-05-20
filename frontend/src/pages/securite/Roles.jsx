@@ -629,8 +629,8 @@ export default function Roles() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="mt-4">
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+          <div className="mt-4 rounded-sm bg-gray-800/75 p-4 ">
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {allInterfaces && allInterfaces.length > 0 ? (
                 allInterfaces.map((iface) => {
                   const isAssigned = selectedRole?.interfaces?.find(
@@ -644,7 +644,7 @@ export default function Roles() {
                           ? handleRemoveInterface(iface.id)
                           : handleAssignInterface(iface.id)
                       }
-                      className={`cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-[1.02] ${
+                      className={`cursor-pointer m-4 p-3 rounded-lg border-2 transition-all duration-200 hover:scale-[1.02] ${
                         isAssigned
                           ? "bg-blue-500/10 border-blue-500 ring-1 ring-blue-500/30"
                           : "bg-surface border-border hover:border-text-muted"

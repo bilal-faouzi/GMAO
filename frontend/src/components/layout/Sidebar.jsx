@@ -307,7 +307,6 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const interfaces = user?.interfaces || [];
-  console.log("User Interfaces:", interfaces);
   const visibleSections = filterNavSections(navSections, interfaces);
 
   // Calcule les groupes ouverts basé sur la location actuelle

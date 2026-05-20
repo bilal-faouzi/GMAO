@@ -108,7 +108,7 @@ export default function ValidationOperateur() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-3xl">
+    <div className="p-6 space-y-6 ">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -172,7 +172,7 @@ export default function ValidationOperateur() {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className=" flex-1 flex flex-row gap-4">
           {ots.map((ot) => {
             const prio = prioriteStyles[ot.priorite] || prioriteStyles.normale;
             return (
@@ -218,44 +218,40 @@ export default function ValidationOperateur() {
                     Résumé de l'intervention
                   </p>
 
-                  {ot.description && (
-                    <Row label="Description" value={ot.description} />
-                  )}
-                  {ot.dureeReelleMin && (
-                    <Row
-                      label="Durée réelle"
-                      value={`${ot.dureeReelleMin} min`}
-                    />
-                  )}
-                  {ot.affectations?.length > 0 && (
-                    <Row
-                      label="Intervenant(s)"
-                      value={ot.affectations
+                  <Row label="Description" value={ot.description || "__"} />
+
+                  <Row
+                    label="Durée réelle"
+                    value={`${ot.dureeReelleMin} min` || "__"}
+                  />
+
+                  <Row
+                    label="Intervenant(s)"
+                    value={
+                      ot.affectations
                         .map(
                           (a) =>
                             a.equipe_detail?.libelle ||
                             a.soustraitant_detail?.raisonSociale,
                         )
                         .filter(Boolean)
-                        .join(", ")}
-                    />
-                  )}
-                  {ot.nb_pieces_utilisees > 0 && (
-                    <Row
-                      label="Pièces utilisées"
-                      value={`${ot.nb_pieces_utilisees} pièce(s)`}
-                    />
-                  )}
-                  {ot.typeCloture && (
-                    <Row
-                      label="Type clôture"
-                      value={
-                        ot.typeCloture === "corrige"
-                          ? "Corrigé définitivement"
-                          : "Dépanné temporairement"
-                      }
-                    />
-                  )}
+                        .join(", ") || "__"
+                    }
+                  />
+
+                  <Row
+                    label="Pièces utilisées"
+                    value={`${ot.nb_pieces_utilisees} pièce(s)` || "__"}
+                  />
+
+                  <Row
+                    label="Type clôture"
+                    value={
+                      ot.typeCloture === "corrige"
+                        ? "Corrigé définitivement"
+                        : "Dépanné temporairement" || "__"
+                    }
+                  />
                 </div>
 
                 {/* Operator notice */}
@@ -275,8 +271,8 @@ export default function ValidationOperateur() {
                       setMotif("");
                     }}
                     className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold
-                      bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400
-                      border border-emerald-300 dark:border-emerald-500/40
+                      bg-emerald-100 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-400
+                      border border-emerald-400 dark:border-emerald-500/40
                       hover:bg-emerald-200 dark:hover:bg-emerald-500/20 transition-colors">
                     <CheckCircle size={15} />
                     Équipement OK
@@ -288,7 +284,7 @@ export default function ValidationOperateur() {
                     }}
                     className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold
                       bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400
-                      border border-red-300 dark:border-red-500/40
+                      border border-red-400 dark:border-red-500/40
                       hover:bg-red-200 dark:hover:bg-red-500/20 transition-colors">
                     <XCircle size={15} />
                     Toujours en panne
@@ -363,7 +359,10 @@ export default function ValidationOperateur() {
           </div>
 
           <DialogFooter className="gap-2">
-            <Button variant="customOutline" onClick={() => setModal(null)}>
+            <Button
+              variant="customOutline"
+              className="border-red-500 text-red-600 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10"
+              onClick={() => setModal(null)}>
               Annuler
             </Button>
             <Button

@@ -15,6 +15,11 @@ export default defineConfig({
         target: "http://localhost:8000",
         changeOrigin: true,
       },
+      "/media": {
+        // ← Proxy pour fichiers médias
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
       "/admin": {
         // ← ajouter ceci
         target: "http://localhost:8000",

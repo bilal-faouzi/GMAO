@@ -30,7 +30,7 @@ import FormulaireDemande from "../ordres/FormulaireDemande";
 //    export function ActifFormModal({ ... }) { ... }
 import { ActifFormModal } from "../actifs/ActifArborescencePage";
 
-//  Config 
+//  Config
 
 const STATUTS = {
   actif: {
@@ -84,7 +84,7 @@ const TYPES = {
 
 const PAGE_SIZE = 10;
 
-//  Badges 
+//  Badges
 
 function StatutBadge({ statut }) {
   const cfg = STATUTS[statut] || {
@@ -114,12 +114,12 @@ function TypeBadge({ type }) {
   );
 }
 
-//  Main Component 
+//  Main Component
 
 export default function ActifUnite() {
   const navigate = useNavigate();
 
-  //  Données liste 
+  //  Données liste
   const [actifs, setActifs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -130,13 +130,13 @@ export default function ActifUnite() {
   const [total, setTotal] = useState(0);
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
-  //  Données pour le modal de création 
+  //  Données pour le modal de création
   const [sites, setSites] = useState([]);
   const [unites, setUnites] = useState([]);
   const [secteurs, setSecteurs] = useState([]);
   const [orgLoading, setOrgLoading] = useState(false);
 
-  //  États des dialogs 
+  //  États des dialogs
   const [dialogActif, setDialogActif] = useState(null); // dialog panne
   const [createOpen, setCreateOpen] = useState(false); // dialog nouvel actif
   const [userSite, setUserSite] = useState(null); // { id, code, libelle }
@@ -145,7 +145,7 @@ export default function ActifUnite() {
   // Ajouter en haut du composant (après les useState)
   const hasDataRef = useRef(false);
 
-  //  Chargement des référentiels org au montage 
+  //  Chargement des référentiels org au montage
   useEffect(() => {
     setOrgLoading(true);
     Promise.all([getSites(), getUnites(), getSecteurs()])
@@ -160,7 +160,7 @@ export default function ActifUnite() {
       .finally(() => setOrgLoading(false));
   }, []);
 
-  //  Chargement de la liste 
+  //  Chargement de la liste
   const charger = useCallback(async () => {
     if (hasDataRef.current) setRefreshing(true);
     else setLoading(true);
@@ -174,8 +174,6 @@ export default function ActifUnite() {
       };
       if (search.trim()) params.search = search.trim();
       const res = await getActifs(params);
-
-      console.log("Actifs chargés :", res.data);
 
       const results = res.data.results ?? res.data;
       const count =
@@ -203,7 +201,7 @@ export default function ActifUnite() {
     charger();
   }, [charger]);
 
-  //  Suppression 
+  //  Suppression
   const handleDelete = async (e, id) => {
     e.stopPropagation();
     if (
@@ -223,13 +221,13 @@ export default function ActifUnite() {
     }
   };
 
-  //  Callback après création réussie 
+  //  Callback après création réussie
   const handleCreated = () => {
     setCreateOpen(false);
     charger();
   };
 
-  //  Render 
+  //  Render
   return (
     <div className="page">
       {/* Header */}

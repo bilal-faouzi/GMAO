@@ -89,8 +89,13 @@ export default function InterfaceMagasinier() {
     setLoading(true);
     try {
       const [o, p, a, u] = await Promise.all([
-        getOTs({ statut__in: STATUTS_ACTIFS.join(",") }),
-        getPieces({ estActif: true, page: tablePage, page_size: 50 }),
+        getOTs({ statut__in: STATUTS_ACTIFS.join(","), isvalide: false }),
+        getPieces({
+          estActif: true,
+          page: tablePage,
+          page_size: 15,
+          quantite_non_zero: true,
+        }),
         getAlertes(),
         getUtilisateurs(),
       ]);
@@ -121,6 +126,7 @@ export default function InterfaceMagasinier() {
           search: pieceSearch,
           estActif: true,
           page_size: 20,
+          quantite_non_zero: true,
         });
         // Exclure les pièces déjà dans le panier
         const idsDansPanier = panier.map((item) => item.piece.id);
@@ -677,7 +683,8 @@ export default function InterfaceMagasinier() {
               {/* Dropdown résultats backend */}
               {pieceDropdown && pieceSearch.length >= 1 && (
                 <div className="w-full bg-surface border border-border rounded-xl shadow-lg overflow-hidden z-20 relative">
-                  <div className={`overflow-y-auto max-h-64 ${searchResults.length > 0 ? 'h-auto' : 'h-20'}`}>
+                  <div
+                    className={`overflow-y-auto max-h-64 ${searchResults.length > 0 ? "h-auto" : "h-20"}`}>
                     <div className="w-full">
                       {searchLoading ? (
                         <p className="text-xs text-text-muted text-center py-6">
@@ -882,6 +889,34 @@ export default function InterfaceMagasinier() {
 
         {/* ── Sidebar droite (1/3) ─────────────────────────────────────────── */}
         <div className="space-y-4">
+          {/* Récapitulatif panier */}
+          {panier.length > 0 && (
+            <div className="bg-surface border border-border rounded-xl p-5">
+              <p className="text-[10px] uppercase tracking-widest text-text-muted font-semibold mb-3">
+                Récapitulatif
+              </p>
+              <div className="space-y-1.5">
+                {panier.map((item) => (
+                  <div
+                    key={item.piece.id}
+                    className="flex items-center justify-between text-xs">
+                    <span className="font-mono text-text truncate">
+                      {item.piece.reference}
+                    </span>
+                    <span className="text-text-muted tabular-nums flex-shrink-0 ml-2">
+                      {item.quantite || "—"} {item.piece.unite}
+                    </span>
+                  </div>
+                ))}
+                <Separator className="bg-border mt-2 mb-2" />
+                <div className="flex items-center justify-between text-xs font-semibold text-text">
+                  <span>Total articles</span>
+                  <span>{panier.length}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Résumé stock */}
           <div className="bg-surface border border-border rounded-xl p-5">
             <p className="text-[10px] uppercase tracking-widest text-text-muted font-semibold mb-4">
@@ -969,112 +1004,84 @@ export default function InterfaceMagasinier() {
           </div>
 
           {/* Tableau stock SAGE X3 avec pagination (branche 1) */}
-          <div className="bg-surface border border-border rounded-xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] uppercase tracking-widest text-text-muted font-semibold flex items-center gap-1.5">
-                <FileSpreadsheet size={12} /> Stock SAGE X3
-              </p>
-              <span className="text-[10px] text-text-muted">
-                {totalPieces} réf.
-              </span>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-left text-text-muted border-b border-border">
-                    <th className="pb-2 font-medium">Réf.</th>
-                    <th className="pb-2 font-medium">Désignation</th>
-                    <th className="pb-2 font-medium">Empl.</th>
-                    <th className="pb-2 font-medium text-right">Stock</th>
-                    <th className="pb-2 font-medium">Unité</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {pieces.map((p) => (
-                    <tr
-                      key={p.id}
-                      onClick={() => {
-                        setPieceSearch(p.reference);
-                        setPieceDropdown(true);
-                      }}
-                      className={`cursor-pointer transition hover:bg-elevated ${
-                        p.est_sous_seuil ? "bg-red-50 dark:bg-red-500/5" : ""
-                      }`}>
-                      <td className="py-1.5 font-mono text-purple-700 dark:text-purple-300 whitespace-nowrap">
-                        {p.reference}
-                      </td>
-                      <td className="py-1.5 text-text truncate max-w-[80px]">
-                        {p.designation}
-                      </td>
-                      <td className="py-1.5 text-text-muted">
-                        {p.emplacement || "—"}
-                      </td>
-                      <td
-                        className={`py-1.5 text-right font-bold ${
-                          p.est_sous_seuil
-                            ? "text-red-600 dark:text-red-400"
-                            : "text-emerald-600 dark:text-emerald-400"
-                        }`}>
-                        {p.quantiteStock}
-                      </td>
-                      <td className="py-1.5 text-text-muted">{p.unite}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {/* Pagination */}
-              {totalPieces > 50 && (
-                <div className="flex items-center justify-between mt-3 pt-2 border-t border-border">
-                  <button
-                    type="button"
-                    className="text-xs text-text-muted hover:text-text disabled:opacity-30 transition"
-                    disabled={tablePage === 1}
-                    onClick={() => setTablePage((p) => Math.max(1, p - 1))}>
-                    ← Précédent
-                  </button>
-                  <span className="text-xs text-text-muted">
-                    {tablePage} / {Math.ceil(totalPieces / 50)}
-                  </span>
-                  <button
-                    type="button"
-                    className="text-xs text-text-muted hover:text-text disabled:opacity-30 transition"
-                    disabled={tablePage >= Math.ceil(totalPieces / 50)}
-                    onClick={() => setTablePage((p) => p + 1)}>
-                    Suivant →
-                  </button>
-                </div>
-              )}
-            </div>
+        </div>
+        <div className="bg-surface border border-border rounded-xl p-5 col-span-3">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[10px] uppercase tracking-widest text-text-muted font-semibold flex items-center gap-1.5">
+              <FileSpreadsheet size={12} /> Stock SAGE X3
+            </p>
+            <span className="text-[10px] text-text-muted">
+              {totalPieces} réf.
+            </span>
           </div>
-
-          {/* Récapitulatif panier */}
-          {panier.length > 0 && (
-            <div className="bg-surface border border-border rounded-xl p-5">
-              <p className="text-[10px] uppercase tracking-widest text-text-muted font-semibold mb-3">
-                Récapitulatif
-              </p>
-              <div className="space-y-1.5">
-                {panier.map((item) => (
-                  <div
-                    key={item.piece.id}
-                    className="flex items-center justify-between text-xs">
-                    <span className="font-mono text-text truncate">
-                      {item.piece.reference}
-                    </span>
-                    <span className="text-text-muted tabular-nums flex-shrink-0 ml-2">
-                      {item.quantite || "—"} {item.piece.unite}
-                    </span>
-                  </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left text-text-muted border-b border-border">
+                  <th className="pb-2 font-medium">Réf.</th>
+                  <th className="pb-2 font-medium">Désignation</th>
+                  <th className="pb-2 font-medium">Empl.</th>
+                  <th className="pb-2 font-medium text-right">Stock</th>
+                  <th className="pb-2 font-medium">Unité</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {pieces.map((p) => (
+                  <tr
+                    key={p.id}
+                    onClick={() => {
+                      setPieceSearch(p.reference);
+                      setPieceDropdown(true);
+                    }}
+                    className={`cursor-pointer transition hover:bg-elevated ${
+                      p.est_sous_seuil ? "bg-red-50 dark:bg-red-500/5" : ""
+                    }`}>
+                    <td className="py-1.5 font-mono text-purple-700 dark:text-purple-300 whitespace-nowrap">
+                      {p.reference}
+                    </td>
+                    <td className="py-1.5 text-text truncate max-w-[80px]">
+                      {p.designation}
+                    </td>
+                    <td className="py-1.5 text-text-muted">
+                      {p.emplacement || "—"}
+                    </td>
+                    <td
+                      className={`py-1.5 text-right font-bold ${
+                        p.est_sous_seuil
+                          ? "text-red-600 dark:text-red-400"
+                          : "text-emerald-600 dark:text-emerald-400"
+                      }`}>
+                      {p.quantiteStock}
+                    </td>
+                    <td className="py-1.5 text-text-muted">{p.unite}</td>
+                  </tr>
                 ))}
-                <Separator className="bg-border mt-2 mb-2" />
-                <div className="flex items-center justify-between text-xs font-semibold text-text">
-                  <span>Total articles</span>
-                  <span>{panier.length}</span>
-                </div>
+              </tbody>
+            </table>
+
+            {/* Pagination */}
+            {totalPieces > 50 && (
+              <div className="flex items-center justify-between mt-3 pt-2 border-t border-border">
+                <button
+                  type="button"
+                  className="text-xs text-text-muted hover:text-text disabled:opacity-30 transition"
+                  disabled={tablePage === 1}
+                  onClick={() => setTablePage((p) => Math.max(1, p - 1))}>
+                  ← Précédent
+                </button>
+                <span className="text-xs text-text-muted">
+                  {tablePage} / {Math.ceil(totalPieces / 50)}
+                </span>
+                <button
+                  type="button"
+                  className="text-xs text-text-muted hover:text-text disabled:opacity-30 transition"
+                  disabled={tablePage >= Math.ceil(totalPieces / 50)}
+                  onClick={() => setTablePage((p) => p + 1)}>
+                  Suivant →
+                </button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

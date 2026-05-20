@@ -1,7 +1,28 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, Play, MessageCircle, User, Users, Wrench, ChevronDown, ChevronUp, Image, Music, Video, FileText, Plus, Trash2, Check, CheckCircle, AlertTriangle, MapPin, ArrowRightLeft } from "lucide-react";
+import {
+  X,
+  Download,
+  Play,
+  MessageCircle,
+  User,
+  Users,
+  Wrench,
+  ChevronDown,
+  ChevronUp,
+  Image,
+  Music,
+  Video,
+  FileText,
+  Plus,
+  Trash2,
+  Check,
+  CheckCircle,
+  AlertTriangle,
+  MapPin,
+  ArrowRightLeft,
+} from "lucide-react";
 import {
   getOTs,
   getDemandes,
@@ -17,7 +38,10 @@ import {
 } from "../../services/ordreService";
 import { getActifs } from "../../services/actifService";
 import {
-  AudioPlayer, ImageViewer, VideoViewer, HierarchyPath,
+  AudioPlayer,
+  ImageViewer,
+  VideoViewer,
+  HierarchyPath,
 } from "../../components/di/MediaViewers";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,7 +55,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-//  Constants 
+//  Constants
 const PRIORITE_CLS = {
   critique: "bg-danger-soft text-danger border-danger/40",
   haute: "bg-status-orange-soft text-status-orange border-status-orange/40",
@@ -57,7 +81,7 @@ const TRANSITIONS = {
   EN_COURS: ["DEPANNE", "CLOTURE"],
 };
 
-//  Composant Affectation enrichi 
+//  Composant Affectation enrichi
 function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
   const [equipes, setEquipes] = useState([]);
   const [soustraitants, setST] = useState([]);
@@ -79,10 +103,26 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
     import("../../services/api").then(({ default: api }) => {
       api
         .get("/v1/organisation/equipes/")
-        .then((r) => setEquipes(Array.isArray(r.data?.results) ? r.data.results : Array.isArray(r.data) ? r.data : []));
+        .then((r) =>
+          setEquipes(
+            Array.isArray(r.data?.results)
+              ? r.data.results
+              : Array.isArray(r.data)
+                ? r.data
+                : [],
+          ),
+        );
       api
         .get("/v1/soustraitants/?statut=actif")
-        .then((r) => setST(Array.isArray(r.data?.results) ? r.data.results : Array.isArray(r.data) ? r.data : []));
+        .then((r) =>
+          setST(
+            Array.isArray(r.data?.results)
+              ? r.data.results
+              : Array.isArray(r.data)
+                ? r.data
+                : [],
+          ),
+        );
     });
   }, []);
 
@@ -90,7 +130,11 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
   useEffect(() => {
     if (!prefillData) return;
     setType("interne");
-    setDateDebut(prefillData.dateDebut ? new Date(prefillData.dateDebut).toISOString().slice(0, 16) : "");
+    setDateDebut(
+      prefillData.dateDebut
+        ? new Date(prefillData.dateDebut).toISOString().slice(0, 16)
+        : "",
+    );
     if (prefillData.equipeId) {
       setEquipeCourante(String(prefillData.equipeId));
       // Charger membres et pré-sélectionner
@@ -100,7 +144,9 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
           const res = await getMembresEquipe(prefillData.equipeId);
           const data = res.data.results || res.data || [];
           setMembresEquipe(data);
-          const ids = (prefillData.membres || []).map((m) => String(m.utilisateur?.id || m.idUtilisateur || m.id));
+          const ids = (prefillData.membres || []).map((m) =>
+            String(m.utilisateur?.id || m.idUtilisateur || m.id),
+          );
           setMembresSelectionnes(ids);
         } catch (e) {
           console.error(e);
@@ -139,22 +185,32 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
 
   const ajouterSelection = () => {
     if (!equipeCourante) return setErreur("Sélectionnez une équipe.");
-    if (membresSelectionnes.length === 0) return setErreur("Cochez au moins un technicien.");
+    if (membresSelectionnes.length === 0)
+      return setErreur("Cochez au moins un technicien.");
 
     const eq = equipes.find((e) => String(e.id) === String(equipeCourante));
     const membresDetails = membresEquipe
-      .filter((m) => membresSelectionnes.includes(String(m.utilisateur?.id || m.id)))
+      .filter((m) =>
+        membresSelectionnes.includes(String(m.utilisateur?.id || m.id)),
+      )
       .map((m) => ({
         id: m.utilisateur?.id || m.id,
-        nom: m.utilisateur?.nom || m.utilisateur_nom?.split(" ").slice(-1)[0] || "",
+        nom:
+          m.utilisateur?.nom ||
+          m.utilisateur_nom?.split(" ").slice(-1)[0] ||
+          "",
         prenom: m.utilisateur?.prenom || m.utilisateur_nom?.split(" ")[0] || "",
       }));
 
     // Vérifier si cette équipe est déjà dans les sélections
-    const existant = selections.find((s) => String(s.equipeId) === String(equipeCourante));
+    const existant = selections.find(
+      (s) => String(s.equipeId) === String(equipeCourante),
+    );
     if (existant) {
       // Fusionner les membres
-      const nouveauxIds = [...new Set([...existant.membres, ...membresSelectionnes])];
+      const nouveauxIds = [
+        ...new Set([...existant.membres, ...membresSelectionnes]),
+      ];
       const nouveauxDetails = [...existant.membresDetails];
       membresDetails.forEach((md) => {
         if (!nouveauxDetails.find((d) => String(d.id) === String(md.id))) {
@@ -187,7 +243,9 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
   };
 
   const retirerSelection = (equipeId) => {
-    setSelections((prev) => prev.filter((s) => String(s.equipeId) !== String(equipeId)));
+    setSelections((prev) =>
+      prev.filter((s) => String(s.equipeId) !== String(equipeId)),
+    );
   };
 
   const handleSubmit = async (e) => {
@@ -196,7 +254,8 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
     setSucces("");
 
     if (type === "externe") {
-      if (!soustraitantSelectionne) return setErreur("Sélectionnez un sous-traitant.");
+      if (!soustraitantSelectionne)
+        return setErreur("Sélectionnez un sous-traitant.");
       setLoading(true);
       try {
         await affecterEquipe(otId, {
@@ -215,7 +274,8 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
       return;
     }
 
-    if (selections.length === 0) return setErreur("Ajoutez au moins une équipe avec des techniciens.");
+    if (selections.length === 0)
+      return setErreur("Ajoutez au moins une équipe avec des techniciens.");
 
     setLoading(true);
     try {
@@ -258,23 +318,25 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
       <div className="flex gap-2">
         <Button
           type="button"
-          onClick={() => { setType("interne"); setErreur(""); }}
+          onClick={() => {
+            setType("interne");
+            setErreur("");
+          }}
           className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition ${
-            type === "interne"
-              ? "btn btn-primary"
-              : "btn btn-ghost"
+            type === "interne" ? "btn btn-primary" : "btn btn-ghost"
           }`}>
-           Équipe interne
+          Équipe interne
         </Button>
         <Button
           type="button"
-          onClick={() => { setType("externe"); setErreur(""); }}
+          onClick={() => {
+            setType("externe");
+            setErreur("");
+          }}
           className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition ${
-            type === "externe"
-              ? "btn btn-warning"
-              : "btn btn-ghost"
+            type === "externe" ? "btn btn-warning" : "btn btn-ghost"
           }`}>
-           Sous-traitant
+          Sous-traitant
         </Button>
       </div>
 
@@ -286,7 +348,12 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
               Sélectionner une équipe et ses techniciens
             </p>
 
-            <Select value={equipeCourante} onValueChange={(v) => { setEquipeCourante(v); chargerMembres(v); }}>
+            <Select
+              value={equipeCourante}
+              onValueChange={(v) => {
+                setEquipeCourante(v);
+                chargerMembres(v);
+              }}>
               <SelectTrigger>
                 <SelectValue placeholder="— Choisir une équipe —" />
               </SelectTrigger>
@@ -300,7 +367,9 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
             </Select>
 
             {loadingMembres && (
-              <p className="text-xs text-text-muted">Chargement des membres...</p>
+              <p className="text-xs text-text-muted">
+                Chargement des membres...
+              </p>
             )}
 
             {membresEquipe.length > 0 && (
@@ -310,13 +379,19 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
                 </p>
                 {membresEquipe.map((m) => {
                   const uid = String(m.utilisateur?.id || m.id);
-                  const nom = m.utilisateur_nom || `${m.utilisateur?.prenom || ""} ${m.utilisateur?.nom || ""}`.trim() || "Technicien";
+                  const nom =
+                    m.utilisateur_nom ||
+                    `${m.utilisateur?.prenom || ""} ${m.utilisateur?.nom || ""}`.trim() ||
+                    "Technicien";
                   const role = m.niveauRole || "Membre";
                   const checked = membresSelectionnes.includes(uid);
                   return (
-                    <label key={uid}
+                    <label
+                      key={uid}
                       className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition border ${
-                        checked ? "bg-primary-soft border-primary/30" : "bg-elevated border-border-subtle hover:bg-hover"
+                        checked
+                          ? "bg-primary-soft border-primary/30"
+                          : "bg-elevated border-border-subtle hover:bg-hover"
                       }`}>
                       <input
                         type="checkbox"
@@ -325,7 +400,10 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
                         className="accent-primary w-4 h-4 shrink-0"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className={`text-xs font-medium truncate ${checked ? "text-primary" : "text-text"}`}>{nom}</p>
+                        <p
+                          className={`text-xs font-medium truncate ${checked ? "text-primary" : "text-text"}`}>
+                          {nom}
+                        </p>
                         <p className="text-[10px] text-text-muted">{role}</p>
                       </div>
                     </label>
@@ -339,7 +417,8 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
                 type="button"
                 onClick={ajouterSelection}
                 className="w-full py-2 btn btn-primary rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5">
-                <Plus size={14} /> Ajouter {membresSelectionnes.length} technicien(s) à l'affectation
+                <Plus size={14} /> Ajouter {membresSelectionnes.length}{" "}
+                technicien(s) à l'affectation
               </button>
             )}
           </div>
@@ -349,26 +428,38 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
             <div className="bg-surface rounded-xl border border-border shadow-card p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-text-muted uppercase tracking-wider font-semibold flex items-center gap-1.5">
-                  <Users size={12} /> Affectations préparées ({selections.length})
+                  <Users size={12} /> Affectations préparées (
+                  {selections.length})
                 </p>
-                <button type="button" onClick={() => setSelections([])} className="text-[10px] text-text-muted hover:text-danger transition">
+                <button
+                  type="button"
+                  onClick={() => setSelections([])}
+                  className="text-[10px] text-text-muted hover:text-danger transition">
                   Tout effacer
                 </button>
               </div>
 
               <div className="space-y-2">
                 {selections.map((sel) => (
-                  <div key={sel.equipeId} className="bg-elevated rounded-lg p-3 border border-border-subtle">
+                  <div
+                    key={sel.equipeId}
+                    className="bg-elevated rounded-lg p-3 border border-border-subtle">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-semibold text-text">{sel.equipeLibelle}</p>
-                      <button type="button" onClick={() => retirerSelection(sel.equipeId)}
+                      <p className="text-xs font-semibold text-text">
+                        {sel.equipeLibelle}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => retirerSelection(sel.equipeId)}
                         className="text-text-muted hover:text-danger transition p-0.5">
                         <Trash2 size={12} />
                       </button>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {sel.membresDetails.map((m) => (
-                        <span key={m.id} className="text-[10px] bg-primary-soft text-primary px-2 py-0.5 rounded-full border border-primary/20">
+                        <span
+                          key={m.id}
+                          className="text-[10px] bg-primary-soft text-primary px-2 py-0.5 rounded-full border border-primary/20">
                           {m.prenom} {m.nom}
                         </span>
                       ))}
@@ -382,7 +473,9 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
       )}
 
       {type === "externe" && (
-        <Select value={soustraitantSelectionne} onValueChange={setSoustraitantSelectionne}>
+        <Select
+          value={soustraitantSelectionne}
+          onValueChange={setSoustraitantSelectionne}>
           <SelectTrigger>
             <SelectValue placeholder="— Sélectionner un sous-traitant —" />
           </SelectTrigger>
@@ -419,14 +512,23 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
         )}
         <Button
           type="submit"
-          disabled={loading || (type === "interne" && selections.length === 0 && !prefillData)}
+          disabled={
+            loading ||
+            (type === "interne" && selections.length === 0 && !prefillData)
+          }
           className={`py-2.5 btn btn-primary rounded-lg text-sm font-medium transition disabled:opacity-50 flex items-center justify-center gap-2 ${prefillData ? "flex-1" : "w-full"}`}>
           {loading ? (
-            <><span className="animate-spin"></span> Enregistrement...</>
+            <>
+              <span className="animate-spin"></span> Enregistrement...
+            </>
           ) : prefillData ? (
-            <><Users size={16} /> Modifier l'affectation</>
+            <>
+              <Users size={16} /> Modifier l'affectation
+            </>
           ) : (
-            <><Users size={16} /> Confirmer l'affectation</>
+            <>
+              <Users size={16} /> Confirmer l'affectation
+            </>
           )}
         </Button>
       </div>
@@ -434,7 +536,7 @@ function AffectationForm({ otId, onSuccess, prefillData, onCancelPrefill }) {
   );
 }
 
-//  Composant principal 
+//  Composant principal
 export default function GestionOTs() {
   const navigate = useNavigate();
   const [ots, setOTs] = useState([]);
@@ -455,7 +557,7 @@ export default function GestionOTs() {
   const [estInterne, setEstInterne] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  //  Compte rendu enrichi 
+  //  Compte rendu enrichi
   const [rapport, setRapport] = useState({
     descriptionTravail: "",
     constatations: "",
@@ -465,7 +567,8 @@ export default function GestionOTs() {
     typeCloture: "depanne",
   });
   const [actifsCorriges, setActifsCorriges] = useState([]);
-  const [showActifCorrigeSelector, setShowActifCorrigeSelector] = useState(false);
+  const [showActifCorrigeSelector, setShowActifCorrigeSelector] =
+    useState(false);
   const [corrigeSelectionPath, setCorrigeSelectionPath] = useState([]);
   const [corrigeOptionsAtLevel, setCorrigeOptionsAtLevel] = useState([]);
   const [corrigeLoading, setCorrigeLoading] = useState(false);
@@ -488,21 +591,9 @@ export default function GestionOTs() {
         getOTs(params),
         getDemandes({ statut__in: "en_attente,rejetee_apres_validation" }),
       ]);
-      console.log(" Ots loaded from API:", o);
-      console.log(" Demandes loaded from API:", d);
       const otsData = o.data.results || o.data;
       const demandesData = d.data.results || d.data;
-      console.log(" Demandes loaded from API:");
-      demandesData.forEach((dm) => {
-        console.log(`  - ${dm.numero}:`, {
-          nb_pieces_jointes: dm.nb_pieces_jointes,
-          pieces_jointes: dm.pieces_jointes,
-          has_audio:
-            dm.pieces_jointes?.some((p) =>
-              p.typeFichier?.startsWith("audio"),
-            ) || false,
-        });
-      });
+      demandesData.forEach((dm) => {});
       setOTs(otsData);
       setDemandes(demandesData);
       if (otSelectionne) {
@@ -648,7 +739,7 @@ export default function GestionOTs() {
     }
   };
 
-  //  Compte rendu complet (depuis GestionOTs) 
+  //  Compte rendu complet (depuis GestionOTs)
   const handleCompteRendu = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -657,7 +748,10 @@ export default function GestionOTs() {
       if (actifsCorriges.length > 0) {
         await enregistrerActifsCorriges(
           otSelectionne.id,
-          actifsCorriges.map((a) => ({ idActif: a.id, description: a.libelle })),
+          actifsCorriges.map((a) => ({
+            idActif: a.id,
+            description: a.libelle,
+          })),
         );
       }
 
@@ -705,11 +799,15 @@ export default function GestionOTs() {
     }
   };
 
-  //  Gestion actifs corrigés 
+  //  Gestion actifs corrigés
   const initCorrigeSelector = async () => {
     setCorrigeLoading(true);
     try {
-      const racines = await getActifs({ estActif: true, idParent: "null", my_unite: true });
+      const racines = await getActifs({
+        estActif: true,
+        idParent: "null",
+        my_unite: true,
+      });
       setCorrigeOptionsAtLevel([racines.data.results || racines.data || []]);
       setCorrigeSelectionPath([]);
     } catch (e) {
@@ -720,13 +818,19 @@ export default function GestionOTs() {
   };
 
   const handleCorrigeSelectAtLevel = async (levelIndex, assetId) => {
-    const selectedAsset = corrigeOptionsAtLevel[levelIndex].find((a) => a.id === assetId);
+    const selectedAsset = corrigeOptionsAtLevel[levelIndex].find(
+      (a) => a.id === assetId,
+    );
     if (!selectedAsset) return;
     const newPath = corrigeSelectionPath.slice(0, levelIndex);
     newPath[levelIndex] = selectedAsset;
     setCorrigeSelectionPath(newPath);
     try {
-      const r = await getActifs({ estActif: true, idParent: selectedAsset.id, my_unite: true });
+      const r = await getActifs({
+        estActif: true,
+        idParent: selectedAsset.id,
+        my_unite: true,
+      });
       const children = r.data.results || r.data || [];
       if (children.length > 0) {
         setCorrigeOptionsAtLevel((prev) => {
@@ -757,11 +861,26 @@ export default function GestionOTs() {
   };
 
   const CATEGORIES_CAUSE = {
-    mecanique: { label: "Mécanique", color: "bg-primary-soft text-primary border-primary/30" },
-    electrique: { label: "Électrique", color: "bg-warning-soft text-warning border-warning/30" },
-    humain: { label: "Erreur humaine", color: "bg-status-orange-soft text-status-orange border-status-orange/30" },
-    externe: { label: "Facteur externe", color: "bg-danger-soft text-danger border-danger/30" },
-    autre: { label: "Autre", color: "bg-hover text-text-secondary border-border-subtle" },
+    mecanique: {
+      label: "Mécanique",
+      color: "bg-primary-soft text-primary border-primary/30",
+    },
+    electrique: {
+      label: "Électrique",
+      color: "bg-warning-soft text-warning border-warning/30",
+    },
+    humain: {
+      label: "Erreur humaine",
+      color: "bg-status-orange-soft text-status-orange border-status-orange/30",
+    },
+    externe: {
+      label: "Facteur externe",
+      color: "bg-danger-soft text-danger border-danger/30",
+    },
+    autre: {
+      label: "Autre",
+      color: "bg-hover text-text-secondary border-border-subtle",
+    },
   };
 
   const otsTries = [...ots].sort((a, b) => {
@@ -907,28 +1026,28 @@ export default function GestionOTs() {
                           <span
                             title="Cette intervention a dépassé l'échéance SLA"
                             className="text-xs bg-danger-soft text-danger px-1.5 py-0.5 rounded-full border border-danger/30 cursor-help">
-                             Retard
+                            Retard
                           </span>
                         )}
                         {ot.estBloquant && (
                           <span
                             title="Cette intervention bloque la production"
                             className="text-xs bg-danger/30 text-danger px-1.5 py-0.5 rounded-full border border-danger/30 cursor-help">
-                             Bloquant
+                            Bloquant
                           </span>
                         )}
                         {ot.estSousTraite && (
                           <span
                             title="Intervention sous-traitée"
                             className="text-xs bg-warning-soft text-warning px-1.5 py-0.5 rounded-full border border-warning/30 cursor-help">
-                             ST
+                            ST
                           </span>
                         )}
                         {ot.rejetOperateur && (
                           <span
                             title="Rejeté par l'opérateur"
                             className="text-xs bg-danger/30 text-danger px-1.5 py-0.5 rounded-full border border-danger/40 cursor-help animate-pulse">
-                             Rejet opérateur
+                            Rejet opérateur
                           </span>
                         )}
                       </div>
@@ -997,20 +1116,25 @@ export default function GestionOTs() {
               ) : (
                 demandes.map((d) => {
                   const isExpanded = expandedDemandeId === d.id;
-                  const audioPieces = d.pieces_jointes?.filter((p) =>
-                    p.typeFichier?.startsWith("audio"),
-                  ) || [];
-                  const imagePieces = d.pieces_jointes?.filter((p) =>
-                    p.typeFichier?.startsWith("image"),
-                  ) || [];
-                  const videoPieces = d.pieces_jointes?.filter((p) =>
-                    p.typeFichier?.startsWith("video"),
-                  ) || [];
-                  const otherPieces = d.pieces_jointes?.filter((p) =>
-                    !p.typeFichier?.startsWith("audio") &&
-                    !p.typeFichier?.startsWith("image") &&
-                    !p.typeFichier?.startsWith("video"),
-                  ) || [];
+                  const audioPieces =
+                    d.pieces_jointes?.filter((p) =>
+                      p.typeFichier?.startsWith("audio"),
+                    ) || [];
+                  const imagePieces =
+                    d.pieces_jointes?.filter((p) =>
+                      p.typeFichier?.startsWith("image"),
+                    ) || [];
+                  const videoPieces =
+                    d.pieces_jointes?.filter((p) =>
+                      p.typeFichier?.startsWith("video"),
+                    ) || [];
+                  const otherPieces =
+                    d.pieces_jointes?.filter(
+                      (p) =>
+                        !p.typeFichier?.startsWith("audio") &&
+                        !p.typeFichier?.startsWith("image") &&
+                        !p.typeFichier?.startsWith("video"),
+                    ) || [];
 
                   return (
                     <motion.div
@@ -1031,35 +1155,46 @@ export default function GestionOTs() {
                             </span>
                             {d.nb_pieces_jointes > 0 && (
                               <span className="text-xs text-primary bg-primary-soft px-1.5 py-0.5 rounded-full border border-primary/20">
-                                 {d.nb_pieces_jointes}
+                                {d.nb_pieces_jointes}
                               </span>
                             )}
                           </div>
                           <button
-                            onClick={() => setExpandedDemandeId(isExpanded ? null : d.id)}
+                            onClick={() =>
+                              setExpandedDemandeId(isExpanded ? null : d.id)
+                            }
                             className="text-text-muted hover:text-text p-1 rounded-lg hover:bg-elevated transition"
                             title={isExpanded ? "Réduire" : "Développer"}>
-                            {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                            {isExpanded ? (
+                              <ChevronUp size={18} />
+                            ) : (
+                              <ChevronDown size={18} />
+                            )}
                           </button>
                         </div>
 
                         {/* Bannière rejet */}
-                        {d.statut === "rejetee_apres_validation" && d.rejet_info && (
-                          <div className="mt-2 bg-danger-soft border border-danger/30 rounded-lg p-2.5">
-                            <p className="text-xs text-danger font-semibold flex items-center gap-1.5">
-                              <span></span>
-                              Cette DI a été rejetée par l'opérateur ({d.rejet_info.count}x)
-                            </p>
-                            {d.rejet_info.motif && (
-                              <p className="text-[11px] text-danger/80 mt-1">
-                                Motif : {d.rejet_info.motif}
+                        {d.statut === "rejetee_apres_validation" &&
+                          d.rejet_info && (
+                            <div className="mt-2 bg-danger-soft border border-danger/30 rounded-lg p-2.5">
+                              <p className="text-xs text-danger font-semibold flex items-center gap-1.5">
+                                <span></span>
+                                Cette DI a été rejetée par l'opérateur (
+                                {d.rejet_info.count}x)
                               </p>
-                            )}
-                            <p className="text-[10px] text-text-muted mt-1">
-                              Dernier rejet : {new Date(d.rejet_info.date).toLocaleString("fr-FR")}
-                            </p>
-                          </div>
-                        )}
+                              {d.rejet_info.motif && (
+                                <p className="text-[11px] text-danger/80 mt-1">
+                                  Motif : {d.rejet_info.motif}
+                                </p>
+                              )}
+                              <p className="text-[10px] text-text-muted mt-1">
+                                Dernier rejet :{" "}
+                                {new Date(d.rejet_info.date).toLocaleString(
+                                  "fr-FR",
+                                )}
+                              </p>
+                            </div>
+                          )}
 
                         {/* Titre */}
                         {d.titre && (
@@ -1076,27 +1211,45 @@ export default function GestionOTs() {
                           <p className="text-[11px] text-text-muted mt-0.5">
                             {d.actif_detail.chemin_hierarchique.map((h, i) => (
                               <span key={h.id}>
-                                <span className="text-text-secondary">{h.libelle}</span>
-                                {i < d.actif_detail.chemin_hierarchique.length - 1 && (
-                                  <span className="mx-1 text-text-muted">›</span>
+                                <span className="text-text-secondary">
+                                  {h.libelle}
+                                </span>
+                                {i <
+                                  d.actif_detail.chemin_hierarchique.length -
+                                    1 && (
+                                  <span className="mx-1 text-text-muted">
+                                    ›
+                                  </span>
                                 )}
                               </span>
                             ))}
                             <span className="mx-1 text-text-muted">›</span>
-                            <span className="text-primary">{d.actif_detail.libelle}</span>
+                            <span className="text-primary">
+                              {d.actif_detail.libelle}
+                            </span>
                           </p>
                         )}
 
                         {/* Description (tronquée si fermé, complète si ouvert) */}
-                        <p className={`text-xs text-text-secondary mt-2 ${isExpanded ? "" : "line-clamp-2"}`}>
+                        <p
+                          className={`text-xs text-text-secondary mt-2 ${isExpanded ? "" : "line-clamp-2"}`}>
                           {d.description}
                         </p>
 
                         {/* Métadonnées */}
                         <div className="flex items-center gap-3 mt-2 text-[11px] text-text-muted">
-                          <span> {new Date(d.dateSignalement).toLocaleString("fr-FR")}</span>
+                          <span>
+                            {" "}
+                            {new Date(d.dateSignalement).toLocaleString(
+                              "fr-FR",
+                            )}
+                          </span>
                           {d.signalement_detail && (
-                            <span> {d.signalement_detail.prenom} {d.signalement_detail.nom}</span>
+                            <span>
+                              {" "}
+                              {d.signalement_detail.prenom}{" "}
+                              {d.signalement_detail.nom}
+                            </span>
                           )}
                         </div>
 
@@ -1107,28 +1260,34 @@ export default function GestionOTs() {
                             animate={{ opacity: 1, height: "auto" }}
                             transition={{ duration: 0.2 }}
                             className="mt-4 pt-4 border-t border-border-subtle space-y-4">
-
                             {/* Images */}
                             {imagePieces.length > 0 && (
                               <div>
                                 <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-2 flex items-center gap-1">
-                                  <Image size={12} /> Photos ({imagePieces.length})
+                                  <Image size={12} /> Photos (
+                                  {imagePieces.length})
                                 </p>
                                 <div className="grid grid-cols-3 gap-2">
                                   {imagePieces.map((img) => (
-                                    <div key={img.id} className="relative group rounded-lg overflow-hidden border border-border-subtle bg-surface">
+                                    <div
+                                      key={img.id}
+                                      className="relative group rounded-lg overflow-hidden border border-border-subtle bg-surface">
                                       <img
                                         src={img.url}
                                         alt={img.nomFichier}
                                         className="w-full h-20 object-cover"
-                                        onError={(e) => { e.target.style.display = "none"; }}
+                                        onError={(e) => {
+                                          e.target.style.display = "none";
+                                        }}
                                       />
                                       <a
                                         href={img.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 transition opacity-0 group-hover:opacity-100">
-                                        <span className="text-[10px] text-text bg-black/60 px-2 py-0.5 rounded">Voir</span>
+                                        <span className="text-[10px] text-text bg-black/60 px-2 py-0.5 rounded">
+                                          Voir
+                                        </span>
                                       </a>
                                     </div>
                                   ))}
@@ -1140,7 +1299,8 @@ export default function GestionOTs() {
                             {videoPieces.length > 0 && (
                               <div>
                                 <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-2 flex items-center gap-1">
-                                  <FileText size={12} /> Vidéos ({videoPieces.length})
+                                  <FileText size={12} /> Vidéos (
+                                  {videoPieces.length})
                                 </p>
                                 <div className="grid grid-cols-2 gap-2">
                                   {videoPieces.map((vid) => (
@@ -1159,7 +1319,8 @@ export default function GestionOTs() {
                             {audioPieces.length > 0 && (
                               <div>
                                 <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-2 flex items-center gap-1">
-                                  <Music size={12} /> Enregistrements audio ({audioPieces.length})
+                                  <Music size={12} /> Enregistrements audio (
+                                  {audioPieces.length})
                                 </p>
                                 <div className="space-y-2">
                                   {audioPieces.map((audio) => (
@@ -1167,14 +1328,20 @@ export default function GestionOTs() {
                                       key={audio.id}
                                       className={`bg-primary/10 border border-primary/30 rounded-lg p-2.5 flex items-center gap-3 transition ${playingAudioId === audio.id ? "ring-1 ring-primary" : ""}`}>
                                       <button
-                                        onClick={() => playAudio(audio.url, audio.id)}
+                                        onClick={() =>
+                                          playAudio(audio.url, audio.id)
+                                        }
                                         className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-text text-xs transition ${playingAudioId === audio.id ? "bg-primary animate-pulse" : "bg-primary hover:bg-primary/80"}`}>
                                         {playingAudioId === audio.id ? "⏸" : ""}
                                       </button>
                                       <div className="flex-1 min-w-0">
-                                        <p className="text-xs text-primary truncate">{audio.nomFichier}</p>
+                                        <p className="text-xs text-primary truncate">
+                                          {audio.nomFichier}
+                                        </p>
                                         <p className="text-[10px] text-text-muted">
-                                          {new Date(audio.dateTeleversement).toLocaleString("fr-FR")}
+                                          {new Date(
+                                            audio.dateTeleversement,
+                                          ).toLocaleString("fr-FR")}
                                         </p>
                                       </div>
                                       <a
@@ -1199,10 +1366,22 @@ export default function GestionOTs() {
                                 </p>
                                 <div className="space-y-1.5">
                                   {otherPieces.map((f) => (
-                                    <div key={f.id} className="flex items-center gap-2 p-2 bg-surface rounded-lg border border-border">
-                                      <FileText size={14} className="text-text-muted" />
-                                      <span className="text-xs text-text flex-1 truncate">{f.nomFichier}</span>
-                                      <a href={f.url} download target="_blank" rel="noopener noreferrer" className="text-text-muted hover:text-text">
+                                    <div
+                                      key={f.id}
+                                      className="flex items-center gap-2 p-2 bg-surface rounded-lg border border-border">
+                                      <FileText
+                                        size={14}
+                                        className="text-text-muted"
+                                      />
+                                      <span className="text-xs text-text flex-1 truncate">
+                                        {f.nomFichier}
+                                      </span>
+                                      <a
+                                        href={f.url}
+                                        download
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-text-muted hover:text-text">
                                         <Download size={14} />
                                       </a>
                                     </div>
@@ -1216,7 +1395,7 @@ export default function GestionOTs() {
                               <button
                                 onClick={() => handleValider(d.id)}
                                 className="flex-1 py-2.5 btn btn-success rounded-lg text-sm font-medium transition text-text">
-                                 Valider → Créer OT
+                                Valider → Créer OT
                               </button>
                               <button
                                 onClick={() => {
@@ -1286,7 +1465,7 @@ export default function GestionOTs() {
                     </span>
                     {otSelectionne.est_en_retard && (
                       <span className="text-xs bg-danger-soft text-danger px-1.5 py-0.5 rounded-full border border-danger/30">
-                         Retard
+                        Retard
                       </span>
                     )}
                   </div>
@@ -1296,9 +1475,7 @@ export default function GestionOTs() {
                 </div>
                 <button
                   onClick={() => setOtSelectionne(null)}
-                  className="text-text-muted hover:text-text ml-2 p-1 rounded-lg hover:bg-elevated transition">
-                  
-                </button>
+                  className="text-text-muted hover:text-text ml-2 p-1 rounded-lg hover:bg-elevated transition"></button>
               </div>
 
               {/* Tabs panneau */}
@@ -1356,7 +1533,9 @@ export default function GestionOTs() {
                   {["EN_COURS"].includes(otSelectionne.statut) && (
                     <div className="bg-surface rounded-xl p-4 border border-border shadow-card">
                       <p className="text-xs text-text-secondary mb-3 font-semibold">
-                        {editAffectation ? "Modifier l'affectation" : "Affecter une équipe / sous-traitant"}
+                        {editAffectation
+                          ? "Modifier l'affectation"
+                          : "Affecter une équipe / sous-traitant"}
                       </p>
                       <AffectationForm
                         otId={otSelectionne.id}
@@ -1392,7 +1571,9 @@ export default function GestionOTs() {
                               <div className="flex flex-wrap gap-1 mt-1 items-center">
                                 {a.membres?.length > 0 ? (
                                   a.membres.map((m) => (
-                                    <span key={m.id} className="text-[9px] bg-primary-soft text-primary px-1.5 py-0.5 rounded border border-primary/20 flex items-center gap-1">
+                                    <span
+                                      key={m.id}
+                                      className="text-[9px] bg-primary-soft text-primary px-1.5 py-0.5 rounded border border-primary/20 flex items-center gap-1">
                                       <span className="w-3 h-3 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[7px] font-bold border border-primary/30">
                                         {m.utilisateur_detail
                                           ? `${m.utilisateur_detail.prenom?.[0] || ""}${m.utilisateur_detail.nom?.[0] || ""}`.toUpperCase()
@@ -1400,20 +1581,26 @@ export default function GestionOTs() {
                                       </span>
                                       {m.utilisateur_detail
                                         ? `${m.utilisateur_detail.prenom} ${m.utilisateur_detail.nom}`
-                                        : m.utilisateur_nom || `Tech #${m.id?.slice(-4)}`}
+                                        : m.utilisateur_nom ||
+                                          `Tech #${m.id?.slice(-4)}`}
                                     </span>
                                   ))
                                 ) : (
-                                  <span className="text-[9px] text-text-muted italic">Aucun technicien</span>
+                                  <span className="text-[9px] text-text-muted italic">
+                                    Aucun technicien
+                                  </span>
                                 )}
-                                {["EN_COURS"].includes(otSelectionne.statut) && (
+                                {["EN_COURS"].includes(
+                                  otSelectionne.statut,
+                                ) && (
                                   <button
                                     type="button"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setEditAffectation({
                                         id: a.id,
-                                        equipeId: a.equipe_detail?.id || a.idEquipe,
+                                        equipeId:
+                                          a.equipe_detail?.id || a.idEquipe,
                                         membres: a.membres || [],
                                         dateDebut: a.dateDebut,
                                       });
@@ -1444,7 +1631,8 @@ export default function GestionOTs() {
                                       e.stopPropagation();
                                       setEditAffectation({
                                         id: a.id,
-                                        equipeId: a.equipe_detail?.id || a.idEquipe,
+                                        equipeId:
+                                          a.equipe_detail?.id || a.idEquipe,
                                         membres: a.membres || [],
                                         dateDebut: a.dateDebut,
                                       });
@@ -1457,7 +1645,12 @@ export default function GestionOTs() {
                                     type="button"
                                     onClick={async (e) => {
                                       e.stopPropagation();
-                                      if (!confirm("Supprimer cette affectation ?")) return;
+                                      if (
+                                        !confirm(
+                                          "Supprimer cette affectation ?",
+                                        )
+                                      )
+                                        return;
                                       try {
                                         await deleteAffectation(a.id);
                                         charger();
@@ -1486,7 +1679,7 @@ export default function GestionOTs() {
                     <Button
                       onClick={() => setModalComment(true)}
                       className="w-full py-2 btn btn-ghost rounded-lg text-sm transition">
-                       Saisir compte rendu
+                      Saisir compte rendu
                     </Button>
                   </div>
 
@@ -1537,12 +1730,13 @@ export default function GestionOTs() {
                           )
                         : "—",
                     ],
-
                   ].map(([l, v]) => (
                     <div
                       key={l}
                       className="flex justify-between text-sm py-2 px-2 border-b border-border-subtle last:border-0">
-                      <span className="text-text-secondary font-medium">{l}</span>
+                      <span className="text-text-secondary font-medium">
+                        {l}
+                      </span>
                       <span className="text-text font-semibold text-right max-w-[55%] break-words">
                         {v}
                       </span>
@@ -1584,7 +1778,9 @@ export default function GestionOTs() {
                                   className={`text-xs px-2 py-0.5 rounded-full border ${STATUT_CLS[h.ancienStatut]}`}>
                                   {STATUT_LABEL[h.ancienStatut]}
                                 </span>
-                                <span className="text-text-muted text-xs">→</span>
+                                <span className="text-text-muted text-xs">
+                                  →
+                                </span>
                               </>
                             )}
                             <span
@@ -1656,7 +1852,9 @@ export default function GestionOTs() {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-surface rounded-2xl border border-border p-6 w-full max-w-sm shadow-2xl">
             <h2 className="text-lg font-semibold mb-4">Motif de rejet</h2>
-            <label className="block text-xs text-text-secondary mb-1">Motif</label>
+            <label className="block text-xs text-text-secondary mb-1">
+              Motif
+            </label>
             <Textarea
               value={motifRejet}
               onChange={(e) => setMotifRejet(e.target.value)}
@@ -1683,62 +1881,112 @@ export default function GestionOTs() {
       {modalComment && (
         <div className="fixed inset-0 bg-black/60 flex items-start justify-center z-50 py-8 overflow-y-auto">
           <div className="bg-surface rounded-2xl border border-border p-6 w-full max-w-2xl shadow-2xl my-auto">
-            <h2 className="text-lg font-semibold mb-1"> Compte rendu d'intervention</h2>
-            <p className="text-text-secondary text-sm mb-4">{otSelectionne?.numero} — {otSelectionne?.actif_detail?.code}</p>
+            <h2 className="text-lg font-semibold mb-1">
+              {" "}
+              Compte rendu d'intervention
+            </h2>
+            <p className="text-text-secondary text-sm mb-4">
+              {otSelectionne?.numero} — {otSelectionne?.actif_detail?.code}
+            </p>
 
-            <form onSubmit={handleCompteRendu} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+            <form
+              onSubmit={handleCompteRendu}
+              className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
               {/* Actifs corrigés */}
               <div className="bg-surface rounded-xl border border-border p-4 shadow-card">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xs font-semibold text-status-cyan uppercase tracking-wider flex items-center gap-1.5">
                     <CheckCircle size={12} /> Actifs corrigés
                   </h3>
-                  <button type="button"
-                    onClick={() => { setShowActifCorrigeSelector((s) => !s); if (!showActifCorrigeSelector) initCorrigeSelector(); }}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowActifCorrigeSelector((s) => !s);
+                      if (!showActifCorrigeSelector) initCorrigeSelector();
+                    }}
                     className="text-[10px] flex items-center gap-1 text-status-cyan hover:text-status-cyan border border-status-cyan/30 bg-status-cyan/10 px-2 py-1 rounded-lg transition">
-                    <Plus size={10} /> {showActifCorrigeSelector ? "Annuler" : "Ajouter"}
+                    <Plus size={10} />{" "}
+                    {showActifCorrigeSelector ? "Annuler" : "Ajouter"}
                   </button>
                 </div>
                 {actifsCorriges.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-2">
                     {actifsCorriges.map((a) => (
-                      <span key={a.id} className="text-[10px] bg-status-cyan/10 text-status-cyan px-2 py-0.5 rounded-full border border-status-cyan/20 flex items-center gap-1">
+                      <span
+                        key={a.id}
+                        className="text-[10px] bg-status-cyan/10 text-status-cyan px-2 py-0.5 rounded-full border border-status-cyan/20 flex items-center gap-1">
                         <CheckCircle size={8} /> {a.code}
-                        <button type="button" onClick={() => retirerActifCorrige(a.id)} className="text-status-cyan hover:text-danger ml-0.5"><Trash2 size={8} /></button>
+                        <button
+                          type="button"
+                          onClick={() => retirerActifCorrige(a.id)}
+                          className="text-status-cyan hover:text-danger ml-0.5">
+                          <Trash2 size={8} />
+                        </button>
                       </span>
                     ))}
                   </div>
                 )}
                 <AnimatePresence>
                   {showActifCorrigeSelector && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden">
                       <div className="bg-elevated rounded-lg p-3 border border-border-subtle space-y-2">
-                        <p className="text-[10px] text-text-secondary">Sélectionnez l'équipement réparé :</p>
+                        <p className="text-[10px] text-text-secondary">
+                          Sélectionnez l'équipement réparé :
+                        </p>
                         {corrigeLoading ? (
-                          <p className="text-xs text-text-muted">Chargement...</p>
+                          <p className="text-xs text-text-muted">
+                            Chargement...
+                          </p>
                         ) : (
                           <>
-                            {corrigeOptionsAtLevel.map((options, levelIndex) => (
-                              <div key={levelIndex}>
-                                <label className="text-[9px] text-text-muted uppercase tracking-wider block mb-0.5">
-                                  {levelIndex === 0 ? "Site / Zone" : `Niveau ${levelIndex + 1}`}
-                                </label>
-                                <select
-                                  value={corrigeSelectionPath[levelIndex]?.id || ""}
-                                  onChange={(e) => handleCorrigeSelectAtLevel(levelIndex, e.target.value)}
-                                  className="w-full bg-elevated text-text rounded-lg px-2 py-1.5 text-xs border border-border-subtle outline-none focus:border-status-cyan"
-                                >
-                                  <option value="">Sélectionner...</option>
-                                  {options.map((a) => (
-                                    <option key={a.id} value={a.id}>{a.code} — {a.libelle}</option>
-                                  ))}
-                                </select>
-                              </div>
-                            ))}
+                            {corrigeOptionsAtLevel.map(
+                              (options, levelIndex) => (
+                                <div key={levelIndex}>
+                                  <label className="text-[9px] text-text-muted uppercase tracking-wider block mb-0.5">
+                                    {levelIndex === 0
+                                      ? "Site / Zone"
+                                      : `Niveau ${levelIndex + 1}`}
+                                  </label>
+                                  <select
+                                    value={
+                                      corrigeSelectionPath[levelIndex]?.id || ""
+                                    }
+                                    onChange={(e) =>
+                                      handleCorrigeSelectAtLevel(
+                                        levelIndex,
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="w-full bg-elevated text-text rounded-lg px-2 py-1.5 text-xs border border-border-subtle outline-none focus:border-status-cyan">
+                                    <option value="">Sélectionner...</option>
+                                    {options.map((a) => (
+                                      <option key={a.id} value={a.id}>
+                                        {a.code} — {a.libelle}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              ),
+                            )}
                             {corrigeSelectionPath.length > 0 && (
                               <div className="flex items-center justify-between pt-1">
-                                <p className="text-[10px] text-text-secondary">Sélection : <span className="text-text font-medium">{corrigeSelectionPath[corrigeSelectionPath.length - 1]?.code}</span></p>
-                                <button type="button" onClick={ajouterActifCorrige}
+                                <p className="text-[10px] text-text-secondary">
+                                  Sélection :{" "}
+                                  <span className="text-text font-medium">
+                                    {
+                                      corrigeSelectionPath[
+                                        corrigeSelectionPath.length - 1
+                                      ]?.code
+                                    }
+                                  </span>
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={ajouterActifCorrige}
                                   className="text-[10px] btn btn-success text-text px-3 py-1 rounded-lg transition flex items-center gap-1">
                                   <Plus size={10} /> Ajouter
                                 </button>
@@ -1754,10 +2002,18 @@ export default function GestionOTs() {
 
               {/* Travaux réalisés */}
               <div>
-                <Label className="text-xs text-text-secondary mb-1 flex items-center gap-1"><Wrench size={10} className="text-primary" /> Travaux réalisés *</Label>
+                <Label className="text-xs text-text-secondary mb-1 flex items-center gap-1">
+                  <Wrench size={10} className="text-primary" /> Travaux réalisés
+                  *
+                </Label>
                 <Textarea
                   value={rapport.descriptionTravail}
-                  onChange={(e) => setRapport((r) => ({ ...r, descriptionTravail: e.target.value }))}
+                  onChange={(e) =>
+                    setRapport((r) => ({
+                      ...r,
+                      descriptionTravail: e.target.value,
+                    }))
+                  }
                   placeholder="Détaillez les actions effectuées..."
                   rows={3}
                   className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-primary resize-none"
@@ -1767,10 +2023,15 @@ export default function GestionOTs() {
 
               {/* Constatations */}
               <div>
-                <Label className="text-xs text-text-secondary mb-1 flex items-center gap-1"><AlertTriangle size={10} className="text-primary" /> Constatations</Label>
+                <Label className="text-xs text-text-secondary mb-1 flex items-center gap-1">
+                  <AlertTriangle size={10} className="text-primary" />{" "}
+                  Constatations
+                </Label>
                 <Textarea
                   value={rapport.constatations}
-                  onChange={(e) => setRapport((r) => ({ ...r, constatations: e.target.value }))}
+                  onChange={(e) =>
+                    setRapport((r) => ({ ...r, constatations: e.target.value }))
+                  }
                   placeholder="État avant/après, observations..."
                   rows={2}
                   className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-primary resize-none"
@@ -1779,15 +2040,22 @@ export default function GestionOTs() {
 
               {/* Cause racine */}
               <div>
-                <Label className="text-xs text-text-secondary mb-1.5"> Cause racine</Label>
+                <Label className="text-xs text-text-secondary mb-1.5">
+                  {" "}
+                  Cause racine
+                </Label>
                 <div className="grid grid-cols-3 md:grid-cols-5 gap-1.5">
                   {Object.entries(CATEGORIES_CAUSE).map(([k, v]) => (
                     <button
                       key={k}
                       type="button"
-                      onClick={() => setRapport((r) => ({ ...r, causeRacine: k }))}
+                      onClick={() =>
+                        setRapport((r) => ({ ...r, causeRacine: k }))
+                      }
                       className={`py-1.5 px-2 rounded-lg text-[10px] font-medium transition border ${
-                        rapport.causeRacine === k ? v.color + " border-opacity-100" : "bg-elevated border-border-subtle text-text-secondary hover:text-text"
+                        rapport.causeRacine === k
+                          ? v.color + " border-opacity-100"
+                          : "bg-elevated border-border-subtle text-text-secondary hover:text-text"
                       }`}>
                       {v.label}
                     </button>
@@ -1797,10 +2065,18 @@ export default function GestionOTs() {
 
               {/* Solution apportée */}
               <div>
-                <Label className="text-xs text-text-secondary mb-1 flex items-center gap-1"><CheckCircle size={10} className="text-success" /> Solution apportée *</Label>
+                <Label className="text-xs text-text-secondary mb-1 flex items-center gap-1">
+                  <CheckCircle size={10} className="text-success" /> Solution
+                  apportée *
+                </Label>
                 <Textarea
                   value={rapport.solutionApportee}
-                  onChange={(e) => setRapport((r) => ({ ...r, solutionApportee: e.target.value }))}
+                  onChange={(e) =>
+                    setRapport((r) => ({
+                      ...r,
+                      solutionApportee: e.target.value,
+                    }))
+                  }
                   placeholder="Résumé de la solution définitive..."
                   rows={2}
                   className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-success resize-none"
@@ -1810,30 +2086,88 @@ export default function GestionOTs() {
 
               {/* État final */}
               <div className="bg-surface rounded-xl border border-border p-3 shadow-card">
-                <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-2"> État final</p>
+                <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-2">
+                  {" "}
+                  État final
+                </p>
                 <div className="space-y-2">
-                  <label className="flex items-start gap-2 p-2 rounded-lg border border-success/30 bg-success/10 cursor-pointer hover:bg-success/20 transition"
-                    onClick={() => setRapport((r) => ({ ...r, estCloture: true, typeCloture: "corrige" }))}>
-                    <input type="radio" name="etatFinal" checked={rapport.estCloture && rapport.typeCloture === "corrige"} onChange={() => {}} className="mt-0.5 accent-success" />
+                  <label
+                    className="flex items-start gap-2 p-2 rounded-lg border border-success/30 bg-success/10 cursor-pointer hover:bg-success/20 transition"
+                    onClick={() =>
+                      setRapport((r) => ({
+                        ...r,
+                        estCloture: true,
+                        typeCloture: "corrige",
+                      }))
+                    }>
+                    <input
+                      type="radio"
+                      name="etatFinal"
+                      checked={
+                        rapport.estCloture && rapport.typeCloture === "corrige"
+                      }
+                      onChange={() => {}}
+                      className="mt-0.5 accent-success"
+                    />
                     <div>
-                      <p className="text-xs font-medium text-success">Réparation définitive</p>
-                      <p className="text-[10px] text-success/80">Clôturer l'OT — équipement réparé</p>
+                      <p className="text-xs font-medium text-success">
+                        Réparation définitive
+                      </p>
+                      <p className="text-[10px] text-success/80">
+                        Clôturer l'OT — équipement réparé
+                      </p>
                     </div>
                   </label>
-                  <label className="flex items-start gap-2 p-2 rounded-lg border border-status-orange/30 bg-status-orange/10 cursor-pointer hover:bg-status-orange/20 transition"
-                    onClick={() => setRapport((r) => ({ ...r, estCloture: true, typeCloture: "depanne" }))}>
-                    <input type="radio" name="etatFinal" checked={rapport.estCloture && rapport.typeCloture === "depanne"} onChange={() => {}} className="mt-0.5 accent-status-orange" />
+                  <label
+                    className="flex items-start gap-2 p-2 rounded-lg border border-status-orange/30 bg-status-orange/10 cursor-pointer hover:bg-status-orange/20 transition"
+                    onClick={() =>
+                      setRapport((r) => ({
+                        ...r,
+                        estCloture: true,
+                        typeCloture: "depanne",
+                      }))
+                    }>
+                    <input
+                      type="radio"
+                      name="etatFinal"
+                      checked={
+                        rapport.estCloture && rapport.typeCloture === "depanne"
+                      }
+                      onChange={() => {}}
+                      className="mt-0.5 accent-status-orange"
+                    />
                     <div>
-                      <p className="text-xs font-medium text-status-orange">Dépannage temporaire</p>
-                      <p className="text-[10px] text-status-orange/80">Marquer dépanné — intervention ultérieure nécessaire</p>
+                      <p className="text-xs font-medium text-status-orange">
+                        Dépannage temporaire
+                      </p>
+                      <p className="text-[10px] text-status-orange/80">
+                        Marquer dépanné — intervention ultérieure nécessaire
+                      </p>
                     </div>
                   </label>
-                  <label className="flex items-start gap-2 p-2 rounded-lg border border-border-subtle bg-elevated cursor-pointer hover:bg-hover transition"
-                    onClick={() => setRapport((r) => ({ ...r, estCloture: false, typeCloture: "depanne" }))}>
-                    <input type="radio" name="etatFinal" checked={!rapport.estCloture} onChange={() => {}} className="mt-0.5 accent-text-secondary" />
+                  <label
+                    className="flex items-start gap-2 p-2 rounded-lg border border-border-subtle bg-elevated cursor-pointer hover:bg-hover transition"
+                    onClick={() =>
+                      setRapport((r) => ({
+                        ...r,
+                        estCloture: false,
+                        typeCloture: "depanne",
+                      }))
+                    }>
+                    <input
+                      type="radio"
+                      name="etatFinal"
+                      checked={!rapport.estCloture}
+                      onChange={() => {}}
+                      className="mt-0.5 accent-text-secondary"
+                    />
                     <div>
-                      <p className="text-xs font-medium text-text">Ne pas clôturer</p>
-                      <p className="text-[10px] text-text-muted">Enregistrer le rapport, OT reste en cours</p>
+                      <p className="text-xs font-medium text-text">
+                        Ne pas clôturer
+                      </p>
+                      <p className="text-[10px] text-text-muted">
+                        Enregistrer le rapport, OT reste en cours
+                      </p>
                     </div>
                   </label>
                 </div>
@@ -1849,9 +2183,19 @@ export default function GestionOTs() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={submitting || !rapport.descriptionTravail.trim() || !rapport.solutionApportee.trim()}
+                  disabled={
+                    submitting ||
+                    !rapport.descriptionTravail.trim() ||
+                    !rapport.solutionApportee.trim()
+                  }
                   className="px-4 py-2 text-sm btn btn-primary rounded-lg transition text-text disabled:opacity-50 flex items-center gap-1.5">
-                  {submitting ? "..." : <><CheckCircle size={14} /> Envoyer le rapport</>}
+                  {submitting ? (
+                    "..."
+                  ) : (
+                    <>
+                      <CheckCircle size={14} /> Envoyer le rapport
+                    </>
+                  )}
                 </Button>
               </div>
             </form>
@@ -1929,7 +2273,7 @@ export default function GestionOTs() {
                   {demandeDetail.signalement_detail && (
                     <div className="flex items-start gap-3">
                       <span className="text-text-secondary min-w-fit">
-                         Créée par:
+                        Créée par:
                       </span>
                       <div>
                         <p className="text-text font-medium">
@@ -1947,7 +2291,7 @@ export default function GestionOTs() {
                   {demandeDetail.validation_detail && (
                     <div className="flex items-start gap-3 pt-2 border-t border-border-subtle">
                       <span className="text-text-secondary min-w-fit">
-                         OT créé par:
+                        OT créé par:
                       </span>
                       <div>
                         <p className="text-text font-medium">
@@ -1978,7 +2322,13 @@ export default function GestionOTs() {
                 ).length > 0 && (
                   <div>
                     <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-1.5">
-                      <Music size={12} /> Enregistrements audio ({demandeDetail.pieces_jointes.filter((p) => p.typeFichier?.startsWith("audio")).length})
+                      <Music size={12} /> Enregistrements audio (
+                      {
+                        demandeDetail.pieces_jointes.filter((p) =>
+                          p.typeFichier?.startsWith("audio"),
+                        ).length
+                      }
+                      )
                     </p>
                     <div className="space-y-2">
                       {demandeDetail.pieces_jointes
@@ -2048,72 +2398,95 @@ export default function GestionOTs() {
               </div>
 
               {/* Pièces jointes */}
-              {demandeDetail.pieces_jointes && demandeDetail.pieces_jointes.length > 0 && (
-                <div>
-                  <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-1.5">
-                    <FileText size={12} /> Pièces jointes ({demandeDetail.pieces_jointes.length})
-                  </p>
+              {demandeDetail.pieces_jointes &&
+                demandeDetail.pieces_jointes.length > 0 && (
+                  <div>
+                    <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-1.5">
+                      <FileText size={12} /> Pièces jointes (
+                      {demandeDetail.pieces_jointes.length})
+                    </p>
 
-                  {/* Images */}
-                  {demandeDetail.pieces_jointes.some((f) => f.typeFichier?.startsWith("image")) && (
-                    <div className="mb-4">
-                      <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1">
-                        <Image size={10} /> Photos
-                      </p>
-                      <div className="grid grid-cols-3 gap-2">
-                        {demandeDetail.pieces_jointes
-                          .filter((f) => f.typeFichier?.startsWith("image"))
-                          .map((f) => (
-                            <ImageViewer key={f.id} file={f} />
-                          ))}
+                    {/* Images */}
+                    {demandeDetail.pieces_jointes.some((f) =>
+                      f.typeFichier?.startsWith("image"),
+                    ) && (
+                      <div className="mb-4">
+                        <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1">
+                          <Image size={10} /> Photos
+                        </p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {demandeDetail.pieces_jointes
+                            .filter((f) => f.typeFichier?.startsWith("image"))
+                            .map((f) => (
+                              <ImageViewer key={f.id} file={f} />
+                            ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Vidéos */}
-                  {demandeDetail.pieces_jointes.some((f) => f.typeFichier?.startsWith("video")) && (
-                    <div className="mb-4">
-                      <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1">
-                        <Video size={10} /> Vidéos
-                      </p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {demandeDetail.pieces_jointes
-                          .filter((f) => f.typeFichier?.startsWith("video"))
-                          .map((f) => (
-                            <VideoViewer key={f.id} file={f} />
-                          ))}
+                    {/* Vidéos */}
+                    {demandeDetail.pieces_jointes.some((f) =>
+                      f.typeFichier?.startsWith("video"),
+                    ) && (
+                      <div className="mb-4">
+                        <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1">
+                          <Video size={10} /> Vidéos
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {demandeDetail.pieces_jointes
+                            .filter((f) => f.typeFichier?.startsWith("video"))
+                            .map((f) => (
+                              <VideoViewer key={f.id} file={f} />
+                            ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Autres fichiers */}
-                  {demandeDetail.pieces_jointes.filter(
-                    (f) => !f.typeFichier?.startsWith("audio") && !f.typeFichier?.startsWith("image") && !f.typeFichier?.startsWith("video"),
-                  ).length > 0 && (
-                    <div>
-                      <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1">
-                        <FileText size={10} /> Autres fichiers
-                      </p>
-                      <div className="space-y-1.5">
-                        {demandeDetail.pieces_jointes
-                          .filter(
-                            (f) => !f.typeFichier?.startsWith("audio") && !f.typeFichier?.startsWith("image") && !f.typeFichier?.startsWith("video"),
-                          )
-                          .map((f) => (
-                            <div key={f.id} className="flex items-center gap-3 p-2.5 border border-border rounded-lg bg-surface">
-                              <FileText size={14} className="shrink-0 text-text-muted" />
-                              <span className="text-xs text-text flex-1 truncate">{f.nomFichier}</span>
-                              <a href={f.url} download target="_blank" rel="noopener noreferrer"
-                                className="text-primary text-xs flex items-center gap-1 shrink-0 hover:underline">
-                                <Download size={12} /> Télécharger
-                              </a>
-                            </div>
-                          ))}
+                    {/* Autres fichiers */}
+                    {demandeDetail.pieces_jointes.filter(
+                      (f) =>
+                        !f.typeFichier?.startsWith("audio") &&
+                        !f.typeFichier?.startsWith("image") &&
+                        !f.typeFichier?.startsWith("video"),
+                    ).length > 0 && (
+                      <div>
+                        <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1">
+                          <FileText size={10} /> Autres fichiers
+                        </p>
+                        <div className="space-y-1.5">
+                          {demandeDetail.pieces_jointes
+                            .filter(
+                              (f) =>
+                                !f.typeFichier?.startsWith("audio") &&
+                                !f.typeFichier?.startsWith("image") &&
+                                !f.typeFichier?.startsWith("video"),
+                            )
+                            .map((f) => (
+                              <div
+                                key={f.id}
+                                className="flex items-center gap-3 p-2.5 border border-border rounded-lg bg-surface">
+                                <FileText
+                                  size={14}
+                                  className="shrink-0 text-text-muted"
+                                />
+                                <span className="text-xs text-text flex-1 truncate">
+                                  {f.nomFichier}
+                                </span>
+                                <a
+                                  href={f.url}
+                                  download
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary text-xs flex items-center gap-1 shrink-0 hover:underline">
+                                  <Download size={12} /> Télécharger
+                                </a>
+                              </div>
+                            ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                    )}
+                  </div>
+                )}
             </div>
 
             {/* Footer */}
@@ -2129,7 +2502,7 @@ export default function GestionOTs() {
                   setDemandeDetail(null);
                 }}
                 className="flex-1 py-2 btn btn-success rounded-lg text-sm font-medium transition text-text">
-                 Valider
+                Valider
               </Button>
             </div>
           </div>

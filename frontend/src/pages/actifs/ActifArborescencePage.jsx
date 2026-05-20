@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -10,6 +10,10 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   getActif,
@@ -30,7 +34,6 @@ import {
   Pencil,
   Trash2,
   Save,
-  X,
   FolderTree,
   Package,
   Box,
@@ -38,8 +41,6 @@ import {
   Wrench,
   CreditCard,
   Hash,
-  Tag,
-  FileText,
   CalendarDays,
   Gauge,
   Clock,
@@ -50,8 +51,15 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-//  Config 
+// ─── Config ──────────────────────────────────────────────────────────────────
 
 const STATUTS = {
   actif: {
@@ -117,6 +125,8 @@ const STATUTS_OPTIONS = [
   { value: "retire", label: "Retiré" },
 ];
 
+// ─── Badges ───────────────────────────────────────────────────────────────────
+
 function StatutBadge({ statut }) {
   const cfg = STATUTS[statut] || {
     label: statut,
@@ -145,45 +155,7 @@ function TypeBadge({ type }) {
   );
 }
 
-function InfoRow({ label, value, icon: Icon }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "10px 0",
-        borderBottom: "1px solid var(--border-subtle)",
-      }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        {Icon && (
-          <Icon
-            size={13}
-            style={{ color: "var(--text-muted)", flexShrink: 0 }}
-          />
-        )}
-        <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
-          {label}
-        </span>
-      </div>
-      <span
-        style={{
-          fontSize: 13,
-          fontWeight: 500,
-          color:
-            value && value !== "—"
-              ? "var(--text-primary)"
-              : "var(--text-muted)",
-          textAlign: "right",
-          maxWidth: "55%",
-        }}>
-        {value || "—"}
-      </span>
-    </div>
-  );
-}
-
-//  Tree Node 
+// ─── Tree Node ────────────────────────────────────────────────────────────────
 
 function TreeNode({ actif, selectedId, onSelect, level = 0 }) {
   const [expanded, setExpanded] = useState(true);
@@ -275,7 +247,7 @@ function TreeNode({ actif, selectedId, onSelect, level = 0 }) {
   );
 }
 
-//  Form Modal 
+// ─── Form Modal ───────────────────────────────────────────────────────────────
 
 const initialFormState = {
   code: "",
@@ -299,7 +271,7 @@ export function ActifFormModal({
   onClose,
   onSaved,
   parentId,
-  parentActif, // ← nouveau prop : l'actif parent complet
+  parentActif,
   editActif,
   sites,
   unites,
@@ -308,7 +280,6 @@ export function ActifFormModal({
   defaultUniteId,
 }) {
   const isEdit = Boolean(editActif);
-  // isAddingChild = true quand on ajoute un enfant (pas en mode édition)
   const isAddingChild = !isEdit && Boolean(parentId);
 
   const [form, setForm] = useState(initialFormState);
@@ -316,8 +287,19 @@ export function ActifFormModal({
   const [erreur, setErreur] = useState(null);
   const [errors, setErrors] = useState({});
 
+  // Ref for the modal container — used as portal container for SelectContent
+  const modalRef = useRef(null);
+
   useEffect(() => {
     if (!open) return;
+    console.log(
+      "Modal open — parentActif:",
+      parentActif,
+      "defaultSiteId:",
+      defaultSiteId,
+      "defaultUniteId:",
+      defaultUniteId,
+    );
     if (isEdit && editActif) {
       setForm({
         code: editActif.code || "",
@@ -338,24 +320,39 @@ export function ActifFormModal({
         estActif: editActif.estActif !== undefined ? editActif.estActif : true,
       });
     } else {
-      // Ajout d'un enfant : héritage du site et de l'unité du parent
       setForm({
         ...initialFormState,
         idParent: parentId || "",
-        idSite: parentActif?.idSite || "" || defaultSiteId,
-        idUnite: parentActif?.idUnite || "" || defaultUniteId,
+        idSite: defaultSiteId ? String(defaultSiteId) : "",
+        idUnite: defaultUniteId ? String(defaultUniteId) : "",
       });
     }
     setErreur(null);
     setErrors({});
-  }, [open, isEdit, editActif, parentId, parentActif]);
+  }, [
+    open,
+    isEdit,
+    editActif,
+    parentId,
+    parentActif,
+    defaultSiteId,
+    defaultUniteId,
+  ]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((f) => ({
       ...f,
       [name]: type === "checkbox" ? checked : value,
-      // Réinitialise l'unité quand le site change (seulement si non verrouillé)
+    }));
+    if (errors[name]) setErrors((err) => ({ ...err, [name]: undefined }));
+  };
+
+  // shadcn <Select> handler — receives value string directly
+  const handleSelectChange = (name) => (value) => {
+    setForm((f) => ({
+      ...f,
+      [name]: value,
       ...(name === "idSite" ? { idUnite: "" } : {}),
     }));
     if (errors[name]) setErrors((err) => ({ ...err, [name]: undefined }));
@@ -396,42 +393,85 @@ export function ActifFormModal({
     }
   };
 
-  //  Options filtrées site → secteur → unité 
+  // Filtered options: site → secteur → unité
   const siteOpts = useMemo(
     () =>
-      sites.map((s) => ({ value: s.id, label: `${s.code} — ${s.libelle}` })),
+      sites.map((s) => ({
+        value: String(s.id),
+        label: `${s.code} — ${s.libelle}`,
+      })),
     [sites],
   );
 
   const uniteOpts = useMemo(() => {
-    if (!form.idSite) return [];
+    const siteId = form.idSite || defaultSiteId;
+    if (!siteId) return [];
     const secteurIds = new Set(
       secteurs
         .filter(
           (sec) =>
-            String(sec.site) === String(form.idSite) ||
-            String(sec.site?.id) === String(form.idSite),
+            String(sec.site) === String(siteId) ||
+            String(sec.site?.id) === String(siteId),
         )
         .map((sec) => sec.id),
     );
     return unites
       .filter((u) => secteurIds.has(u.secteur) || secteurIds.has(u.secteur?.id))
-      .map((u) => ({ value: u.id, label: `${u.code} — ${u.libelle}` }));
-  }, [unites, secteurs, form.idSite]);
+      .map((u) => ({
+        value: String(u.id),
+        label: `${u.code} — ${u.libelle}`,
+      }));
+  }, [unites, secteurs, form.idSite, defaultSiteId]);
 
   if (!open) return null;
 
   return (
-    <div className="backdrop">
-      <div className="modal" style={{ maxWidth: 560 }}>
+    /*
+     * FIX: The backdrop must NOT have overflow:hidden or a CSS transform,
+     * because both create a new stacking context that traps the Radix portal.
+     * We give the modal `position: relative` and a high z-index so the
+     * SelectContent portal (rendered into <body>) still appears above it.
+     * We also pass `container={modalRef.current}` to every SelectContent so
+     * Radix portals into the modal element instead of <body>, which avoids
+     * any z-index race entirely.
+     */
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 50,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.45)",
+        backdropFilter: "blur(2px)",
+        // NO overflow:hidden, NO transform
+      }}>
+      <div
+        ref={modalRef}
+        style={{
+          position: "relative", // ← required for portal containment
+          zIndex: 51,
+          background: "var(--bg-surface)",
+          borderRadius: "var(--r)",
+          border: "1px solid var(--border-subtle)",
+          boxShadow: "0 24px 48px rgba(0,0,0,0.18)",
+          width: "100%",
+          maxWidth: 560,
+          maxHeight: "90vh",
+          display: "flex",
+          flexDirection: "column",
+          overflowY: "auto", // scroll here, NOT on the backdrop
+        }}>
+        {/* ── Header ── */}
         <div className="m-hdr">
           <span className="m-title">
             {isEdit ? "Modifier l'actif" : "Ajouter un sous-actif"}
           </span>
-          <button className="m-close" onClick={onClose}>
-            
-          </button>
+          <button className="m-close" onClick={onClose} />
         </div>
+
+        {/* ── Error banner ── */}
         {erreur && (
           <div
             style={{
@@ -444,75 +484,81 @@ export function ActifFormModal({
             {erreur}
           </div>
         )}
+
+        {/* ── Form ── */}
         <form onSubmit={handleSubmit}>
           <div className="m-body" style={{ gap: 10, padding: "14px 18px" }}>
+            {/* Code */}
             <div className="fg">
-              <label className="flabel">
+              <Label className="flabel">
                 Code <span className="req">*</span>
-              </label>
-              <input
+              </Label>
+              <Input
                 name="code"
                 value={form.code}
                 onChange={handleChange}
-                className={`finput${errors.code ? " err" : ""}`}
+                className={errors.code ? "border-destructive" : ""}
               />
               {errors.code && <span className="ferr">{errors.code}</span>}
             </div>
+
+            {/* Libellé */}
             <div className="fg">
-              <label className="flabel">
+              <Label className="flabel">
                 Libellé <span className="req">*</span>
-              </label>
-              <input
+              </Label>
+              <Input
                 name="libelle"
                 value={form.libelle}
                 onChange={handleChange}
-                className={`finput${errors.libelle ? " err" : ""}`}
+                className={errors.libelle ? "border-destructive" : ""}
               />
               {errors.libelle && <span className="ferr">{errors.libelle}</span>}
             </div>
+
+            {/* Type */}
             <div className="fg">
-              <label className="flabel">Type</label>
-              <select
-                name="type"
+              <Label className="flabel">Type</Label>
+              <Select
                 value={form.type}
-                onChange={handleChange}
-                className="fsel">
-                {ACTIF_TYPES_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+                onValueChange={handleSelectChange("type")}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un type" />
+                </SelectTrigger>
+                {/*
+                 * FIX: container={modalRef.current} forces Radix to portal
+                 * the dropdown inside the modal div, bypassing any stacking
+                 * context issues with the backdrop.
+                 * position="popper" + sideOffset prevent clipping.
+                 */}
+                <SelectContent
+                  container={modalRef.current}
+                  position="popper"
+                  sideOffset={4}>
+                  {ACTIF_TYPES_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            {/* <div className="fg">
-              <label className="flabel">Statut</label>
-              <select
-                name="statut"
-                value={form.statut}
-                onChange={handleChange}
-                className="fsel">
-                {STATUTS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div> */}
+
+            {/* Description */}
             <div className="fg span2">
-              <label className="flabel">Description</label>
-              <textarea
+              <Label className="flabel">Description</Label>
+              <Textarea
                 name="description"
                 value={form.description}
                 onChange={handleChange}
                 rows={2}
-                className="finput"
                 style={{ resize: "none" }}
               />
             </div>
 
             {/* Site */}
             <div className="fg">
-              <label className="flabel">
+              <Label className="flabel">
                 Site
                 {isAddingChild && (
                   <span
@@ -525,9 +571,9 @@ export function ActifFormModal({
                     (hérité du parent)
                   </span>
                 )}
-              </label>
+              </Label>
               {isAddingChild ? (
-                <input
+                <Input
                   value={
                     parentActif?.site_detail?.libelle
                       ? `${parentActif.site_detail.code ?? ""} — ${parentActif.site_detail.libelle}`.replace(
@@ -541,28 +587,32 @@ export function ActifFormModal({
                         "—"
                   }
                   disabled
-                  className="finput disabled"
                   style={{ opacity: 0.7 }}
                 />
               ) : (
-                <select
-                  name="idSite"
-                  value={form.idSite}
-                  onChange={handleChange}
-                  className="fsel">
-                  <option value="">— Sélectionner —</option>
-                  {siteOpts.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  value={String(form.idSite)}
+                  onValueChange={handleSelectChange("idSite")}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="— Sélectionner —" />
+                  </SelectTrigger>
+                  <SelectContent
+                    container={modalRef.current}
+                    position="popper"
+                    sideOffset={4}>
+                    {siteOpts.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
             </div>
 
             {/* Unité */}
             <div className="fg">
-              <label className="flabel">
+              <Label className="flabel">
                 Unité
                 {isAddingChild && (
                   <span
@@ -575,9 +625,9 @@ export function ActifFormModal({
                     (hérité du parent)
                   </span>
                 )}
-              </label>
+              </Label>
               {isAddingChild ? (
-                <input
+                <Input
                   value={
                     parentActif?.unite_detail?.libelle
                       ? `${parentActif.unite_detail.code ?? ""} — ${parentActif.unite_detail.libelle}`.replace(
@@ -591,106 +641,114 @@ export function ActifFormModal({
                         "—"
                   }
                   disabled
-                  className="finput disabled"
                   style={{ opacity: 0.7 }}
                 />
               ) : (
-                <select
-                  name="idUnite"
-                  value={form.idUnite}
-                  onChange={handleChange}
-                  disabled={!form.idSite}
-                  className={`fsel${!form.idSite ? " disabled" : ""}`}
-                  title={
-                    !form.idSite ? "Veuillez d'abord sélectionner un site" : ""
-                  }>
-                  <option value="">
-                    {!form.idSite
-                      ? "— Sélectionner un site d'abord —"
-                      : "— Sélectionner —"}
-                  </option>
-                  {uniteOpts.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  value={String(form.idUnite)}
+                  onValueChange={handleSelectChange("idUnite")}
+                  disabled={!form.idSite}>
+                  <SelectTrigger
+                    title={
+                      !form.idSite
+                        ? "Veuillez d'abord sélectionner un site"
+                        : ""
+                    }>
+                    <SelectValue
+                      placeholder={
+                        !form.idSite
+                          ? "— Sélectionner un site d'abord —"
+                          : "— Sélectionner —"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent
+                    container={modalRef.current}
+                    position="popper"
+                    sideOffset={4}>
+                    {uniteOpts.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
             </div>
 
+            {/* Parent (read-only) */}
             <div className="fg span2">
-              <label className="flabel">Parent</label>
-              <input
-                value={form.idParent}
-                disabled
-                className="finput"
-                style={{ opacity: 0.6 }}
-              />
+              <Label className="flabel">Parent</Label>
+              <Input value={form.idParent} disabled style={{ opacity: 0.6 }} />
               <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
                 Rempli automatiquement
               </span>
             </div>
+
+            {/* Fabricant */}
             <div className="fg">
-              <label className="flabel">Fabricant</label>
-              <input
+              <Label className="flabel">Fabricant</Label>
+              <Input
                 name="fabricant"
                 value={form.fabricant}
                 onChange={handleChange}
-                className="finput"
               />
             </div>
+
+            {/* Modèle */}
             <div className="fg">
-              <label className="flabel">Modèle</label>
-              <input
+              <Label className="flabel">Modèle</Label>
+              <Input
                 name="modele"
                 value={form.modele}
                 onChange={handleChange}
-                className="finput"
               />
             </div>
+
+            {/* N° de série */}
             <div className="fg">
-              <label className="flabel">N° de série</label>
-              <input
+              <Label className="flabel">N° de série</Label>
+              <Input
                 name="numSerie"
                 value={form.numSerie}
                 onChange={handleChange}
-                className="finput"
               />
             </div>
+
+            {/* Date d'acquisition */}
             <div className="fg">
-              <label className="flabel">Date d'acquisition</label>
-              <input
+              <Label className="flabel">Date d'acquisition</Label>
+              <Input
                 name="dateAcquisition"
                 type="date"
                 value={form.dateAcquisition}
                 onChange={handleChange}
-                className="finput"
               />
             </div>
+
+            {/* Valeur */}
             <div className="fg">
-              <label className="flabel">Valeur (DH)</label>
-              <input
+              <Label className="flabel">Valeur (DH)</Label>
+              <Input
                 name="valeur"
                 type="number"
                 step="0.01"
                 value={form.valeur}
                 onChange={handleChange}
-                className="finput"
               />
             </div>
           </div>
+
+          {/* ── Footer ── */}
           <div className="m-foot">
-            <button
+            <Button
               type="button"
-              className="btn btn-outline"
+              variant="outline"
               onClick={onClose}
               disabled={loading}>
               Annuler
-            </button>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={loading}>
+            </Button>
+            <Button type="submit" disabled={loading}>
               {loading ? (
                 "En cours…"
               ) : (
@@ -698,7 +756,7 @@ export function ActifFormModal({
                   <Save size={13} /> {isEdit ? "Modifier" : "Ajouter"}
                 </>
               )}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -706,7 +764,7 @@ export function ActifFormModal({
   );
 }
 
-//  Main 
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ActifArborescencePage() {
   const { id } = useParams();
@@ -721,7 +779,7 @@ export default function ActifArborescencePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [parentForNew, setParentForNew] = useState(null);
-  const [parentActifForNew, setParentActifForNew] = useState(null); // ← nouveau state
+  const [parentActifForNew, setParentActifForNew] = useState(null);
 
   const chargerArbre = useCallback(async () => {
     setLoading(true);
@@ -782,7 +840,7 @@ export default function ActifArborescencePage() {
   const handleAddChild = () => {
     setEditTarget(null);
     setParentForNew(selectedId);
-    setParentActifForNew(selectedActif); // ← on passe l'actif parent complet
+    setParentActifForNew(selectedActif);
     setModalOpen(true);
   };
 
@@ -793,32 +851,10 @@ export default function ActifArborescencePage() {
     setModalOpen(true);
   };
 
-  // const handleDelete = async () => {
-  //   if (!selectedActif) return;
-  //   if (selectedActif.id === id) {
-  //     try {
-  //       await deleteActif(selectedActif.id);
-  //       navigate("/actifs-racines");
-  //     } catch {
-  //       alert("Erreur lors de la suppression");
-  //     }
-  //     return;
-  //   }
-  //   try {
-  //     await deleteActif(selectedActif.id);
-  //     setSelectedId(id);
-  //     await chargerArbre();
-  //   } catch {
-  //     alert("Erreur lors de la suppression");
-  //   }
-  // };
-
   const handleDelete = async () => {
     if (!selectedActif) return;
-
     try {
       await deleteActif(selectedActif.id);
-
       if (selectedActif.id === id) {
         navigate("/actifs-racines");
       } else {
@@ -834,6 +870,7 @@ export default function ActifArborescencePage() {
     chargerArbre();
   };
 
+  // ── Loading skeleton ──
   if (loading) {
     return (
       <div className="page">
@@ -1002,6 +1039,7 @@ export default function ActifArborescencePage() {
     );
   }
 
+  // ── Not found ──
   if (!rootActif) {
     return (
       <div className="page">
@@ -1021,7 +1059,7 @@ export default function ActifArborescencePage() {
 
   return (
     <div className="page">
-      {/* Header */}
+      {/* ── Header ── */}
       <div
         style={{
           display: "flex",
@@ -1065,10 +1103,10 @@ export default function ActifArborescencePage() {
         </div>
       </div>
 
-      {/* Main content: Tree + Details */}
+      {/* ── Main: Tree + Details ── */}
       <div
         style={{ display: "flex", gap: 16, minHeight: "calc(100vh - 180px)" }}>
-        {/* Left: Tree */}
+        {/* Left: Tree panel */}
         <div
           style={{
             width: 300,
@@ -1113,7 +1151,7 @@ export default function ActifArborescencePage() {
           </div>
         </div>
 
-        {/* Center: Details */}
+        {/* Right: Details panel */}
         <div
           style={{
             flex: 1,
@@ -1165,16 +1203,14 @@ export default function ActifArborescencePage() {
                         <Trash2 size={13} /> Supprimer
                       </button>
                     </AlertDialogTrigger>
-
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Supprimer l’actif</AlertDialogTitle>
-
+                        <AlertDialogTitle>Supprimer l'actif</AlertDialogTitle>
                         <AlertDialogDescription>
                           {selectedActif?.id === id ? (
                             <>
                               Vous allez supprimer{" "}
-                              <strong>l’actif racine</strong> ainsi que toute
+                              <strong>l'actif racine</strong> ainsi que toute
                               son arborescence.
                               <br />
                               Cette action est irréversible.
@@ -1190,10 +1226,8 @@ export default function ActifArborescencePage() {
                           )}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
-
                       <AlertDialogFooter>
                         <AlertDialogCancel>Annuler</AlertDialogCancel>
-
                         <AlertDialogAction
                           onClick={handleDelete}
                           className="bg-red-600 hover:bg-red-700">
@@ -1221,7 +1255,7 @@ export default function ActifArborescencePage() {
                       border: "1px solid var(--border-subtle)",
                       borderRadius: "var(--r-sm)",
                     }}>
-                    {selectedActif.chemin_hierarchique.map((c, i) => (
+                    {selectedActif.chemin_hierarchique.map((c) => (
                       <span
                         key={c.id}
                         style={{
@@ -1255,7 +1289,7 @@ export default function ActifArborescencePage() {
                   </div>
                 )}
 
-              {/* Info cards */}
+              {/* Info cards grid */}
               <div
                 style={{
                   display: "grid",
@@ -1830,7 +1864,7 @@ export default function ActifArborescencePage() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* ── Modal ── */}
       <ActifFormModal
         open={modalOpen}
         onClose={() => {
@@ -1840,7 +1874,7 @@ export default function ActifArborescencePage() {
         }}
         onSaved={handleSaved}
         parentId={parentForNew}
-        parentActif={parentActifForNew} // ← nouveau prop passé au modal
+        parentActif={parentActifForNew}
         editActif={editTarget}
         sites={sites}
         unites={unites}
@@ -1850,7 +1884,7 @@ export default function ActifArborescencePage() {
   );
 }
 
-//  Helpers 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function findInTree(node, targetId) {
   if (node.id === targetId) return node;
