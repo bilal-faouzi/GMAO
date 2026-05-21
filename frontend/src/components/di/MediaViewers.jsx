@@ -447,16 +447,13 @@ export function HierarchyPath({ actifDetail }) {
             {actifDetail.libelle}
           </span>
         )}
-        <span className="text-text-muted ml-1 text-[10px]">
-          ({actifDetail.code})
-        </span>
       </div>
       {hasChildren && (
-        <div className="mt-2">
+        <div className="mt-2 ">
           <p className="text-[10px] text-text-muted mb-1">
             Fils directs ({actifDetail.fils.length}) :
           </p>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5 mt-2">
             {actifDetail.fils.map((f) => (
               <span
                 key={f.id}

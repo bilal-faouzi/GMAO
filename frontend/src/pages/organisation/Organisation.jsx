@@ -36,7 +36,7 @@ function TreeNode({ node, level = 0, icon: Icon, color }) {
     3: {
       Icon: Factory,
       color: "text-amber-700 dark:text-warning",
-      bg: "bg-amber-100 dark:bg-warning/10",
+      bg: "bg-amber-100 dark:bg-amber-500/10",
     },
   };
   const { Icon: NodeIcon, color: nodeColor, bg } = icons[level] || icons[3];

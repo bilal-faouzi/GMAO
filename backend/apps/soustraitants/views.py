@@ -498,7 +498,7 @@ class SousTraitantViewSet(viewsets.ModelViewSet):
                         'message': f'Attention : ce sous-traitant est le seul prestataire actif pour la spécialité {spec.libelle}. Aucun sous-traitant de remplacement disponible.',
                     })
 
-        log_audit(request, 'STATUT_CHANGE', 'SousTraitant', st.id,
+        log_audit(request, 'STATUT_CHANGE', 'SOUS_TRAITANT', 'SousTraitant', st.id,
                   ancienne_valeur={'statut': ancien_statut},
                   nouvelle_valeur={
                       'ancienStatut': ancien_statut,
@@ -590,7 +590,7 @@ class SousTraitantViewSet(viewsets.ModelViewSet):
             idSpecialite_id=id_specialite,
         )
 
-        log_audit(request, 'SPECIALITE_AJOUTEE', 'SousTraitantSpecialite', lien.id,
+        log_audit(request, 'SPECIALITE_AJOUTEE','SOUS_TRAITANCE' , 'SousTraitantSpecialite', lien.id,
                   nouvelle_valeur={
                       'idSousTraitant': str(st.id),
                       'idSpecialite': str(id_specialite),
@@ -640,7 +640,7 @@ class SousTraitantViewSet(viewsets.ModelViewSet):
         if remaining == 0:
             avertissements.append("Ce sous-traitant n'a plus aucune spécialité assignée")
 
-        log_audit(request, 'SOUS_TRAITANT_SPECIALITE_SUPPRIMEE', 'SousTraitantSpecialite',
+        log_audit(request, 'SOUS_TRAITANT_SPECIALITE_SUPPRIMEE','SOUS_TRAITANCE' , 'SousTraitantSpecialite',
                   uuid.UUID(str(id_specialite)),
                   ancienne_valeur={
                       'idSousTraitant': str(st.id),

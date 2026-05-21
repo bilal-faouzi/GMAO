@@ -12,6 +12,17 @@ import {
 } from "lucide-react";
 
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+import {
   createUtilisateur,
   getUtilisateurs,
   updateUtilisateur,
@@ -30,23 +41,30 @@ const labelCls = "text-xs text-text-secondary mb-1 block";
 export default function Utilisateurs() {
   const navigate = useNavigate();
 
-  //  Data state 
+  //  Data state
   const [utilisateurs, setUtilisateurs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
 
-  //  Modal state 
+  //  Modal state
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [openRoles, setOpenRoles] = useState(false);
 
-  //  Selection 
+  //  Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    userId: null,
+    estActif: null,
+  });
+
+  //  Selection
   const [selected, setSelected] = useState(null); // for edit
   const [roleTarget, setRoleTarget] = useState(null); // for role modal
 
-  //  Form 
+  //  Form
   const [form, setForm] = useState({
     nom_utilisateur: "",
     email: "",
@@ -57,9 +75,9 @@ export default function Utilisateurs() {
 
   const { errors, setApiErrors, clearErrors, inputCls } = useFormErrors();
 
-  // 
+  //
   // Fetch
-  // 
+  //
   const fetchUtilisateurs = async (currentPage = page) => {
     try {
       const res = await getUtilisateurs({ page: currentPage });
@@ -77,9 +95,9 @@ export default function Utilisateurs() {
     fetchUtilisateurs();
   }, [page]);
 
-  // 
+  //
   // Handlers
-  // 
+  //
   const handleCreate = async (e) => {
     e.preventDefault();
     clearErrors();
@@ -113,10 +131,13 @@ export default function Utilisateurs() {
     }
   };
 
-  const handleToggleActive = async (id, est_actif) => {
-    if (!confirm(`${est_actif ? "Désactiver" : "Activer"} cet utilisateur ?`))
-      return;
-    await deleteUtilisateur(id);
+  const handleToggleActive = (id, est_actif) => {
+    setConfirmDialog({ open: true, userId: id, estActif: est_actif });
+  };
+
+  const handleConfirmToggle = async () => {
+    await deleteUtilisateur(confirmDialog.userId);
+    setConfirmDialog({ open: false, userId: null, estActif: null });
     fetchUtilisateurs();
   };
 
@@ -147,9 +168,9 @@ export default function Utilisateurs() {
     );
   };
 
-  // 
+  //
   // Filtered list
-  // 
+  //
   const filtered = utilisateurs.filter(
     (u) =>
       u.nom_utilisateur.toLowerCase().includes(search.toLowerCase()) ||
@@ -157,9 +178,9 @@ export default function Utilisateurs() {
       u.prenom.toLowerCase().includes(search.toLowerCase()),
   );
 
-  // 
+  //
   // Render
-  // 
+  //
   return (
     <div className="p-6 space-y-6">
       {/*  Header  */}
@@ -543,6 +564,43 @@ export default function Utilisateurs() {
           />
         </Modal>
       )}
+
+      {/* 
+          AlertDialog — Confirmation activation / désactivation
+       */}
+      <AlertDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) =>
+          !open &&
+          setConfirmDialog({ open: false, userId: null, estActif: null })
+        }>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmDialog.estActif
+                ? "Désactiver l'utilisateur ?"
+                : "Activer l'utilisateur ?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDialog.estActif
+                ? "Cet utilisateur ne pourra plus se connecter à l'application."
+                : "Cet utilisateur pourra de nouveau accéder à l'application."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmToggle}
+              className={
+                confirmDialog.estActif
+                  ? "bg-red-600 hover:bg-red-700 text-white"
+                  : "bg-emerald-600 hover:bg-emerald-700 text-white"
+              }>
+              {confirmDialog.estActif ? "Désactiver" : "Activer"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

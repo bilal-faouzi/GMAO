@@ -3,64 +3,84 @@ import { useNavigate } from "react-router-dom";
 import { createDemande, getDemandes } from "../../services/ordreService";
 import { getActifs, getActif } from "../../services/actifService";
 import {
-  Upload, X, Image, Mic, Video, AlertTriangle, Building2,
-  Clock, Wrench, ChevronRight, ChevronDown, ChevronUp,
+  X,
+  Image,
+  Mic,
+  Video,
+  AlertTriangle,
+  Building2,
+  Clock,
+  Wrench,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  Trash2,
+  Play,
+  Square,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import api from "../../services/api";
 import useAuthStore from "@/store/authStore";
 
 const URGENCE_INFO = {
   critique: {
     label: "Critique",
-    desc: "Production arrêtée — intervention immédiate requise",
+    desc: "Production arrêtée",
+    dot: "var(--status-red-dot)",
     style: {
       borderColor: "var(--status-red-dot)",
       background: "var(--status-red-bg)",
       color: "var(--status-red-text)",
     },
-    dot: "var(--status-red-dot)",
   },
   haute: {
     label: "Haute",
-    desc: "Impact fort sur la production — traiter dans la journée",
+    desc: "Traiter dans la journée",
+    dot: "var(--status-orange-dot)",
     style: {
       borderColor: "var(--status-orange-dot)",
       background: "var(--status-orange-bg)",
       color: "var(--status-orange-text)",
     },
-    dot: "var(--status-orange-dot)",
   },
   normale: {
     label: "Normale",
-    desc: "Gêne partielle — peut attendre quelques jours",
+    desc: "Peut attendre quelques jours",
+    dot: "var(--status-blue-dot)",
     style: {
       borderColor: "var(--status-blue-dot)",
       background: "var(--status-blue-bg)",
       color: "var(--status-blue-text)",
     },
-    dot: "var(--status-blue-dot)",
   },
   basse: {
     label: "Basse",
-    desc: "Non urgent — à traiter selon disponibilité",
+    desc: "Selon disponibilité",
+    dot: "var(--status-gray-dot)",
     style: {
       borderColor: "var(--status-gray-dot)",
       background: "var(--status-gray-bg)",
       color: "var(--status-gray-text)",
     },
-    dot: "var(--status-gray-dot)",
   },
 };
 
 const STATUT_STYLES = {
   en_attente: {
-    label: "Nouvelle déclaration",
+    label: "En attente",
     bg: "var(--status-yellow-bg)",
     text: "var(--status-yellow-text)",
     border: "var(--status-yellow-dot)",
   },
   validee: {
-    label: "Validée → OT créé",
+    label: "Validée",
     bg: "var(--status-green-bg)",
     text: "var(--status-green-text)",
     border: "var(--status-green-dot)",
@@ -73,8 +93,35 @@ const STATUT_STYLES = {
   },
 };
 
+function MediaSection({ icon: Icon, label, color, children }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-lg border border-border-subtle overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-semibold uppercase tracking-wider transition hover:opacity-80"
+        style={{ background: "var(--color-elevated)", color }}>
+        <Icon size={14} style={{ color }} />
+        <span style={{ color }}>{label}</span>
+        <span className="ml-auto opacity-50">
+          {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </span>
+      </button>
+      {open && (
+        <div
+          className="p-3 border-t border-border-subtle"
+          style={{ background: "var(--color-surface)" }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function FormulaireDemande({
   defaultActifId,
+  defaultActif,
   onClose,
   onSuccess,
 }) {
@@ -84,12 +131,11 @@ export default function FormulaireDemande({
 
   const [mesDemandes, setMesDemandes] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showRecents, setShowRecents] = useState(false);
 
-  // Cascade selector
   const [selectionPath, setSelectionPath] = useState([]);
   const [optionsAtLevel, setOptionsAtLevel] = useState([]);
   const [loadingActifs, setLoadingActifs] = useState(false);
-  const [actifDetails, setActifDetails] = useState(null);
 
   const [form, setForm] = useState({
     idActif: defaultActifId ?? "",
@@ -97,14 +143,12 @@ export default function FormulaireDemande({
     urgence: "normale",
     description: "",
   });
-
   const [images, setImages] = useState([]);
   const [previewImages, setPreviewImages] = useState([]);
   const [videos, setVideos] = useState([]);
   const [previewVideos, setPreviewVideos] = useState([]);
   const [audioFiles, setAudioFiles] = useState([]);
 
-  // Audio recording
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [recordedAudios, setRecordedAudios] = useState([]);
@@ -117,89 +161,95 @@ export default function FormulaireDemande({
 
   const [erreur, setErreur] = useState("");
   const [succes, setSucces] = useState("");
-  const [showRecents, setShowRecents] = useState(false);
 
-  /*  Initial load  */
+  /* ── Pre-fill actif from prop (passed from table row click) ── */
   useEffect(() => {
+    // Load root actifs for cascade
     setLoadingActifs(true);
     getActifs({ estActif: true, is_parent: true, my_unite: true })
       .then((r) => {
         const roots = r.data.results || r.data;
         setOptionsAtLevel([roots]);
+
+        // If we have a defaultActif object passed directly, pre-select it
+        if (defaultActif) {
+          setSelectionPath([defaultActif]);
+          setForm((f) => ({ ...f, idActif: String(defaultActif.id) }));
+          // Load children
+          getActifs({
+            estActif: true,
+            idParent: defaultActif.id,
+            my_unite: true,
+          })
+            .then((rc) => {
+              const children = rc.data.results || rc.data;
+              if (children.length > 0) setOptionsAtLevel([roots, children]);
+            })
+            .catch(console.error);
+        } else if (defaultActifId) {
+          // Fallback: fetch actif by id
+          getActif(defaultActifId).then((r) => {
+            setSelectionPath([r.data]);
+            setForm((f) => ({ ...f, idActif: String(defaultActifId) }));
+            getActifs({
+              estActif: true,
+              idParent: defaultActifId,
+              my_unite: true,
+            })
+              .then((rc) => {
+                const children = rc.data.results || rc.data;
+                if (children.length > 0) setOptionsAtLevel([roots, children]);
+              })
+              .catch(console.error);
+          });
+        }
       })
-      .catch((err) => console.error("Erreur chargement actifs racines:", err))
+      .catch(console.error)
       .finally(() => setLoadingActifs(false));
 
     getDemandes({ my_unite: true }).then((r) =>
       setMesDemandes((r.data.results || r.data).slice(0, 6)),
     );
-
-    if (defaultActifId) {
-      getActif(defaultActifId).then((r) => {
-        setActifDetails(r.data);
-        setForm((f) => ({ ...f, idActif: String(defaultActifId) }));
-        // Pre-fill cascade if the asset has a parent chain
-        if (r.data?.idParent) {
-          // We only have direct parent info; pre-select at one level
-          setSelectionPath([r.data]);
-        }
-      });
-    }
-  }, [defaultActifId]);
+  }, [defaultActifId, defaultActif]);
 
   useEffect(() => {
     let interval;
-    if (isRecording) {
+    if (isRecording)
       interval = setInterval(() => setRecordingTime((t) => t + 1), 1000);
-    }
     return () => clearInterval(interval);
   }, [isRecording]);
 
   useEffect(() => {
     return () => {
-      if (
-        mediaRecorderRef.current &&
-        mediaRecorderRef.current.state !== "inactive"
-      ) {
-        mediaRecorderRef.current.stop();
-      }
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
-      }
-      if (currentPlayingAudio) {
-        currentPlayingAudio.pause();
-      }
-      recordedAudios.forEach((rec) => rec.url && URL.revokeObjectURL(rec.url));
-      previewImages.forEach((url) => URL.revokeObjectURL(url));
-      previewVideos.forEach((url) => URL.revokeObjectURL(url));
+      if (mediaRecorderRef.current?.state !== "inactive")
+        mediaRecorderRef.current?.stop();
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      currentPlayingAudio?.pause();
+      recordedAudios.forEach((r) => r.url && URL.revokeObjectURL(r.url));
+      previewImages.forEach(URL.revokeObjectURL);
+      previewVideos.forEach(URL.revokeObjectURL);
     };
   }, []);
 
-  /*  Cascade  */
-  const actifParent = selectionPath.length > 0 ? selectionPath[0] : null;
-  const actifSelectionne =
-    selectionPath.length > 0
-      ? selectionPath[selectionPath.length - 1]
-      : null;
+  /* Cascade */
+  const actifParent = selectionPath[0] ?? null;
+  const actifSelectionne = selectionPath[selectionPath.length - 1] ?? null;
 
   const handleSelectAtLevel = async (levelIndex, assetId) => {
     if (!assetId) {
-      setSelectionPath((prev) => prev.slice(0, levelIndex));
-      setOptionsAtLevel((prev) => prev.slice(0, levelIndex + 1));
+      setSelectionPath((p) => p.slice(0, levelIndex));
+      setOptionsAtLevel((p) => p.slice(0, levelIndex + 1));
       setForm((f) => ({ ...f, idActif: "" }));
       return;
     }
     const selectedAsset = optionsAtLevel[levelIndex].find(
-      (a) => a.id === assetId,
+      (a) => String(a.id) === String(assetId),
     );
     if (!selectedAsset) return;
-
-    const newPath = selectionPath.slice(0, levelIndex);
-    newPath[levelIndex] = selectedAsset;
+    const newPath = [...selectionPath.slice(0, levelIndex), selectedAsset];
     setSelectionPath(newPath);
     setForm((f) => ({ ...f, idActif: selectedAsset.id }));
-    setOptionsAtLevel((prev) => prev.slice(0, levelIndex + 1));
-
+    setOptionsAtLevel((p) => p.slice(0, levelIndex + 1));
     setLoadingActifs(true);
     try {
       const r = await getActifs({
@@ -208,15 +258,14 @@ export default function FormulaireDemande({
         my_unite: true,
       });
       const children = r.data.results || r.data;
-      if (children.length > 0) {
-        setOptionsAtLevel((prev) => {
-          const updated = [...prev.slice(0, levelIndex + 1)];
-          updated[levelIndex + 1] = children;
-          return updated;
+      if (children.length > 0)
+        setOptionsAtLevel((p) => {
+          const u = [...p.slice(0, levelIndex + 1)];
+          u[levelIndex + 1] = children;
+          return u;
         });
-      }
-    } catch (err) {
-      console.error("Erreur chargement enfants:", err);
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoadingActifs(false);
     }
@@ -224,63 +273,49 @@ export default function FormulaireDemande({
 
   const clearSelection = () => {
     setSelectionPath([]);
-    setOptionsAtLevel((prev) => prev.slice(0, 1));
+    setOptionsAtLevel((p) => p.slice(0, 1));
     setForm((f) => ({ ...f, idActif: "" }));
   };
 
-  /*  Images  */
+  /* Files */
   const handleImageChange = (e) => {
-    const files = Array.from(e.target.files || []);
-    const newImages = [...images, ...files];
-    setImages(newImages);
-    setPreviewImages(newImages.map((f) => URL.createObjectURL(f)));
+    const files = [...images, ...Array.from(e.target.files || [])];
+    setImages(files);
+    setPreviewImages(files.map((f) => URL.createObjectURL(f)));
     e.target.value = "";
   };
-  const removeImage = (index) => {
-    URL.revokeObjectURL(previewImages[index]);
-    const newImages = images.filter((_, i) => i !== index);
-    setImages(newImages);
-    setPreviewImages(newImages.map((f) => URL.createObjectURL(f)));
+  const removeImage = (i) => {
+    URL.revokeObjectURL(previewImages[i]);
+    const f = images.filter((_, j) => j !== i);
+    setImages(f);
+    setPreviewImages(f.map((x) => URL.createObjectURL(x)));
   };
-
-  /*  Vidéos  */
   const handleVideoChange = (e) => {
-    const files = Array.from(e.target.files || []);
-    const newVideos = [...videos, ...files];
-    setVideos(newVideos);
-    setPreviewVideos(newVideos.map((f) => URL.createObjectURL(f)));
+    const files = [...videos, ...Array.from(e.target.files || [])];
+    setVideos(files);
+    setPreviewVideos(files.map((f) => URL.createObjectURL(f)));
     e.target.value = "";
   };
-  const removeVideo = (index) => {
-    URL.revokeObjectURL(previewVideos[index]);
-    const newVideos = videos.filter((_, i) => i !== index);
-    setVideos(newVideos);
-    setPreviewVideos(newVideos.map((f) => URL.createObjectURL(f)));
+  const removeVideo = (i) => {
+    URL.revokeObjectURL(previewVideos[i]);
+    const f = videos.filter((_, j) => j !== i);
+    setVideos(f);
+    setPreviewVideos(f.map((x) => URL.createObjectURL(x)));
   };
 
-  /*  Audio  */
-  const isSecureContext = () => {
-    return (
-      window.isSecureContext ||
-      location.protocol === "https:" ||
-      location.hostname === "localhost" ||
-      location.hostname === "127.0.0.1"
-    );
-  };
-
+  /* Audio */
   const getSupportedMimeType = () => {
-    const types = ["audio/webm", "audio/mp4", "audio/ogg", "audio/wav"];
-    for (const t of types) {
+    for (const t of ["audio/webm", "audio/mp4", "audio/ogg", "audio/wav"])
       if (MediaRecorder.isTypeSupported(t)) return t;
-    }
     return "";
   };
-
   const startRecording = async () => {
-    if (!isSecureContext()) {
-      setErreur(
-        "L'enregistrement audio nécessite HTTPS. Utilisez https://192.168.2.232:9669",
-      );
+    if (
+      !window.isSecureContext &&
+      location.protocol !== "https:" &&
+      location.hostname !== "localhost"
+    ) {
+      setErreur("Enregistrement audio nécessite HTTPS.");
       return;
     }
     try {
@@ -289,22 +324,21 @@ export default function FormulaireDemande({
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       const mimeType = getSupportedMimeType();
-      const options = mimeType
-        ? { mimeType, audioBitsPerSecond: 128000 }
-        : {};
-      const recorder = new MediaRecorder(stream, options);
+      const recorder = new MediaRecorder(
+        stream,
+        mimeType ? { mimeType, audioBitsPerSecond: 128000 } : {},
+      );
       mediaRecorderRef.current = recorder;
-
       recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
+        if (e.data?.size > 0) chunksRef.current.push(e.data);
       };
       recorder.onstop = () => {
-        const durationSeconds = Math.floor(
+        const duration = Math.floor(
           (Date.now() - recordingStartTimeRef.current) / 1000,
         );
         const finalType = mimeType || "audio/webm";
         const blob = new Blob(chunksRef.current, { type: finalType });
-        if (blob.size === 0) {
+        if (!blob.size) {
           setErreur("Aucun audio enregistré.");
           return;
         }
@@ -313,117 +347,90 @@ export default function FormulaireDemande({
           : finalType.includes("ogg")
             ? "ogg"
             : "webm";
-        const fileName = `recording_${Date.now()}.${ext}`;
-        setRecordedAudios((prev) => [
-          ...prev,
-          {
-            blob,
-            url: URL.createObjectURL(blob),
-            duration: durationSeconds,
-            name: fileName,
-          },
+        const name = `recording_${Date.now()}.${ext}`;
+        setRecordedAudios((p) => [
+          ...p,
+          { blob, url: URL.createObjectURL(blob), duration, name },
         ]);
-        setAudioFiles((prev) => [
-          ...prev,
-          new File([blob], fileName, { type: finalType }),
+        setAudioFiles((p) => [
+          ...p,
+          new File([blob], name, { type: finalType }),
         ]);
         setRecordingTime(0);
-      };
-      recorder.onerror = (e) => {
-        setErreur(`Erreur enregistrement: ${e.message || e}`);
       };
       recorder.start(1000);
       setIsRecording(true);
     } catch (err) {
-      if (err.name === "NotAllowedError") {
-        setErreur(
-          "Microphone bloqué. Autorisez l'accès au micro dans les paramètres du navigateur.",
-        );
-      } else if (err.name === "NotFoundError") {
-        setErreur("Aucun microphone détecté.");
-      } else {
-        setErreur(`Erreur microphone: ${err.message}`);
-      }
+      setErreur(
+        err.name === "NotAllowedError"
+          ? "Microphone bloqué. Autorisez l'accès."
+          : err.name === "NotFoundError"
+            ? "Aucun microphone détecté."
+            : `Erreur: ${err.message}`,
+      );
     }
   };
-
   const stopRecording = () => {
-    if (
-      mediaRecorderRef.current &&
-      mediaRecorderRef.current.state !== "inactive"
-    ) {
+    if (mediaRecorderRef.current?.state !== "inactive") {
       mediaRecorderRef.current.stop();
-      if (streamRef.current)
-        streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current?.getTracks().forEach((t) => t.stop());
       setIsRecording(false);
     }
   };
-
-  const removeRecordedAudio = (index) => {
-    if (recordedAudios[index]?.url)
-      URL.revokeObjectURL(recordedAudios[index].url);
-    const nameToRemove = recordedAudios[index].name;
-    setRecordedAudios((prev) => prev.filter((_, i) => i !== index));
-    setAudioFiles((prev) => prev.filter((f) => f.name !== nameToRemove));
+  const removeRecordedAudio = (i) => {
+    if (recordedAudios[i]?.url) URL.revokeObjectURL(recordedAudios[i].url);
+    const name = recordedAudios[i].name;
+    setRecordedAudios((p) => p.filter((_, j) => j !== i));
+    setAudioFiles((p) => p.filter((f) => f.name !== name));
   };
-
-  const playRecordedAudio = (index) => {
-    if (currentPlayingAudio) {
-      currentPlayingAudio.pause();
-      currentPlayingAudio.currentTime = 0;
-    }
-    const recorded = recordedAudios[index];
-    if (!recorded?.blob?.size) {
+  const playRecordedAudio = (i) => {
+    currentPlayingAudio?.pause();
+    const rec = recordedAudios[i];
+    if (!rec?.blob?.size) {
       setErreur("Fichier audio vide");
       return;
     }
-    const audio = new Audio(
-      recorded.url || URL.createObjectURL(recorded.blob),
-    );
+    const audio = new Audio(rec.url || URL.createObjectURL(rec.blob));
     setCurrentPlayingAudio(audio);
     audio.onended = () => setCurrentPlayingAudio(null);
     audio.onerror = () => {
       setErreur("Impossible de lire le fichier");
       setCurrentPlayingAudio(null);
     };
-    audio.play().catch((err) => {
-      setErreur(err.message);
+    audio.play().catch((e) => {
+      setErreur(e.message);
       setCurrentPlayingAudio(null);
     });
   };
 
-  /*  Submit  */
+  /* Submit */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErreur("");
     setSucces("");
     if (!form.idActif) return setErreur("Sélectionnez l'équipement en panne.");
-    if (!form.titre.trim())
-      return setErreur("Saisissez un titre pour la demande d'intervention.");
+    if (!form.titre.trim()) return setErreur("Saisissez un titre.");
     if (!form.description.trim())
       return setErreur("Décrivez le problème observé.");
-
     setLoading(true);
     try {
       const res = await createDemande(form);
       const demandeId = res.data.id;
-
       const tousLesFichiers = [...images, ...videos, ...audioFiles];
       if (tousLesFichiers.length > 0) {
-        const formData = new FormData();
-        tousLesFichiers.forEach((f) => formData.append("fichiers", f));
+        const fd = new FormData();
+        tousLesFichiers.forEach((f) => fd.append("fichiers", f));
         try {
           await api.post(
             `/v1/ordres/demandes/${demandeId}/telecharger_fichiers/`,
-            formData,
+            fd,
             { headers: { "Content-Type": "multipart/form-data" } },
           );
         } catch (e) {
           console.warn("Upload non-bloquant:", e.message);
         }
       }
-
-      setSucces(`Demande ${res.data.numero} enregistrée avec succès.`);
+      setSucces(`Demande ${res.data.numero} enregistrée.`);
       setForm({ idActif: "", titre: "", urgence: "normale", description: "" });
       setImages([]);
       setPreviewImages([]);
@@ -431,13 +438,10 @@ export default function FormulaireDemande({
       setPreviewVideos([]);
       setAudioFiles([]);
       setRecordedAudios([]);
-      setSelectionPath([]);
-      setOptionsAtLevel((prev) => prev.slice(0, 1));
-
+      clearSelection();
       getDemandes({ my_unite: true }).then((r) =>
         setMesDemandes((r.data.results || r.data).slice(0, 6)),
       );
-
       if (onSuccess) onSuccess();
     } catch (e) {
       setErreur(
@@ -450,11 +454,8 @@ export default function FormulaireDemande({
     }
   };
 
-  const handleClose = () => {
-    if (onClose) onClose();
-    else navigate("/ordres/demandes");
-  };
-
+  const handleClose = () =>
+    onClose ? onClose() : navigate("/ordres/demandes");
   const formatDate = (d) =>
     new Date(d).toLocaleString("fr-FR", {
       day: "2-digit",
@@ -463,144 +464,186 @@ export default function FormulaireDemande({
       hour: "2-digit",
       minute: "2-digit",
     });
-
   const formatTime = (s) =>
     `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
-  /* ── Form body (shared between page & dialog) ── */
+  /* ── FORM ── */
   const formCard = (
-    <div className="bg-surface rounded-xl border border-border p-6 shadow-card">
-      <div className="flex items-center gap-2 mb-5 pb-4 border-b border-border-subtle">
-        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Wrench size={16} style={{ color: "var(--color-primary)" }} />
+    <div className="bg-surface rounded-xl border border-border shadow-card overflow-hidden">
+      {/* Header */}
+      <div
+        className="flex items-center gap-2 px-5 py-3 border-b border-border"
+        style={{ background: "var(--color-elevated)" }}>
+        <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+          <Wrench size={14} style={{ color: "var(--color-primary)" }} />
         </div>
-        <h2 className="text-sm font-semibold text-text uppercase tracking-wider">
-          Nouvelle déclaration
+        <h2 className="text-sm font-semibold text-text">
+          Nouvelle déclaration de panne
         </h2>
+        {onClose && (
+          <button
+            type="button"
+            onClick={handleClose}
+            className="ml-auto p-1.5 rounded-md text-text-muted hover:text-text transition">
+            <X size={16} />
+          </button>
+        )}
       </div>
 
-      {uniteUser && (
-        <div
-          className="mb-4 flex items-center gap-2 text-xs rounded-lg px-3 py-2.5 border"
-          style={{
-            background: "var(--status-blue-bg)",
-            borderColor: "rgba(37,99,235,0.18)",
-            color: "var(--status-blue-text)",
-          }}>
-          <Building2 size={14} />
-          <span>
-            <strong>Unité :</strong> {uniteUser.libelle} — Seuls les actifs de
-            cette unité sont affichés
-          </span>
-        </div>
-      )}
-      {!uniteUser && (
-        <div
-          className="mb-4 flex items-center gap-2 text-xs rounded-lg px-3 py-2.5 border"
-          style={{
-            background: "var(--status-yellow-bg)",
-            borderColor: "rgba(234,179,8,0.18)",
-            color: "var(--status-yellow-text)",
-          }}>
-          <AlertTriangle size={14} />
-          <span>
-            Aucune unité principale assignée. Contactez un administrateur.
-          </span>
-        </div>
-      )}
-
-      {erreur && (
-        <div
-          className="mb-4 flex items-start gap-2 text-sm rounded-lg px-3 py-2.5 border"
-          style={{
-            background: "var(--status-red-bg)",
-            borderColor: "rgba(220,38,38,0.2)",
-            color: "var(--status-red-text)",
-          }}>
-          <AlertTriangle size={16} className="shrink-0 mt-0.5" /> {erreur}
-        </div>
-      )}
-      {succes && (
-        <div
-          className="mb-4 flex items-start gap-2 text-sm rounded-lg px-3 py-2.5 border"
-          style={{
-            background: "var(--status-green-bg)",
-            borderColor: "rgba(22,163,74,0.2)",
-            color: "var(--status-green-text)",
-          }}>
-          <span className="shrink-0 mt-0.5"></span> {succes}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Équipement */}
-        <div>
-          <label className="block text-xs font-medium text-text-secondary mb-1.5">
-            Équipement en panne{" "}
-            <span style={{ color: "var(--status-red-dot)" }}>*</span>
-          </label>
-          {loadingActifs && optionsAtLevel.length === 0 && (
-            <p className="text-xs text-text-muted py-2">
-              Chargement des équipements…
-            </p>
-          )}
-          <div className="space-y-2">
-            {optionsAtLevel.map((options, levelIndex) => (
-              <div key={levelIndex}>
-                <label className="block text-[10px] text-text-muted mb-0.5 uppercase tracking-wider">
-                  {levelIndex === 0
-                    ? "Actif parent"
-                    : `Sous-actif niveau ${levelIndex}`}
-                </label>
-                <select
-                  value={selectionPath[levelIndex]?.id || ""}
-                  onChange={(e) =>
-                    handleSelectAtLevel(levelIndex, e.target.value)
-                  }
-                  className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-primary appearance-none cursor-pointer"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                    backgroundRepeat: "no-repeat",
-                    backgroundPosition: "right 0.5rem center",
-                    backgroundSize: "1rem",
-                  }}>
-                  <option value="">-- Sélectionner --</option>
-                  {options.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.code} — {a.libelle}{" "}
-                      {a.statut === "en_panne" ? "(EN PANNE)" : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ))}
+      <div className="p-5 space-y-4">
+        {/* Banners */}
+        {uniteUser && (
+          <div
+            className="flex items-center gap-2 text-xs rounded-lg px-3 py-2 border"
+            style={{
+              background: "var(--status-blue-bg)",
+              borderColor: "rgba(37,99,235,0.18)",
+              color: "var(--status-blue-text)",
+            }}>
+            <Building2 size={13} />
+            <span>
+              <strong>{uniteUser.libelle}</strong> — actifs de cette unité
+              uniquement
+            </span>
           </div>
+        )}
+        {!uniteUser && (
+          <div
+            className="flex items-center gap-2 text-xs rounded-lg px-3 py-2 border"
+            style={{
+              background: "var(--status-yellow-bg)",
+              borderColor: "rgba(234,179,8,0.18)",
+              color: "var(--status-yellow-text)",
+            }}>
+            <AlertTriangle size={13} />
+            <span>
+              Aucune unité principale assignée. Contactez un administrateur.
+            </span>
+          </div>
+        )}
+        {erreur && (
+          <div
+            className="flex items-start gap-2 text-sm rounded-lg px-3 py-2 border"
+            style={{
+              background: "var(--status-red-bg)",
+              borderColor: "rgba(220,38,38,0.2)",
+              color: "var(--status-red-text)",
+            }}>
+            <AlertTriangle size={15} className="shrink-0 mt-0.5" />
+            {erreur}
+          </div>
+        )}
+        {succes && (
+          <div
+            className="flex items-start gap-2 text-sm rounded-lg px-3 py-2 border"
+            style={{
+              background: "var(--status-green-bg)",
+              borderColor: "rgba(22,163,74,0.2)",
+              color: "var(--status-green-text)",
+            }}>
+            <span>✓</span>
+            {succes}
+          </div>
+        )}
 
-          {actifSelectionne && (
-            <div className="mt-3 space-y-2">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Équipement — cascade with shadcn Select */}
+          <div>
+            <label className="block text-xs font-medium text-text-secondary mb-1.5">
+              Équipement en panne{" "}
+              <span style={{ color: "var(--status-red-dot)" }}>*</span>
+            </label>
+
+            {loadingActifs && !optionsAtLevel.length && (
+              <p className="text-xs text-text-muted py-1">Chargement…</p>
+            )}
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              {optionsAtLevel.map((options, levelIndex) => (
+                <div
+                  key={levelIndex}
+                  className="flex items-center gap-1.5 flex-1 min-w-[160px]">
+                  {levelIndex > 0 && (
+                    <ChevronRight
+                      size={13}
+                      className="text-text-muted shrink-0"
+                    />
+                  )}
+                  <Select
+                    value={
+                      selectionPath[levelIndex]
+                        ? String(selectionPath[levelIndex].id)
+                        : ""
+                    }
+                    onValueChange={(val) =>
+                      handleSelectAtLevel(
+                        levelIndex,
+                        val === "__none__" ? null : val,
+                      )
+                    }>
+                    <SelectTrigger className="flex-1 h-9 text-xs bg-elevated border-border-subtle">
+                      <SelectValue
+                        placeholder={
+                          levelIndex === 0
+                            ? "Actif parent"
+                            : `Sous-actif niv. ${levelIndex}`
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {levelIndex > 0 && (
+                        <SelectItem
+                          value="__none__"
+                          className="text-xs text-text-muted italic">
+                          — Désélectionner —
+                        </SelectItem>
+                      )}
+                      {options.map((a) => (
+                        <SelectItem
+                          key={a.id}
+                          value={String(a.id)}
+                          className="text-xs">
+                          <span className="font-mono font-semibold">
+                            {a.code}
+                          </span>
+                          <span className="text-text-muted">
+                            {" "}
+                            — {a.libelle}
+                          </span>
+                          {a.statut === "en_panne" && (
+                            <span className="ml-1 text-orange-400">⚠</span>
+                          )}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
+
+            {/* Selected path display */}
+            {actifSelectionne && (
               <div
-                className="p-3 rounded-lg border"
+                className="mt-2 flex items-center justify-between px-3 py-2 rounded-lg border"
                 style={{
                   background: "var(--status-blue-bg)",
                   borderColor: "rgba(37,99,235,0.15)",
                 }}>
-                <p
-                  className="text-[10px] uppercase tracking-wider mb-1 font-semibold"
-                  style={{ color: "var(--status-blue-text)" }}>
-                  Actif sélectionné
-                </p>
-                <div className="flex items-center gap-1 flex-wrap">
+                <div className="flex items-center gap-1 flex-wrap text-xs">
                   {selectionPath.map((a, i) => (
-                    <span key={a.id} className="text-sm flex items-center">
+                    <span key={a.id} className="flex items-center">
                       <span
-                        className="font-mibold"
+                        className="font-mono font-semibold"
                         style={{ color: "var(--status-blue-text)" }}>
                         {a.code}
                       </span>
-                      <span className="text-text"> — {a.libelle}</span>
+                      <span className="text-text-secondary">
+                        {" "}
+                        — {a.libelle}
+                      </span>
                       {i < selectionPath.length - 1 && (
                         <ChevronRight
-                          size={14}
+                          size={11}
                           className="text-text-muted mx-0.5"
                         />
                       )}
@@ -610,429 +653,311 @@ export default function FormulaireDemande({
                 <button
                   type="button"
                   onClick={clearSelection}
-                  className="mt-2 text-xs underline"
-                  style={{ color: "var(--status-red-text)" }}>
-                  Réinitialiser la sélection
+                  className="shrink-0 ml-2 p-1 rounded text-text-muted hover:text-red-500 transition">
+                  <X size={13} />
                 </button>
               </div>
+            )}
 
-              {actifParent && actifParent.id !== actifSelectionne.id && (
-                <div
-                  className="p-3 rounded-lg border flex items-start gap-2"
-                  style={{
-                    background: "var(--status-yellow-bg)",
-                    borderColor: "rgba(234,179,8,0.15)",
-                  }}>
-                  <AlertTriangle
-                    size={16}
-                    className="shrink-0 mt-0.5"
-                    style={{ color: "var(--status-yellow-text)" }}
+            {actifParent && actifSelectionne && (
+              <p
+                className="mt-1.5 text-xs px-1 flex items-center gap-1"
+                style={{ color: "var(--status-yellow-text)" }}>
+                <AlertTriangle size={11} />
+                {actifParent.id === actifSelectionne.id
+                  ? "Cet actif parent sera mis en panne."
+                  : `L'actif parent ${actifParent.code} sera mis en panne.`}
+              </p>
+            )}
+          </div>
+
+          {/* Titre */}
+          <div>
+            <label className="block text-xs font-medium text-text-secondary mb-1.5">
+              Titre <span style={{ color: "var(--status-red-dot)" }}>*</span>
+            </label>
+            <input
+              type="text"
+              value={form.titre}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, titre: e.target.value }))
+              }
+              placeholder="Ex: Arrêt moteur principal, Fuite hydraulique…"
+              className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-primary"
+            />
+          </div>
+
+          {/* Urgence */}
+          <div>
+            <label className="block text-xs font-medium text-text-secondary mb-1.5">
+              Urgence <span style={{ color: "var(--status-red-dot)" }}>*</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {Object.entries(URGENCE_INFO).map(([k, v]) => (
+                <label
+                  key={k}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition text-xs font-medium"
+                  style={
+                    form.urgence === k
+                      ? { ...v.style, borderWidth: "1.5px" }
+                      : {
+                          background: "var(--color-elevated)",
+                          borderColor: "var(--color-border-subtle)",
+                          color: "var(--color-text-secondary)",
+                        }
+                  }>
+                  <input
+                    type="radio"
+                    name="urgence"
+                    value={k}
+                    checked={form.urgence === k}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, urgence: e.target.value }))
+                    }
+                    className="hidden"
                   />
-                  <div>
-                    <p
-                      className="text-xs font-semibold"
-                      style={{ color: "var(--status-yellow-text)" }}>
-                      Actif parent concerné
-                    </p>
-                    <p className="text-xs text-text-secondary">
-                      Le statut de{" "}
-                      <span
-                        className="font-mono font-medium"
-                        style={{ color: "var(--status-yellow-text)" }}>
-                        {actifParent.code}
-                      </span>{" "}
-                      — {actifParent.libelle} sera mis en panne
-                    </p>
-                  </div>
-                </div>
-              )}
-              {actifParent && actifParent.id === actifSelectionne.id && (
-                <div
-                  className="p-3 rounded-lg border flex items-start gap-2"
-                  style={{
-                    background: "var(--status-yellow-bg)",
-                    borderColor: "rgba(234,179,8,0.15)",
-                  }}>
-                  <AlertTriangle
-                    size={16}
-                    className="shrink-0 mt-0.5"
-                    style={{ color: "var(--status-yellow-text)" }}
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ background: v.dot }}
                   />
-                  <div>
-                    <p
-                      className="text-xs font-semibold"
-                      style={{ color: "var(--status-yellow-text)" }}>
-                      Cet actif est l'actif parent racine
-                    </p>
-                    <p className="text-xs text-text-secondary">
-                      Son statut sera mis en panne directement
-                    </p>
-                  </div>
-                </div>
-              )}
+                  <span>{v.label}</span>
+                </label>
+              ))}
             </div>
-          )}
-        </div>
+            {form.urgence && (
+              <p className="mt-1 text-xs text-text-muted pl-1">
+                {URGENCE_INFO[form.urgence]?.desc}
+              </p>
+            )}
+          </div>
 
-        {/* Titre */}
-        <div>
-          <label className="block text-xs font-medium text-text-secondary mb-1.5">
-            Titre de la demande{" "}
-            <span style={{ color: "var(--status-red-dot)" }}>*</span>
-          </label>
-          <input
-            type="text"
-            value={form.titre}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, titre: e.target.value }))
-            }
-            placeholder="Ex: Arrêt moteur principal, Fuite hydraulique…"
-            className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-primary"
-          />
-          <p className="text-xs text-text-muted mt-1">
-            Un titre clair permet au responsable de comprendre rapidement la
-            panne
-          </p>
-        </div>
+          {/* Description */}
+          <div>
+            <label className="block text-xs font-medium text-text-secondary mb-1.5">
+              Description{" "}
+              <span style={{ color: "var(--status-red-dot)" }}>*</span>
+            </label>
+            <textarea
+              value={form.description}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, description: e.target.value }))
+              }
+              rows={4}
+              placeholder="Symptôme, depuis quand, dans quelles conditions…"
+              className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-primary resize-none"
+            />
+            <p className="text-[11px] text-text-muted mt-0.5 text-right">
+              {form.description.length} car.
+            </p>
+          </div>
 
-        {/* Urgence */}
-        <div>
-          <label className="block text-xs font-medium text-text-secondary mb-2">
-            Niveau d'urgence{" "}
-            <span style={{ color: "var(--status-red-dot)" }}>*</span>
-          </label>
+          {/* Media */}
           <div className="space-y-2">
-            {Object.entries(URGENCE_INFO).map(([k, v]) => (
+            <p className="text-xs font-medium text-text-secondary">
+              Pièces jointes (optionnel)
+            </p>
+
+            <MediaSection
+              icon={Image}
+              label={`Photos${images.length ? ` (${images.length})` : ""}`}
+              color="var(--color-primary)">
               <label
-                key={k}
-                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition ${
-                  form.urgence === k
-                    ? "border-opacity-100"
-                    : "border-border bg-elevated/40 hover:bg-elevated"
-                }`}
-                style={
-                  form.urgence === k
-                    ? { ...v.style, borderWidth: "1.5px" }
-                    : {}
-                }>
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed cursor-pointer hover:opacity-80 transition text-xs"
+                style={{
+                  borderColor: "rgba(79,70,229,0.3)",
+                  color: "var(--color-primary)",
+                }}>
+                <Plus size={14} />
+                <span>Ajouter des photos</span>
                 <input
-                  type="radio"
-                  name="urgence"
-                  value={k}
-                  checked={form.urgence === k}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, urgence: e.target.value }))
-                  }
-                  className="mt-1 accent-primary"
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
                 />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm" style={{ color: v.dot }}></span>
-                    <p className="text-sm font-semibold text-text">{v.label}</p>
-                  </div>
-                  <p className="text-xs text-text-secondary mt-0.5">{v.desc}</p>
-                </div>
               </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Description */}
-        <div>
-          <label className="block text-xs font-medium text-text-secondary mb-1.5">
-            Description du problème{" "}
-            <span style={{ color: "var(--status-red-dot)" }}>*</span>
-          </label>
-          <textarea
-            value={form.description}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, description: e.target.value }))
-            }
-            rows={5}
-            placeholder={`Décrivez précisément ce que vous observez :\n• Quel est le symptôme ? (bruit, fuite, arrêt, surchauffe…)\n• Depuis quand ?\n• Dans quelles conditions cela se produit-il ?`}
-            className="w-full bg-elevated text-text rounded-lg px-3 py-2 text-sm border border-border-subtle outline-none focus:border-primary resize-none"
-          />
-          <p className="text-xs text-text-muted mt-1">
-            {form.description.length} caractères — plus vous êtes précis, plus
-            vite l'intervention sera réalisée
-          </p>
-        </div>
-
-        {/* Images */}
-        <div
-          className="rounded-xl border p-4"
-          style={{
-            background: "var(--color-primary-soft)",
-            borderColor: "rgba(79,70,229,0.15)",
-          }}>
-          <div className="flex items-center gap-2 mb-3">
-            <Image size={16} style={{ color: "var(--color-primary)" }} />
-            <span
-              className="text-xs font-semibold uppercase tracking-wider"
-              style={{ color: "var(--color-primary)" }}>
-              Photos (optionnel)
-            </span>
-          </div>
-          <label
-            className="flex flex-col items-center justify-center w-full p-4 border-2 border-dashed rounded-lg cursor-pointer transition hover:opacity-80"
-            style={{
-              borderColor: "rgba(79,70,229,0.25)",
-              background: "rgba(79,70,229,0.03)",
-            }}>
-            <Upload
-              size={22}
-              style={{ color: "var(--color-primary)" }}
-              className="mb-2"
-            />
-            <p
-              className="text-xs font-medium text-center"
-              style={{ color: "var(--color-primary)" }}>
-              Cliquez pour ajouter des images
-            </p>
-            <p className="text-[11px] text-center text-text-muted">
-              JPG, PNG max 5MB
-            </p>
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={handleImageChange}
-              className="hidden"
-            />
-          </label>
-          {previewImages.length > 0 && (
-            <div className="mt-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider mb-2 text-text-secondary">
-                Images ({previewImages.length})
-              </p>
-              <div className="grid grid-cols-4 gap-2">
-                {previewImages.map((preview, i) => (
-                  <div
-                    key={i}
-                    className="relative group rounded-lg overflow-hidden border border-border-subtle bg-elevated">
-                    <img
-                      src={preview}
-                      alt={`preview-${i}`}
-                      className="w-full h-20 object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(i)}
-                      className="absolute top-1 right-1 p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
-                      style={{
-                        background: "var(--status-red-bg)",
-                        color: "var(--status-red-text)",
-                      }}>
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Vidéos */}
-        <div
-          className="rounded-xl border p-4"
-          style={{
-            background: "rgba(236,72,153,0.06)",
-            borderColor: "rgba(236,72,153,0.15)",
-          }}>
-          <div className="flex items-center gap-2 mb-3">
-            <Video size={16} style={{ color: "#db2777" }} />
-            <span
-              className="text-xs font-semibold uppercase tracking-wider"
-              style={{ color: "#db2777" }}>
-              Vidéos (optionnel)
-            </span>
-          </div>
-          <label
-            className="flex flex-col items-center justify-center w-full p-4 border-2 border-dashed rounded-lg cursor-pointer transition hover:opacity-80"
-            style={{
-              borderColor: "rgba(236,72,153,0.25)",
-              background: "rgba(236,72,153,0.03)",
-            }}>
-            <Upload size={22} style={{ color: "#db2777" }} className="mb-2" />
-            <p
-              className="text-xs font-medium text-center"
-              style={{ color: "#db2777" }}>
-              Cliquez pour ajouter des vidéos
-            </p>
-            <p className="text-[11px] text-center text-text-muted">
-              MP4, MOV max 20MB
-            </p>
-            <input
-              type="file"
-              multiple
-              accept="video/*"
-              onChange={handleVideoChange}
-              className="hidden"
-            />
-          </label>
-          {previewVideos.length > 0 && (
-            <div className="mt-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider mb-2 text-text-secondary">
-                Vidéos ({previewVideos.length})
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {previewVideos.map((preview, i) => (
-                  <div
-                    key={i}
-                    className="relative group rounded-lg overflow-hidden border border-border-subtle bg-elevated">
-                    <video
-                      src={preview}
-                      className="w-full h-28 object-cover"
-                      controls
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeVideo(i)}
-                      className="absolute top-1 right-1 p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
-                      style={{
-                        background: "var(--status-red-bg)",
-                        color: "var(--status-red-text)",
-                      }}>
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Audio */}
-        <div
-          className="rounded-xl border p-4"
-          style={{
-            background: "rgba(14,165,233,0.06)",
-            borderColor: "rgba(14,165,233,0.15)",
-          }}>
-          <div className="flex items-center gap-2 mb-3">
-            <Mic size={16} style={{ color: "#0ea5e9" }} />
-            <span
-              className="text-xs font-semibold uppercase tracking-wider"
-              style={{ color: "#0ea5e9" }}>
-              Audio (optionnel)
-            </span>
-          </div>
-          {!isRecording ? (
-            <button
-              type="button"
-              onClick={startRecording}
-              className="w-full py-3 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2 text-white"
-              style={{ background: "#0ea5e9" }}>
-              <Mic size={16} /> Démarrer l'enregistrement
-            </button>
-          ) : (
-            <div
-              className="flex items-center justify-between p-4 rounded-lg border"
-              style={{
-                background: "var(--status-red-bg)",
-                borderColor: "rgba(220,38,38,0.2)",
-              }}>
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-3 h-3 rounded-full animate-pulse"
-                  style={{ background: "var(--status-red-dot)" }}
-                />
-                <div>
-                  <p
-                    className="text-sm font-semibold"
-                    style={{ color: "var(--status-red-text)" }}>
-                    Enregistrement en cours…
-                  </p>
-                  <p className="text-xs font-mono text-text-secondary">
-                    {formatTime(recordingTime)}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={stopRecording}
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition"
-                style={{ background: "var(--status-red-dot)" }}>
-                Arrêter
-              </button>
-            </div>
-          )}
-          {recordedAudios.length > 0 && (
-            <div className="mt-4 space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
-                Audios ({recordedAudios.length})
-              </p>
-              {recordedAudios.map((rec, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between p-3 rounded-lg border transition group hover:opacity-90"
-                  style={{
-                    background: "rgba(14,165,233,0.08)",
-                    borderColor: "rgba(14,165,233,0.18)",
-                  }}>
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <button
-                      type="button"
-                      onClick={() => playRecordedAudio(i)}
-                      className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white transition"
-                      style={{ background: "#0ea5e9" }}></button>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-text truncate">
-                        {rec.name}
-                      </p>
-                      <p className="text-[11px] text-text-muted font-mono">
-                        {formatTime(rec.duration)}
-                      </p>
+              {previewImages.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {previewImages.map((src, i) => (
+                    <div
+                      key={i}
+                      className="relative group w-16 h-16 rounded-lg overflow-hidden border border-border-subtle">
+                      <img
+                        src={src}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(i)}
+                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+                        <Trash2 size={14} className="text-white" />
+                      </button>
                     </div>
+                  ))}
+                </div>
+              )}
+            </MediaSection>
+
+            <MediaSection
+              icon={Video}
+              label={`Vidéos${videos.length ? ` (${videos.length})` : ""}`}
+              color="#db2777">
+              <label
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed cursor-pointer hover:opacity-80 transition text-xs"
+                style={{
+                  borderColor: "rgba(236,72,153,0.3)",
+                  color: "#db2777",
+                }}>
+                <Plus size={14} />
+                <span>Ajouter des vidéos</span>
+                <input
+                  type="file"
+                  multiple
+                  accept="video/*"
+                  onChange={handleVideoChange}
+                  className="hidden"
+                />
+              </label>
+              {previewVideos.length > 0 && (
+                <div className="mt-2 space-y-2">
+                  {previewVideos.map((src, i) => (
+                    <div
+                      key={i}
+                      className="relative group rounded-lg overflow-hidden border border-border-subtle">
+                      <video
+                        src={src}
+                        className="w-full h-28 object-cover"
+                        controls
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeVideo(i)}
+                        className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition">
+                        <X size={13} className="text-white" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </MediaSection>
+
+            <MediaSection
+              icon={Mic}
+              label={`Audio${recordedAudios.length ? ` (${recordedAudios.length})` : ""}`}
+              color="#0ea5e9">
+              {!isRecording ? (
+                <button
+                  type="button"
+                  onClick={startRecording}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-white transition"
+                  style={{ background: "#0ea5e9" }}>
+                  <Mic size={14} /> Démarrer l'enregistrement
+                </button>
+              ) : (
+                <div
+                  className="flex items-center justify-between px-3 py-2 rounded-lg border"
+                  style={{
+                    background: "var(--status-red-bg)",
+                    borderColor: "rgba(220,38,38,0.2)",
+                  }}>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-2 h-2 rounded-full animate-pulse"
+                      style={{ background: "var(--status-red-dot)" }}
+                    />
+                    <span
+                      className="text-xs font-semibold"
+                      style={{ color: "var(--status-red-text)" }}>
+                      Enregistrement
+                    </span>
+                    <span className="text-xs font-mono text-text-secondary">
+                      {formatTime(recordingTime)}
+                    </span>
                   </div>
                   <button
                     type="button"
-                    onClick={() => removeRecordedAudio(i)}
-                    className="shrink-0 p-1.5 rounded-md opacity-0 group-hover:opacity-100 transition text-text-muted hover:text-red-500">
-                    <X size={16} />
+                    onClick={stopRecording}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
+                    style={{ background: "var(--status-red-dot)" }}>
+                    <Square size={12} /> Arrêter
                   </button>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              )}
+              {recordedAudios.length > 0 && (
+                <div className="mt-2 space-y-1.5">
+                  {recordedAudios.map((rec, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border group"
+                      style={{
+                        background: "rgba(14,165,233,0.07)",
+                        borderColor: "rgba(14,165,233,0.18)",
+                      }}>
+                      <button
+                        type="button"
+                        onClick={() => playRecordedAudio(i)}
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-white shrink-0"
+                        style={{ background: "#0ea5e9" }}>
+                        <Play size={11} />
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-text truncate">
+                          {rec.name}
+                        </p>
+                        <p className="text-[11px] text-text-muted font-mono">
+                          {formatTime(rec.duration)}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeRecordedAudio(i)}
+                        className="shrink-0 p-1 rounded opacity-0 group-hover:opacity-100 transition text-text-muted hover:text-red-500">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </MediaSection>
+          </div>
 
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 rounded-xl text-sm font-semibold transition text-white flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{
-            background: "var(--color-primary)",
-            boxShadow: "0 2px 12px rgba(79,70,229,0.25)",
-          }}>
-          {loading ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
-              Envoi en cours…
-            </>
-          ) : (
-            <>Déclarer la panne</>
-          )}
-        </button>
-      </form>
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2.5 rounded-xl text-sm font-semibold transition text-white flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              background: "var(--color-primary)",
+              boxShadow: "0 2px 12px rgba(79,70,229,0.25)",
+            }}>
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />{" "}
+                Envoi…
+              </>
+            ) : (
+              "Déclarer la panne"
+            )}
+          </button>
+        </form>
+      </div>
     </div>
   );
 
-  /* ── Recent declarations sidebar ── */
+  /* ── Recent sidebar ── */
   const recentsSidebar = showRecents && (
-    <div className="bg-surface rounded-xl border border-border p-6 shadow-card flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
-      <div className="flex items-center gap-2 mb-5 pb-4 border-b border-border-subtle">
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-          style={{ background: "var(--status-purple-bg)" }}>
-          <Clock size={16} style={{ color: "var(--status-purple-text)" }} />
-        </div>
-        <h2 className="text-sm font-semibold text-text uppercase tracking-wider">
-          Mes déclarations récentes
+    <div className="bg-surface rounded-xl border border-border shadow-card overflow-hidden animate-in fade-in slide-in-from-right-4 duration-300">
+      <div
+        className="flex items-center gap-2 px-5 py-3 border-b border-border"
+        style={{ background: "var(--color-elevated)" }}>
+        <Clock size={14} style={{ color: "var(--status-purple-text)" }} />
+        <h2 className="text-sm font-semibold text-text">
+          Déclarations récentes
         </h2>
         <span
-          className="ml-auto text-[11px] px-2 py-0.5 rounded-full font-medium"
+          className="ml-auto text-[11px] px-1.5 py-0.5 rounded-full font-medium"
           style={{
             background: "var(--bg-active)",
             color: "var(--text-muted)",
@@ -1040,42 +965,31 @@ export default function FormulaireDemande({
           {mesDemandes.length}
         </span>
       </div>
-
-      {mesDemandes.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center py-16">
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-            style={{ background: "var(--bg-active)" }}>
-            <AlertTriangle size={24} className="text-text-muted" />
-          </div>
-          <p className="text-text-secondary text-sm font-medium">
+      <div className="p-4 space-y-2 overflow-y-auto max-h-[70vh]">
+        {mesDemandes.length === 0 ? (
+          <p className="text-center text-xs text-text-muted py-10">
             Aucune déclaration
           </p>
-          <p className="text-text-muted text-xs mt-1">
-            Vos déclarations apparaîtront ici
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3 flex-1">
-          {mesDemandes.map((d) => {
+        ) : (
+          mesDemandes.map((d) => {
             const st = STATUT_STYLES[d.statut] || STATUT_STYLES.en_attente;
             const ur = URGENCE_INFO[d.urgence] || URGENCE_INFO.normale;
             return (
               <div
                 key={d.id}
-                className="rounded-xl border p-4 transition hover:shadow-sm"
+                className="rounded-lg border p-3 hover:shadow-sm transition"
                 style={{
                   background: "var(--bg-elevated)",
                   borderColor: "var(--color-border-subtle)",
                 }}>
-                <div className="flex justify-between items-start mb-2">
+                <div className="flex justify-between items-center mb-1.5">
                   <span
-                    className="font-mono text-sm font-semibold"
+                    className="font-mono text-xs font-semibold"
                     style={{ color: "var(--color-primary)" }}>
                     {d.numero}
                   </span>
                   <span
-                    className="text-[11px] px-2 py-1 rounded-lg font-medium border"
+                    className="text-[11px] px-2 py-0.5 rounded-md font-medium border"
                     style={{
                       background: st.bg,
                       color: st.text,
@@ -1088,76 +1002,61 @@ export default function FormulaireDemande({
                   {d.titre || "(Sans titre)"}
                 </p>
                 <p
-                  className="text-xs font-medium truncate mt-0.5"
+                  className="text-xs truncate mt-0.5"
                   style={{ color: "var(--status-blue-text)" }}>
                   {d.actif_detail?.code} — {d.actif_detail?.libelle}
                 </p>
                 {d.description && (
-                  <p className="text-xs text-text-secondary mt-1.5 line-clamp-2">
+                  <p className="text-xs text-text-secondary mt-1 line-clamp-2">
                     {d.description}
                   </p>
                 )}
                 <div
-                  className="flex justify-between items-center mt-3 pt-2.5"
-                  style={{
-                    borderTop: "1px solid var(--color-border-subtle)",
-                  }}>
+                  className="flex justify-between items-center mt-2 pt-2"
+                  style={{ borderTop: "1px solid var(--color-border-subtle)" }}>
                   <span
-                    className="flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-full border font-medium"
+                    className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border font-medium"
                     style={{
                       background: ur.style.background,
                       color: ur.style.color,
                       borderColor: ur.dot + "35",
                     }}>
-                    <span style={{ color: ur.dot }}></span> {ur.label}
+                    <span
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ background: ur.dot }}
+                    />
+                    {ur.label}
                   </span>
-                  <span className="text-[11px] text-text-muted font-mono flex items-center gap-1">
-                    <Clock size={11} /> {formatDate(d.dateSignalement)}
+                  <span className="text-[11px] text-text-muted font-mono">
+                    {formatDate(d.dateSignalement)}
                   </span>
                 </div>
                 {d.statut === "rejetee" && d.motifRejet && (
                   <div
-                    className="mt-2.5 p-2.5 rounded-lg border text-xs"
+                    className="mt-2 p-2 rounded text-xs"
                     style={{
                       background: "var(--status-red-bg)",
-                      borderColor: "rgba(220,38,38,0.12)",
                       color: "var(--status-red-text)",
                     }}>
-                    <span className="font-semibold">Motif de rejet :</span>{" "}
+                    <span className="font-semibold">Rejet :</span>{" "}
                     {d.motifRejet}
-                  </div>
-                )}
-                {d.statut === "validee" && (
-                  <div
-                    className="mt-2.5 p-2.5 rounded-lg border text-xs flex items-center gap-1.5"
-                    style={{
-                      background: "var(--status-green-bg)",
-                      borderColor: "rgba(22,163,74,0.12)",
-                      color: "var(--status-green-text)",
-                    }}>
-                    <span></span>{" "}
-                    <span className="font-semibold">OT créé</span> —
-                    intervention en cours de traitement
                   </div>
                 )}
               </div>
             );
-          })}
-        </div>
-      )}
-
-      <div
-        className="mt-4 pt-4"
-        style={{ borderTop: "1px solid var(--color-border-subtle)" }}>
+          })
+        )}
+      </div>
+      <div className="px-4 py-3 border-t border-border">
         <button
           onClick={() => navigate("/ordres/demandes")}
-          className="w-full py-2.5 text-sm font-semibold rounded-lg transition border"
+          className="w-full py-2 text-xs font-semibold rounded-lg transition border"
           style={{
             color: "var(--color-primary)",
             borderColor: "rgba(79,70,229,0.25)",
             background: "var(--color-primary-soft)",
           }}>
-          Voir toutes les demandes →
+          Voir toutes →
         </button>
       </div>
     </div>
@@ -1166,7 +1065,7 @@ export default function FormulaireDemande({
   /* ── Dialog mode ── */
   if (onClose) {
     return (
-      <div className="flex flex-col max-h-[80vh]">
+      <div className="flex flex-col max-h-[85vh]">
         <div className="overflow-y-auto flex-1 min-h-0">{formCard}</div>
       </div>
     );
@@ -1175,35 +1074,26 @@ export default function FormulaireDemande({
   /* ── Page mode ── */
   return (
     <div className="page">
-      {/* Header */}
-      <div className="mb-2 flex items-start justify-between gap-4">
+      <div className="mb-4 flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-text tracking-tight">
+          <h1 className="text-xl font-semibold text-text tracking-tight">
             Déclarer une panne
           </h1>
-          <p className="text-text-muted text-sm mt-1">
-            Signalez un dysfonctionnement sur un équipement. L'actif parent sera
-            automatiquement mis en panne.
+          <p className="text-text-muted text-xs mt-0.5">
+            L'actif parent sera automatiquement mis en panne.
           </p>
         </div>
         <button
           type="button"
           onClick={() => setShowRecents((v) => !v)}
-          className="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-lg border shadow-sm transition hover:brightness-110"
+          className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg border shadow-sm transition hover:brightness-110 text-sm font-semibold"
           style={{
             background: "var(--bg-surface)",
             borderColor: "var(--color-border)",
             color: "var(--color-primary)",
-          }}
-          title={
-            showRecents
-              ? "Masquer les déclarations récentes"
-              : "Afficher les déclarations récentes"
-          }>
-          <Clock size={16} />
-          <span className="text-sm font-semibold hidden sm:inline">
-            Déclarations récentes
-          </span>
+          }}>
+          <Clock size={15} />
+          <span className="hidden sm:inline">Récentes</span>
           <span
             className="text-[11px] px-1.5 py-0.5 rounded-full font-bold"
             style={{
@@ -1212,14 +1102,12 @@ export default function FormulaireDemande({
             }}>
             {mesDemandes.length}
           </span>
-          {showRecents ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          {showRecents ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
       </div>
 
       <div
-        className={`grid gap-6 transition-all duration-300 ${
-          showRecents ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"
-        }`}>
+        className={`grid gap-5 transition-all duration-300 ${showRecents ? "grid-cols-1 lg:grid-cols-[1fr_380px]" : "grid-cols-1 max-w-2xl"}`}>
         {formCard}
         {recentsSidebar}
       </div>

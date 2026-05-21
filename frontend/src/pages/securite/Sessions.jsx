@@ -3,6 +3,16 @@ import { Monitor, Wifi, WifiOff, LogOut, RefreshCw } from "lucide-react";
 import { getSessions, forcedLogout } from "@/services/securiteService";
 import api from "@/services/api";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const formatDate = (d) =>
   new Date(d).toLocaleString("fr-FR", {
@@ -17,6 +27,13 @@ export default function Sessions() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [forcing, setForcing] = useState(null);
+
+  //  Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    session: null,
+    errorMessage: null,
+  });
 
   async function fetchSessions() {
     try {
@@ -34,14 +51,24 @@ export default function Sessions() {
     fetchSessions();
   }, []);
 
-  async function handleForceLogout(session) {
-    if (!confirm(`Forcer la déconnexion de ${session.utilisateur} ?`)) return;
+  function handleForceLogout(session) {
+    setConfirmDialog({ open: true, session, errorMessage: null });
+  }
+
+  async function handleConfirmLogout() {
+    const session = confirmDialog.session;
     try {
       setForcing(session.id);
+      setConfirmDialog((prev) => ({ ...prev, open: false }));
       await forcedLogout(session.id);
       fetchSessions();
     } catch (err) {
-      alert(err.response?.data?.detail || "Erreur lors de la déconnexion.");
+      setConfirmDialog({
+        open: true,
+        session: null,
+        errorMessage:
+          err.response?.data?.detail || "Erreur lors de la déconnexion.",
+      });
     } finally {
       setForcing(null);
     }
@@ -186,6 +213,45 @@ export default function Sessions() {
           </tbody>
         </table>
       </div>
+
+      {/* 
+          AlertDialog — Confirmation déconnexion forcée
+       */}
+      <AlertDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) =>
+          !open &&
+          setConfirmDialog({ open: false, session: null, errorMessage: null })
+        }>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmDialog.errorMessage
+                ? "Une erreur est survenue"
+                : "Forcer la déconnexion ?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDialog.errorMessage
+                ? confirmDialog.errorMessage
+                : `La session de ${confirmDialog.session?.utilisateur} sera immédiatement invalidée.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {confirmDialog.errorMessage ? (
+              <AlertDialogCancel>Fermer</AlertDialogCancel>
+            ) : (
+              <>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleConfirmLogout}
+                  className="bg-red-600 hover:bg-red-700 text-white">
+                  Déconnecter
+                </AlertDialogAction>
+              </>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,16 +1,22 @@
 /**
- * DIDetailDialog — Composant partagé (riche, style GestionOTs)
- * @param {{ di: object|null, open: boolean, onOpenChange: (v:boolean)=>void }} props
+ * DIDetailDialog — Compact redesign
  */
 
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { FileText, Image, Video, Download, Clock } from "lucide-react";
+  FileText,
+  Image,
+  Video,
+  Download,
+  Wrench,
+  Mic,
+  AlertTriangle,
+  Ban,
+  Paperclip,
+  ChevronRight,
+  Play,
+  FileIcon,
+} from "lucide-react";
 import {
   formatDate,
   getFileUrl,
@@ -18,7 +24,43 @@ import {
   VideoViewer,
   HierarchyPath,
 } from "./di/MediaViewers";
-import AudioPlayer from "./AudioPlayer"; // ← composant audio séparé
+import AudioPlayer from "./AudioPlayer";
+
+/* ─── helpers ─────────────────────────────────────── */
+
+const URGENCE_STYLES = {
+  critique: "bg-red-500/20 text-red-600 border border-red-500",
+  haute: "bg-orange-500/20 text-orange-600 border border-orange-500",
+  normale: "bg-blue-500/20 text-blue-600 border border-blue-500",
+  basse: "bg-muted text-text-secondary border border-border-subtle",
+};
+
+const STATUT_STYLES = {
+  en_attente: "bg-amber-500/20 text-amber-700",
+  validee: "bg-green-500/20 text-green-700",
+  rejetee: "bg-red-500/20 text-red-600",
+  en_cours: "bg-blue-500/20 text-blue-700",
+};
+
+function Label({ children }) {
+  return (
+    <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-1">
+      {children}
+    </p>
+  );
+}
+
+function Cell({ label, children, className = "" }) {
+  return (
+    <div
+      className={`bg-elevated/30 rounded-lg p-3 border border-border-subtle ${className}`}>
+      <Label>{label}</Label>
+      {children}
+    </div>
+  );
+}
+
+/* ─── composant principal ─────────────────────────── */
 
 export default function DIDetailDialog({ di, open, onOpenChange }) {
   if (!di) return null;
@@ -27,217 +69,202 @@ export default function DIDetailDialog({ di, open, onOpenChange }) {
     di.pieces_jointes?.filter(
       (f) =>
         f.typeFichier?.startsWith("audio") || f.nomFichier?.endsWith(".webm"),
-    ) || [];
+    ) ?? [];
   const imagePieces =
-    di.pieces_jointes?.filter((f) => f.typeFichier?.startsWith("image")) || [];
+    di.pieces_jointes?.filter((f) => f.typeFichier?.startsWith("image")) ?? [];
   const videoPieces =
     di.pieces_jointes?.filter(
       (f) =>
         f.typeFichier?.startsWith("video") && !f.nomFichier?.endsWith(".webm"),
-    ) || [];
+    ) ?? [];
   const otherPieces =
     di.pieces_jointes?.filter(
       (f) =>
         !f.typeFichier?.startsWith("audio") &&
         !f.typeFichier?.startsWith("image") &&
         !f.typeFichier?.startsWith("video"),
-    ) || [];
+    ) ?? [];
+
+  const totalPieces = di.pieces_jointes?.length ?? 0;
+  const urgenceClass = URGENCE_STYLES[di.urgence] ?? URGENCE_STYLES.basse;
+  const statutClass =
+    STATUT_STYLES[di.statut] ?? "bg-muted text-text-secondary";
+
+  /* rejet unifié (rejet_info OU motifRejet) */
+  const rejet = di.rejet_info
+    ? {
+        count: di.rejet_info.count,
+        motif: di.rejet_info.motif,
+        date: di.rejet_info.date,
+      }
+    : di.motifRejet
+      ? { count: null, motif: di.motifRejet, date: null }
+      : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] scrollbar-none overflow-y-auto p-1 gap-0 ">
-        {/* Header sticky */}
-        <div className="sticky top-0 bg-surface border-b border-border p-6 z-10">
-          <DialogHeader className="space-y-1">
-            <DialogTitle className="flex items-center gap-2 text-2xl font-bold text-text">
-              <FileText size={20} />
-              {di.numero}
-            </DialogTitle>
-            {di.titre && (
-              <p className="text-base font-semibold text-text">{di.titre}</p>
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto scrollbar-none p-0 gap-0">
+        {/* ── Header sticky ─────────────────────────── */}
+        <div className="sticky top-0 bg-surface border-b border-border z-10 px-5 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <FileText size={14} className="text-text-secondary shrink-0" />
+                <span className="text-base font-bold text-text">
+                  {di.numero}
+                </span>
+                <span
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statutClass}`}>
+                  {di.statut?.replace(/_/g, " ")}
+                </span>
+              </div>
+              {di.titre && (
+                <p className="text-sm font-medium text-text truncate">
+                  {di.titre}
+                </p>
+              )}
+              <p className="text-xs text-text-secondary truncate mt-0.5">
+                {di.actif_detail?.libelle || "—"}
+              </p>
+            </div>
+
+            {di.urgence && (
+              <span
+                className={`shrink-0 text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1 ${urgenceClass}`}>
+                <AlertTriangle size={10} />
+                {di.urgence.toUpperCase()}
+              </span>
             )}
-            <DialogDescription className="text-text-secondary text-sm">
-              {di.actif_detail?.libelle || "—"}
-            </DialogDescription>
-          </DialogHeader>
+          </div>
         </div>
 
-        {/* Contenu */}
-        <div className="p-6 space-y-6">
-          {/* Historique Audit */}
-          <div className="bg-elevated/30 rounded-lg p-4 border border-border-subtle">
-            <div className="flex items-center gap-2 mb-4">
-              <Clock />
-              <p className="text-sm font-bold text-text uppercase tracking-wider">
-                Historique Audit
+        {/* ── Corps ─────────────────────────────────── */}
+        <div className="px-5 py-4 space-y-4">
+          {/* Métadonnées : date + audit en grille 3 colonnes */}
+          <div className="grid grid-cols-3 gap-2">
+            <Cell label="Signalé le">
+              <p className="text-xs font-mono text-text">
+                {new Date(di.dateSignalement).toLocaleDateString("fr-FR")}
               </p>
-            </div>
-            <div className="space-y-3 text-sm">
-              {di.signalement_detail && (
-                <div className="flex items-start gap-3">
-                  <span className="text-text-secondary min-w-fit">
-                    Créée par :
-                  </span>
-                  <div>
-                    <p className="text-text font-medium">
-                      {di.signalement_detail.prenom} {di.signalement_detail.nom}
-                    </p>
-                    <p className="text-text-muted text-xs">
-                      {new Date(di.signalement_detail.date).toLocaleString(
-                        "fr-FR",
-                      )}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {di.validation_detail && (
-                <div className="flex items-start gap-3 pt-2 border-t border-border-subtle">
-                  <span className="text-text-secondary min-w-fit">
-                    OT créé par :
-                  </span>
-                  <div>
-                    <p className="text-text font-medium">
-                      {di.validation_detail.prenom} {di.validation_detail.nom}
-                    </p>
-                    <p className="text-text-muted text-xs">
-                      {new Date(di.validation_detail.date).toLocaleString(
-                        "fr-FR",
-                      )}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {!di.signalement_detail && !di.validation_detail && (
-                <p className="text-text-muted text-xs italic">
-                  Aucune information d'audit disponible
-                </p>
-              )}
-            </div>
-          </div>
+              <p className="text-[10px] text-text-muted font-mono">
+                {new Date(di.dateSignalement).toLocaleTimeString("fr-FR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+            </Cell>
 
-          {/* ── Enregistrements Audio ── */}
-          {audioPieces.length > 0 && (
-            <div>
-              <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-3">
-                🎙 Enregistrements audio ({audioPieces.length})
-              </p>
-              <div className="space-y-3">
-                {audioPieces.map((f) => (
-                  <AudioPlayer key={f.id} file={f} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Urgence & Date */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-elevated/30 rounded-lg p-4 border border-border-subtle">
-              <p className="text-xs text-text-secondary uppercase font-semibold mb-1">
-                Urgence
-              </p>
-              <p
-                className={`text-lg font-bold ${
-                  di.urgence === "critique"
-                    ? "text-status-red"
-                    : di.urgence === "haute"
-                      ? "text-status-orange"
-                      : di.urgence === "normale"
-                        ? "text-status-blue"
-                        : "text-text-secondary"
-                }`}>
-                {di.urgence?.toUpperCase()}
-              </p>
-            </div>
-            <div className="bg-elevated/30 rounded-lg p-4 border border-border-subtle">
-              <p className="text-xs text-text-secondary uppercase font-semibold mb-1">
-                Date de signalement
-              </p>
-              <p className="text-sm text-text font-mono">
-                {new Date(di.dateSignalement).toLocaleString("fr-FR")}
-              </p>
-            </div>
-          </div>
-
-          {/* Statut & Rejet */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-elevated/30 rounded-lg p-4 border border-border-subtle">
-              <p className="text-xs text-text-secondary uppercase font-semibold mb-1">
-                Statut
-              </p>
-              <p className="text-sm text-text font-medium capitalize">
-                {di.statut?.replace(/_/g, " ")}
-              </p>
-            </div>
-            {di.rejet_info && (
-              <div className="bg-danger-soft rounded-lg p-4 border border-danger/30">
-                <p className="text-xs text-danger uppercase font-semibold mb-1">
-                  Rejet ({di.rejet_info.count}x)
+            {di.signalement_detail ? (
+              <Cell label="Créé par">
+                <p className="text-xs font-medium text-text truncate">
+                  {di.signalement_detail.prenom} {di.signalement_detail.nom}
                 </p>
-                {di.rejet_info.motif && (
-                  <p className="text-xs text-text">{di.rejet_info.motif}</p>
-                )}
-                <p className="text-[10px] text-text-muted mt-1">
-                  Dernier rejet : {formatDate(di.rejet_info.date)}
+                <p className="text-[10px] text-text-muted font-mono">
+                  {new Date(di.signalement_detail.date).toLocaleString(
+                    "fr-FR",
+                    {
+                      day: "2-digit",
+                      month: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    },
+                  )}
                 </p>
-              </div>
+              </Cell>
+            ) : (
+              <Cell label="Créé par">
+                <p className="text-xs text-text-muted italic">—</p>
+              </Cell>
+            )}
+
+            {di.validation_detail ? (
+              <Cell label="OT créé par">
+                <p className="text-xs font-medium text-text truncate">
+                  {di.validation_detail.prenom} {di.validation_detail.nom}
+                </p>
+                <p className="text-[10px] text-text-muted font-mono">
+                  {new Date(di.validation_detail.date).toLocaleString("fr-FR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </Cell>
+            ) : (
+              <Cell label="OT créé par">
+                <p className="text-xs text-text-muted italic">—</p>
+              </Cell>
             )}
           </div>
 
-          {/* Équipement */}
-          <div className="bg-primary-soft rounded-lg p-4 border border-primary">
-            <p className="text-xs text-primary uppercase font-semibold mb-2">
-              Équipement
-            </p>
-            <p className="text-sm font-mono text-text-secondary">
-              {di.actif_detail?.code || "—"}
-            </p>
-            <p className="text-sm text-text">
-              {di.actif_detail?.libelle || "—"}
-            </p>
+          {/* Équipement + hiérarchie fusionnés */}
+          <div className="flex items-center gap-3 bg-elevated/30 rounded-lg px-3 py-2.5 border border-border-subtle">
+            <Wrench size={14} className="text-text-muted shrink-0" />
+            <div className="min-w-0 flex-1">
+              {/* Breadcrumb hiérarchie */}
+              {di.actif_detail && (
+                <HierarchyPath
+                  actifDetail={di.actif_detail}
+                  className="flex items-center gap-1 flex-wrap text-[10px] text-text-muted mb-1"
+                  separatorClassName="opacity-40"
+                  separator={<ChevronRight size={9} />}
+                />
+              )}
+              <div className="flex items-center gap-2 mt-2">
+                {di.actif_detail?.code && (
+                  <span className="text-[10px] font-mono bg-surface border border-border-subtle rounded px-1.5 py-0.5 text-text-secondary whitespace-nowrap">
+                    {di.actif_detail.code}
+                  </span>
+                )}
+                <span className="text-xs font-medium text-text truncate">
+                  {di.actif_detail?.libelle || "—"}
+                </span>
+              </div>
+            </div>
           </div>
-
-          {/* Hiérarchie */}
-          <HierarchyPath actifDetail={di.actif_detail} />
 
           {/* Description */}
           {di.description && (
-            <div className="bg-primary-soft rounded-lg p-4 border border-primary">
-              <p className="text-xs text-primary uppercase font-semibold mb-2">
-                Description du problème
-              </p>
-              <p className="text-sm text-text leading-relaxed whitespace-pre-wrap">
+            <div className="border-l-2 border-primary rounded-r-lg bg-primary-soft px-3 py-2.5">
+              <Label>Description du problème</Label>
+              <p className="text-xs text-text leading-relaxed whitespace-pre-wrap">
                 {di.description}
               </p>
             </div>
           )}
 
-          {/* Motif de rejet (si pas dans rejet_info) */}
-          {di.motifRejet && !di.rejet_info && (
-            <div className="bg-danger-soft rounded-lg p-4 border border-danger">
-              <p className="text-xs text-danger uppercase font-semibold mb-2">
-                Motif de rejet
-              </p>
-              <p className="text-sm text-text leading-relaxed">
-                {di.motifRejet}
-              </p>
+          {/* Rejet (unifié) */}
+          {rejet && (
+            <div className="border-l-2 border-danger rounded-r-lg bg-danger-soft px-3 py-2.5">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Ban size={11} className="text-danger" />
+                <span className="text-[10px] font-semibold text-danger uppercase tracking-wide">
+                  Rejet{rejet.count ? ` (${rejet.count}×)` : ""}
+                  {rejet.date ? ` · ${formatDate(rejet.date)}` : ""}
+                </span>
+              </div>
+              {rejet.motif && (
+                <p className="text-xs text-text">{rejet.motif}</p>
+              )}
             </div>
           )}
 
-          {/* ── Pièces jointes (Images / Vidéos / Autres) ── */}
-          {di.pieces_jointes?.length > 0 ? (
+          {/* Pièces jointes — section unique */}
+          {totalPieces > 0 ? (
             <div>
-              <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-1.5">
-                <FileText size={12} /> Pièces jointes (
-                {di.pieces_jointes.length})
+              <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-2.5 flex items-center gap-1.5">
+                <Paperclip size={11} />
+                Pièces jointes ({totalPieces})
               </p>
 
               {/* Images */}
               {imagePieces.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1">
+                <div className="mb-3">
+                  <p className="text-[10px] text-text-muted mb-1.5 flex items-center gap-1">
                     <Image size={10} /> Photos ({imagePieces.length})
                   </p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-4 gap-1.5">
                     {imagePieces.map((f) => (
                       <ImageViewer key={f.id} file={f} />
                     ))}
@@ -247,11 +274,11 @@ export default function DIDetailDialog({ di, open, onOpenChange }) {
 
               {/* Vidéos */}
               {videoPieces.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1">
+                <div className="mb-3">
+                  <p className="text-[10px] text-text-muted mb-1.5 flex items-center gap-1">
                     <Video size={10} /> Vidéos ({videoPieces.length})
                   </p>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-1.5">
                     {videoPieces.map((f) => (
                       <VideoViewer key={f.id} file={f} />
                     ))}
@@ -259,20 +286,33 @@ export default function DIDetailDialog({ di, open, onOpenChange }) {
                 </div>
               )}
 
-              {/* Autres fichiers */}
-              {otherPieces.length > 0 && (
-                <div>
-                  <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1">
-                    <FileText size={10} /> Autres fichiers ({otherPieces.length}
-                    )
+              {/* Audio */}
+              {audioPieces.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-[10px] text-text-muted mb-1.5 flex items-center gap-1">
+                    <Mic size={10} /> Audio ({audioPieces.length})
                   </p>
                   <div className="space-y-1.5">
+                    {audioPieces.map((f) => (
+                      <AudioPlayer key={f.id} file={f} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Autres */}
+              {otherPieces.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-text-muted mb-1.5 flex items-center gap-1">
+                    <FileIcon size={10} /> Autres ({otherPieces.length})
+                  </p>
+                  <div className="space-y-1">
                     {otherPieces.map((f) => (
                       <div
                         key={f.id}
-                        className="flex items-center gap-3 p-2.5 border border-border-subtle rounded-lg bg-elevated/30">
+                        className="flex items-center gap-2.5 px-2.5 py-2 border border-border-subtle rounded-lg bg-elevated/30">
                         <FileText
-                          size={14}
+                          size={13}
                           className="shrink-0 text-text-muted"
                         />
                         <span className="text-xs text-text flex-1 truncate">
@@ -283,8 +323,8 @@ export default function DIDetailDialog({ di, open, onOpenChange }) {
                           download
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary text-xs flex items-center gap-1 shrink-0 hover:underline">
-                          <Download size={12} /> Télécharger
+                          className="text-primary flex items-center gap-1 shrink-0 hover:underline">
+                          <Download size={11} />
                         </a>
                       </div>
                     ))}
@@ -293,9 +333,9 @@ export default function DIDetailDialog({ di, open, onOpenChange }) {
               )}
             </div>
           ) : (
-            <div className="p-4 text-center text-text-muted text-xs border border-border-subtle rounded-lg bg-elevated/30">
-              Aucune pièce jointe pour cette demande
-            </div>
+            <p className="text-center text-text-muted text-xs py-3 border border-border-subtle rounded-lg bg-elevated/30">
+              Aucune pièce jointe
+            </p>
           )}
         </div>
       </DialogContent>

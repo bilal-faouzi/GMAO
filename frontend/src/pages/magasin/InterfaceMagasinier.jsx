@@ -89,7 +89,7 @@ export default function InterfaceMagasinier() {
     setLoading(true);
     try {
       const [o, p, a, u] = await Promise.all([
-        getOTs({ statut__in: STATUTS_ACTIFS.join(","), isvalide: false }),
+        getOTs({ statut__in: STATUTS_ACTIFS.join(","), isvalide: true }),
         getPieces({
           estActif: true,
           page: tablePage,

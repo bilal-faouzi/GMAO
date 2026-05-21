@@ -164,7 +164,7 @@ function MembresPanel({ equipe, onClose }) {
   return (
     <Modal title={`Membres — ${equipe.libelle}`} onClose={onClose}>
       {/*  Liste membres actuels  */}
-      <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
+      <div className="space-y-2 max-h-64 overflow-y-auto mb-10">
         {loading ? (
           <p className="text-text-secondary text-sm text-center py-4">
             Chargement...
@@ -177,9 +177,9 @@ function MembresPanel({ equipe, onClose }) {
           membres.map((m) => (
             <div
               key={m.id}
-              className="flex items-center justify-between p-2 mx-2 my-1  shadow-md hover:ring dark:bg-neutral-900/50 inset-shadow-sm rounded-sm bg-surface">
+              className="flex items-center justify-between p-2 mx-2 my-1  shadow-xl hover:ring dark:bg-neutral-900/50  rounded-sm bg-blue-100/50 ring-blue-200/50 transition-all">
               <div>
-                <p className="text-sm text-text">{m.utilisateur_nom}</p>
+                <p className="text-sm text-text ">{m.utilisateur_nom}</p>
                 <RoleBadge role={m.niveauRole} />
               </div>
               <AlertDialog>
@@ -262,7 +262,7 @@ function MembresPanel({ equipe, onClose }) {
                             setNewMembre({ ...newMembre, utilisateur: u.id });
                             setOpenCombo(false);
                           }}
-                          className="flex items-center px-3 py-2 text-sm cursor-pointer rounded-sm text-text hover:bg-hover data-[selected=true]:bg-hover">
+                          className="flex items-center  px-3 py-2 text-sm cursor-pointer rounded-sm text-text hover:bg-hover data-[selected=true]:bg-hover">
                           <Check
                             size={14}
                             className={cn(
@@ -275,7 +275,7 @@ function MembresPanel({ equipe, onClose }) {
                           <span>
                             {u.prenom} {u.nom}
                           </span>
-                          <span className="ml-2 text-xs text-text-muted">
+                          <span className="ml-2 text-xs text-text-muted ">
                             {u.nom_utilisateur}
                           </span>
                         </CommandItem>

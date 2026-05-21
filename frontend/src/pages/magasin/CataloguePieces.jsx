@@ -11,7 +11,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { getPieces, deletePiece, getCategoriesPieces, importerPiecesCSV } from "../../services/magasinService";
+import {
+  getPieces,
+  deletePiece,
+  getCategoriesPieces,
+  importerPiecesCSV,
+} from "../../services/magasinService";
 import MouvementStockModal from "../../components/MouvementStockModal";
 import {
   Plus,
@@ -63,7 +68,7 @@ export default function CataloguePieces() {
 
   // Pagination
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const totalPages = Math.ceil(total / pageSize);
 
@@ -141,9 +146,13 @@ export default function CataloguePieces() {
             className="btn btn-outline"
             title="Importer CSV (Référence, Désignation, Unité)">
             {importLoading ? (
-              <><span className="animate-spin" /> Import...</>
+              <>
+                <span className="animate-spin" /> Import...
+              </>
             ) : (
-              <><Upload size={14} /> Importer CSV</>
+              <>
+                <Upload size={14} /> Importer CSV
+              </>
             )}
           </button>
           <input
@@ -157,10 +166,13 @@ export default function CataloguePieces() {
               setImportLoading(true);
               try {
                 const res = await importerPiecesCSV(file);
-                alert(`Import terminé : ${res.data.creees} créées, ${res.data.mises_a_jour} mises à jour`);
+                alert(
+                  `Import terminé : ${res.data.creees} créées, ${res.data.mises_a_jour} mises à jour`,
+                );
                 await charger();
               } catch (err) {
-                const msg = err.response?.data?.error || "Erreur lors de l'import CSV.";
+                const msg =
+                  err.response?.data?.error || "Erreur lors de l'import CSV.";
                 alert(msg);
               } finally {
                 setImportLoading(false);

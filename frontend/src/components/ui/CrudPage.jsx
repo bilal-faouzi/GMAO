@@ -7,6 +7,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -15,7 +25,7 @@ import { FieldLabel } from "@/components/ui/field";
 import { FieldError, GlobalError } from "@/components/FieldError";
 import { useFormErrors } from "@/hooks/useFormErrors";
 
-//  Badge 
+//  Badge
 
 function Badge({ active }) {
   return (
@@ -26,7 +36,7 @@ function Badge({ active }) {
   );
 }
 
-//  ModalForm 
+//  ModalForm
 
 function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
   const [form, setForm] = useState(
@@ -36,7 +46,6 @@ function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
   );
   const [saving, setSaving] = useState(false);
 
-  // Chaque instance de ModalForm a son propre état d'erreurs
   const { errors, setApiErrors, clearErrors, inputCls } = useFormErrors();
 
   async function handleSubmit(e) {
@@ -67,7 +76,6 @@ function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Erreur globale en haut du formulaire */}
           <GlobalError errors={errors} />
 
           {fields.map((f) => (
@@ -141,7 +149,7 @@ function ModalForm({ title, fields, onSave, onClose, initial = {} }) {
   );
 }
 
-//  CrudPage 
+//  CrudPage
 
 export { Badge, ModalForm };
 
@@ -155,8 +163,65 @@ export default function CrudPage({
   onEdit,
   onDelete,
   loading,
+  // Optionnel : personnaliser le message de confirmation de suppression
+  // Signature : (row) => ({ title?, description? })
+  deleteConfirm,
 }) {
   const [modal, setModal] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null); // row._raw
+
+  // Résout le titre et la description du dialog en fonction de la ligne ciblée
+  function resolveConfirm(row) {
+    if (deleteConfirm) return deleteConfirm(row._raw);
+
+    const raw = row._raw ?? {};
+    const PREFERRED = [
+      "nom",
+      "name",
+      "libelle",
+      "libellé",
+      "titre",
+      "title",
+      "label",
+      "code",
+      "designation",
+      "désignation",
+    ];
+    const SKIP = ["id", "uuid", "token", "password", "mot_de_passe"];
+    const isDate = (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v);
+
+    const label =
+      // 1. Champ au nom sémantique connu
+      PREFERRED.map((k) => raw[k]).find(
+        (v) => typeof v === "string" && v.trim() !== "",
+      ) ??
+      // 2. Premier string lisible (pas une date, pas un champ technique)
+      Object.entries(raw)
+        .filter(
+          ([k, v]) =>
+            !SKIP.includes(k) &&
+            typeof v === "string" &&
+            v.trim() !== "" &&
+            !isDate(v),
+        )
+        .map(([, v]) => v)
+        .find(Boolean);
+
+    return {
+      title: "Confirmer la suppression",
+      description: label
+        ? `Supprimer « ${label} » ? Cette action est irréversible.`
+        : "Cette action est irréversible.",
+    };
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return;
+    await onDelete(deleteTarget.id);
+    setDeleteTarget(null);
+  }
+
+  const confirm = deleteTarget ? resolveConfirm(deleteTarget) : {};
 
   return (
     <div className="p-6 space-y-6">
@@ -229,7 +294,7 @@ export default function CrudPage({
                       {onDelete && (
                         <Button
                           variant="ghost"
-                          onClick={() => onDelete(row.id)}
+                          onClick={() => setDeleteTarget(row)}
                           className="rounded hover:bg-danger-soft text-text-muted hover:text-danger transition-colors">
                           <Trash2 size={13} />
                         </Button>
@@ -263,6 +328,30 @@ export default function CrudPage({
           onClose={() => setModal(null)}
         />
       )}
+
+      {/* 
+          AlertDialog — Confirmation suppression
+       */}
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirm.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirm.description}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

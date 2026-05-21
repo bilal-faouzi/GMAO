@@ -452,21 +452,15 @@ export default function ActifUnite() {
       <Dialog
         open={!!dialogActif}
         onOpenChange={(open) => !open && setDialogActif(null)}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>
-              Déclarer une panne —{" "}
-              <span className="font-mono text-sm font-normal text-muted-foreground">
-                {dialogActif?.code}
-              </span>
-            </DialogTitle>
-            <DialogDescription>
-              Remplissez le formulaire pour signaler une panne sur cet actif.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent
+          hideCloseButton
+          className="p-0 border-0 shadow-none bg-transparent max-w-xl focus:outline-none [&>button]:hidden">
+          {" "}
           {dialogActif && (
             <FormulaireDemande
+              defaultActif={dialogActif}
               defaultActifId={dialogActif.id}
+              defaultType={dialogActif.type}
               onClose={() => setDialogActif(null)}
               onSuccess={() => {
                 setDialogActif(null);
