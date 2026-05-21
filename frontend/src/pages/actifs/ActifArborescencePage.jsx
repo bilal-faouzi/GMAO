@@ -20,6 +20,7 @@ import {
   createActif,
   updateActif,
   deleteActif,
+  getTypesActifs,
 } from "../../services/actifService";
 import {
   getSites,
@@ -286,12 +287,28 @@ export function ActifFormModal({
   const [loading, setLoading] = useState(false);
   const [erreur, setErreur] = useState(null);
   const [errors, setErrors] = useState({});
+  const [typesActifs, setTypesActifs] = useState([]); // <-- État pour stocker les types dynamiques
 
   // Ref for the modal container — used as portal container for SelectContent
   const modalRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
+
+    // Fonction asynchrone pour charger les types d'actifs depuis la base de données
+    const loadTypes = async () => {
+      try {
+        const res = await getTypesActifs();
+        const types = res.data.results || res.data;
+        // Formatage identique au premier document (value/label)
+        setTypesActifs(types.map((t) => ({ value: t.code, label: t.libelle })));
+      } catch (err) {
+        console.error("Erreur lors du chargement des types d'actifs", err);
+      }
+    };
+
+    loadTypes(); // Appel de la fonction
+
     console.log(
       "Modal open — parentActif:",
       parentActif,
@@ -426,15 +443,6 @@ export function ActifFormModal({
   if (!open) return null;
 
   return (
-    /*
-     * FIX: The backdrop must NOT have overflow:hidden or a CSS transform,
-     * because both create a new stacking context that traps the Radix portal.
-     * We give the modal `position: relative` and a high z-index so the
-     * SelectContent portal (rendered into <body>) still appears above it.
-     * We also pass `container={modalRef.current}` to every SelectContent so
-     * Radix portals into the modal element instead of <body>, which avoids
-     * any z-index race entirely.
-     */
     <div
       style={{
         position: "fixed",
@@ -445,12 +453,11 @@ export function ActifFormModal({
         justifyContent: "center",
         background: "rgba(0,0,0,0.45)",
         backdropFilter: "blur(2px)",
-        // NO overflow:hidden, NO transform
       }}>
       <div
         ref={modalRef}
         style={{
-          position: "relative", // ← required for portal containment
+          position: "relative",
           zIndex: 51,
           background: "var(--bg-surface)",
           borderRadius: "var(--r)",
@@ -461,7 +468,7 @@ export function ActifFormModal({
           maxHeight: "90vh",
           display: "flex",
           flexDirection: "column",
-          overflowY: "auto", // scroll here, NOT on the backdrop
+          overflowY: "auto",
         }}>
         {/* ── Header ── */}
         <div className="m-hdr">
@@ -516,7 +523,7 @@ export function ActifFormModal({
               {errors.libelle && <span className="ferr">{errors.libelle}</span>}
             </div>
 
-            {/* Type */}
+            {/* Type (Dynamique maintenant !) */}
             <div className="fg">
               <Label className="flabel">Type</Label>
               <Select
@@ -525,17 +532,12 @@ export function ActifFormModal({
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un type" />
                 </SelectTrigger>
-                {/*
-                 * FIX: container={modalRef.current} forces Radix to portal
-                 * the dropdown inside the modal div, bypassing any stacking
-                 * context issues with the backdrop.
-                 * position="popper" + sideOffset prevent clipping.
-                 */}
                 <SelectContent
                   container={modalRef.current}
                   position="popper"
                   sideOffset={4}>
-                  {ACTIF_TYPES_OPTIONS.map((o) => (
+                  {/* Utilisation de typesActifs provenant de l'API au lieu de ACTIF_TYPES_OPTIONS */}
+                  {typesActifs.map((o) => (
                     <SelectItem key={o.value} value={o.value}>
                       {o.label}
                     </SelectItem>
@@ -552,7 +554,6 @@ export function ActifFormModal({
                 value={form.description}
                 onChange={handleChange}
                 rows={2}
-                style={{ resize: "none" }}
               />
             </div>
 
@@ -676,7 +677,7 @@ export function ActifFormModal({
               )}
             </div>
 
-            {/* Parent (read-only) */}
+            {/* Parent */}
             <div className="fg span2">
               <Label className="flabel">Parent</Label>
               <Input value={form.idParent} disabled style={{ opacity: 0.6 }} />
@@ -685,7 +686,7 @@ export function ActifFormModal({
               </span>
             </div>
 
-            {/* Fabricant */}
+            {/* Fabricant, Modèle, N° Série, etc. (Conservés à l'identique) */}
             <div className="fg">
               <Label className="flabel">Fabricant</Label>
               <Input
@@ -694,8 +695,6 @@ export function ActifFormModal({
                 onChange={handleChange}
               />
             </div>
-
-            {/* Modèle */}
             <div className="fg">
               <Label className="flabel">Modèle</Label>
               <Input
@@ -704,8 +703,6 @@ export function ActifFormModal({
                 onChange={handleChange}
               />
             </div>
-
-            {/* N° de série */}
             <div className="fg">
               <Label className="flabel">N° de série</Label>
               <Input
@@ -714,8 +711,6 @@ export function ActifFormModal({
                 onChange={handleChange}
               />
             </div>
-
-            {/* Date d'acquisition */}
             <div className="fg">
               <Label className="flabel">Date d'acquisition</Label>
               <Input
@@ -725,8 +720,6 @@ export function ActifFormModal({
                 onChange={handleChange}
               />
             </div>
-
-            {/* Valeur */}
             <div className="fg">
               <Label className="flabel">Valeur (DH)</Label>
               <Input

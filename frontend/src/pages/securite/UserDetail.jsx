@@ -902,203 +902,16 @@ export default function UserDetail() {
         />
       </div>
 
-      {/* ══ 3. BENTO INFÉRIEUR ════════════════════════════════════════════════
-          Grille CSS explicite :
-            col 1 (2fr) : DIs  → row-span 2 (toujours la plus haute)
-            col 2 (1fr) : OTs  row 1  |  Équipe   row 2
-            col 3 (1fr) : Rôles row 1 |  Org      row 2
-      ════════════════════════════════════════════════════════════════════════ */}
+      {/* ══ 3. GRID PROFIL ═══════════════════════════════════════════════════ */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "2fr 1fr 1fr",
-          gridTemplateRows: "auto auto",
+          gridTemplateColumns: "1.2fr 1fr 1fr",
           gap: 16,
+          alignItems: "start",
         }}>
-        {/* ── DIs — col 1, rows 1-2 ───────────────────────────────────────── */}
-        <BentoCard style={{ gridColumn: "1", gridRow: "1 / 3" }}>
-          <BentoHeader
-            icon={FileText}
-            title="Demandes en attente"
-            action={
-              pendingDIs.length > 0 && (
-                <span className="badge bg-[var(--status-yellow-bg)] text-[var(--status-yellow-text)] text-[10px]">
-                  {pendingDIs.length}
-                </span>
-              )
-            }
-          />
-          {pendingDIs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 gap-2">
-              <FileText size={22} className="text-text-muted opacity-30" />
-              <p className="text-xs text-text-muted">
-                Aucune demande en attente
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2 pt-1">
-              {pendingDIs.map((di) => {
-                const urgenceCfg =
-                  {
-                    critique: {
-                      bg: "var(--status-red-bg)",
-                      text: "var(--status-red-text)",
-                      dot: "var(--status-red-dot)",
-                    },
-                    haute: {
-                      bg: "var(--status-orange-bg)",
-                      text: "var(--status-orange-text)",
-                      dot: "var(--status-orange-dot)",
-                    },
-                    normale: {
-                      bg: "var(--status-blue-bg)",
-                      text: "var(--status-blue-text)",
-                      dot: "var(--status-blue-dot)",
-                    },
-                    basse: {
-                      bg: "var(--bg-elevated)",
-                      text: "var(--text-muted)",
-                      dot: "var(--text-muted)",
-                    },
-                  }[di.urgence] || {};
-                const isValidating = validatingDI === di.id;
-                return (
-                  <div
-                    key={di.id}
-                    className="flex items-center gap-3 p-3 rounded-lg border border-border-subtle bg-[var(--bg-elevated)] cursor-pointer hover:border-primary/30 transition-all duration-150"
-                    onClick={() => {
-                      setSelectedDI(di);
-                      setShowDIDialog(true);
-                    }}>
-                    <span
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{
-                        background: urgenceCfg.dot,
-                        boxShadow: `0 0 0 3px ${urgenceCfg.bg}`,
-                      }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="code-mono text-xs font-semibold text-text-primary">
-                          {di.numero}
-                        </span>
-                        <span
-                          className="badge text-[10px]"
-                          style={{
-                            background: urgenceCfg.bg,
-                            color: urgenceCfg.text,
-                          }}>
-                          {di.urgence}
-                        </span>
-                        {di.nb_pieces_jointes > 0 && (
-                          <span className="text-[10px] text-text-muted">
-                            {di.nb_pieces_jointes} pièce(s)
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-text-secondary line-clamp-1">
-                        {di.description}
-                      </p>
-                    </div>
-                    <button
-                      className="btn btn-primary text-[10px] px-2.5 py-1.5 shrink-0 flex items-center gap-1.5 whitespace-nowrap"
-                      disabled={isValidating}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleValiderDI(di);
-                      }}>
-                      {isValidating ? (
-                        <span className="opacity-70">…</span>
-                      ) : (
-                        <>
-                          <CheckCircle size={11} /> Participer
-                        </>
-                      )}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </BentoCard>
-
-        {/* ── OTs — col 2, row 1 ──────────────────────────────────────────── */}
-        <BentoCard style={{ gridColumn: "2", gridRow: "1" }}>
-          <BentoHeader
-            icon={Wrench}
-            title="OTs assignés"
-            action={
-              <span className="badge bg-[var(--bg-elevated)] text-[var(--text-muted)] text-[10px]">
-                {affectations.length}
-              </span>
-            }
-          />
-          {affectations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 gap-2">
-              <Wrench size={20} className="text-text-muted opacity-30" />
-              <p className="text-xs text-text-muted">Aucun OT assigné</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-1.5 pt-1">
-              {affectations.map((aff) => {
-                const statutCfg = {
-                  rejeter: {
-                    bg: "var(--status-red-bg)",
-                    text: "var(--status-red-text)",
-                  },
-                  en_attente: {
-                    bg: "var(--status-yellow-bg)",
-                    text: "var(--status-yellow-text)",
-                  },
-                  en_cours: {
-                    bg: "var(--status-orange-bg)",
-                    text: "var(--status-orange-text)",
-                  },
-                  termine: {
-                    bg: "var(--status-green-bg)",
-                    text: "var(--status-green-text)",
-                  },
-                }[aff.statut] || {
-                  bg: "var(--bg-elevated)",
-                  text: "var(--text-muted)",
-                };
-                return (
-                  <div
-                    key={aff.id}
-                    className="flex items-center justify-between p-2.5 rounded border border-border-subtle bg-[var(--bg-elevated)] cursor-pointer hover:border-primary/30 transition-all duration-150"
-                    onClick={() =>
-                      navigate(`/ordres/ots/${aff.idOrdreTravail}`)
-                    }>
-                    <span className="code-mono text-xs font-semibold text-text-primary">
-                      {aff.ot_numero || aff.idOrdreTravail}
-                    </span>
-                    <div className="flex flex-col items-end gap-1">
-                      <span
-                        className="badge text-[9px]"
-                        style={{
-                          background: statutCfg.bg,
-                          color: statutCfg.text,
-                        }}>
-                        {aff.statut?.replace(/_/g, " ")}
-                      </span>
-                      <span className="code-mono text-[9px] text-text-muted">
-                        {aff.dateDebut
-                          ? new Intl.DateTimeFormat("fr-FR", {
-                              day: "2-digit",
-                              month: "2-digit",
-                            }).format(new Date(aff.dateDebut))
-                          : "—"}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </BentoCard>
-
-        {/* ── Rôles — col 3, row 1 ────────────────────────────────────────── */}
-        <BentoCard style={{ gridColumn: "3", gridRow: "1" }}>
+        {/* ── Rôles ───────────────────────────────────────────── */}
+        <BentoCard className="h-full">
           <BentoHeader
             icon={Shield}
             title="Rôles attribués"
@@ -1112,24 +925,41 @@ export default function UserDetail() {
               />
             }
           />
+
           {!showRoleManager ? (
             roles.length === 0 ? (
-              <p className="empty py-4 text-xs">Aucun rôle attribué</p>
+              <div className="flex flex-col items-center justify-center py-10 gap-2">
+                <Shield size={22} className="text-text-muted opacity-30" />
+                <p className="text-xs text-text-muted">Aucun rôle attribué</p>
+              </div>
             ) : (
               <div className="flex flex-col gap-2 pt-1">
                 {roles.map((r, i) => {
                   const c = ROLE_COLORS[i % ROLE_COLORS.length];
+
                   return (
                     <div
                       key={r.id}
-                      className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-[11px] font-medium border ${c.bg} ${c.text} ${c.activeBorder} shadow-sm`}>
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.dot}`}
-                      />
-                      <span className="truncate flex-1">{r.libelle}</span>
-                      <span className="code-mono text-[9px] opacity-60 shrink-0">
-                        N{r.niveau}
-                      </span>
+                      className={`group relative overflow-hidden rounded-xl border px-4 py-3 transition-all duration-200 hover:translate-y-[-1px] hover:shadow-md ${c.bg} ${c.activeBorder}`}>
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`w-2 h-2 rounded-full shrink-0 ${c.dot}`}
+                        />
+
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-semibold ${c.text}`}>
+                            {r.libelle}
+                          </p>
+
+                          <p className="text-[10px] text-text-muted mt-0.5">
+                            {NIVEAU_LABELS[r.niveau] || `Niveau ${r.niveau}`}
+                          </p>
+                        </div>
+
+                        <span className="code-mono text-[10px] opacity-60">
+                          {r.code}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
@@ -1140,8 +970,8 @@ export default function UserDetail() {
           )}
         </BentoCard>
 
-        {/* ── Équipe — col 2, row 2 ────────────────────────────────────────── */}
-        <BentoCard style={{ gridColumn: "2", gridRow: "2" }}>
+        {/* ── Équipe ─────────────────────────────────────────── */}
+        <BentoCard className="h-full">
           <BentoHeader
             icon={Users}
             title="Équipe"
@@ -1152,54 +982,64 @@ export default function UserDetail() {
               />
             }
           />
+
           {!showTeamManager ? (
             <>
               {activeTeam ? (
-                <div className="rounded-lg p-3 border border-border-subtle bg-[var(--bg-elevated)]">
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-xs font-semibold text-text-primary leading-tight">
-                      {activeTeam.equipe_libelle || "—"}
-                    </span>
-                    <span className="badge bg-[var(--status-green-bg)] text-[var(--status-green-text)] text-[10px] shrink-0 ml-2">
+                <div className="relative overflow-hidden rounded-xl border border-border-subtle bg-[var(--bg-elevated)] p-4">
+                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-[var(--color-primary)]" />
+
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="text-sm font-semibold text-text-primary">
+                        {activeTeam.equipe_libelle || "—"}
+                      </p>
+
+                      <p className="text-[11px] text-text-muted mt-1">
+                        {activeTeam.niveauRole}
+                      </p>
+                    </div>
+
+                    <span className="badge bg-[var(--status-green-bg)] text-[var(--status-green-text)] text-[10px]">
                       <span className="bdot bg-[var(--status-green-dot)]" />
                       Active
                     </span>
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-1.5 text-[11px] text-text-muted">
-                      <Shield size={10} className="opacity-60" />
-                      <span>{activeTeam.niveauRole}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[11px] text-text-muted">
-                      <Calendar size={10} className="opacity-60" />
-                      <span>{formatDateShort(activeTeam.dateAdhesion)}</span>
-                    </div>
+
+                  <div className="flex items-center gap-2 text-[11px] text-text-muted">
+                    <Calendar size={11} />
+                    <span>
+                      Depuis {formatDateShort(activeTeam.dateAdhesion)}
+                    </span>
                   </div>
                 </div>
               ) : (
-                <p className="empty py-4 text-xs">Aucune équipe active</p>
+                <div className="flex flex-col items-center justify-center py-10 gap-2">
+                  <Users size={22} className="text-text-muted opacity-30" />
+                  <p className="text-xs text-text-muted">
+                    Aucune équipe active
+                  </p>
+                </div>
               )}
+
               {teamHistory.length > 0 && (
-                <div className="mt-1">
-                  <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider mb-2">
+                <div className="mt-4">
+                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2">
                     Historique
                   </p>
-                  <div className="flex flex-col gap-1">
+
+                  <div className="flex flex-col gap-2">
                     {teamHistory.map((m) => (
                       <div
                         key={m.id}
-                        className="flex items-center justify-between py-1.5 border-b border-border-subtle">
+                        className="flex items-center justify-between rounded-lg border border-border-subtle px-3 py-2 bg-[var(--bg-elevated)]">
                         <span className="text-xs text-text-secondary truncate">
                           {m.equipe_libelle || "—"}
                         </span>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span className="badge bg-[var(--status-gray-bg)] text-[var(--status-gray-text)] text-[10px]">
-                            {m.niveauRole}
-                          </span>
-                          <span className="code-mono text-[9px] text-text-muted">
-                            {formatDateShort(m.dateAdhesion)}
-                          </span>
-                        </div>
+
+                        <span className="code-mono text-[10px] text-text-muted">
+                          {formatDateShort(m.dateAdhesion)}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -1211,8 +1051,8 @@ export default function UserDetail() {
           )}
         </BentoCard>
 
-        {/* ── Organisation — col 3, row 2 ──────────────────────────────────── */}
-        <BentoCard style={{ gridColumn: "3", gridRow: "2" }}>
+        {/* ── Organisation ───────────────────────────────────── */}
+        <BentoCard className="h-full">
           <BentoHeader
             icon={Building2}
             title="Organisation"
@@ -1223,79 +1063,54 @@ export default function UserDetail() {
               />
             }
           />
+
           {!showAppartenanceManager ? (
-            <div className="flex flex-col gap-3 pt-1">
-              <div>
-                <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest mb-2">
-                  Principal
-                </p>
-                {primaryOrg ? (
-                  <div className="rounded-lg border border-border-subtle bg-[var(--bg-elevated)] p-2.5">
+            <div className="flex flex-col gap-3">
+              {primaryOrg ? (
+                <div className="rounded-xl border border-border-subtle bg-[var(--bg-elevated)] overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border-subtle bg-[var(--primary-soft)]">
+                    <p className="text-xs font-semibold text-primary">
+                      Organisation principale
+                    </p>
+                  </div>
+
+                  <div className="p-4 flex flex-col gap-3">
                     {[
-                      { label: "Sté", value: primaryOrg.societe_libelle },
-                      { label: "Site", value: primaryOrg.site_libelle },
-                      { label: "Sect.", value: primaryOrg.secteur_libelle },
-                      { label: "Unité", value: primaryOrg.unite_libelle },
+                      {
+                        label: "Société",
+                        value: primaryOrg.societe_libelle,
+                      },
+                      {
+                        label: "Site",
+                        value: primaryOrg.site_libelle,
+                      },
+                      {
+                        label: "Secteur",
+                        value: primaryOrg.secteur_libelle,
+                      },
+                      {
+                        label: "Unité",
+                        value: primaryOrg.unite_libelle,
+                      },
                     ]
-                      .filter((item) => item.value)
-                      .map((item, i) => (
-                        <div
-                          key={i}
-                          className="flex items-center gap-1.5 py-0.5"
-                          style={{ paddingLeft: i * 10 }}>
-                          {i > 0 && (
-                            <ChevronRight
-                              size={9}
-                              className="text-text-muted opacity-40 shrink-0"
-                            />
-                          )}
-                          <span className="text-[9px] text-text-muted uppercase w-8 shrink-0">
+                      .filter((i) => i.value)
+                      .map((item) => (
+                        <div key={item.label} className="flex flex-col gap-1">
+                          <span className="text-[10px] uppercase tracking-wider text-text-muted">
                             {item.label}
                           </span>
-                          <span
-                            className={`text-[11px] truncate ${i === 0 ? "font-semibold text-primary" : "font-medium text-text-primary"}`}>
+
+                          <span className="text-xs font-medium text-text-primary">
                             {item.value}
                           </span>
                         </div>
                       ))}
                   </div>
-                ) : (
-                  <p className="empty text-xs py-2">Aucun rattachement</p>
-                )}
-              </div>
-              {secondaryOrgs.length > 0 && (
-                <div>
-                  <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest mb-2">
-                    Secondaires
-                  </p>
-                  <div className="flex flex-col gap-1">
-                    {secondaryOrgs.map((org) => (
-                      <div
-                        key={org.id}
-                        className="flex flex-wrap items-center gap-1 p-2 rounded border border-border-subtle bg-[var(--bg-elevated)]">
-                        {[
-                          org.societe_libelle,
-                          org.site_libelle,
-                          org.secteur_libelle,
-                          org.unite_libelle,
-                        ]
-                          .filter(Boolean)
-                          .map((label, i, arr) => (
-                            <span key={i} className="flex items-center gap-0.5">
-                              <span className="text-[10px] text-text-secondary">
-                                {label}
-                              </span>
-                              {i < arr.length - 1 && (
-                                <ChevronRight
-                                  size={9}
-                                  className="text-text-muted opacity-50"
-                                />
-                              )}
-                            </span>
-                          ))}
-                      </div>
-                    ))}
-                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10 gap-2">
+                  <Building2 size={22} className="text-text-muted opacity-30" />
+                  <p className="text-xs text-text-muted">Aucun rattachement</p>
                 </div>
               )}
             </div>

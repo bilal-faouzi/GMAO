@@ -14,7 +14,7 @@ import {
 } from "../../services/organisationService";
 import { ArrowLeft, Save, X } from "lucide-react";
 
-//  Constantes 
+//  Constantes
 
 const STATUTS = [
   { value: "actif", label: "Actif" },
@@ -40,7 +40,7 @@ const initialFormState = {
   estActif: true,
 };
 
-//  Field 
+//  Field
 
 function Field({
   label,
@@ -91,7 +91,7 @@ function Field({
   );
 }
 
-//  Main 
+//  Main
 
 export default function FormulaireActif() {
   const { id } = useParams();
@@ -147,7 +147,7 @@ export default function FormulaireActif() {
         setActifs(a.data.results || a.data);
         setSecteurs(sec.data.results || sec.data);
         const types = t.data.results || t.data;
-        setTypesActifs(types.map(t => ({ value: t.code, label: t.libelle })));
+        setTypesActifs(types.map((t) => ({ value: t.code, label: t.libelle })));
         if (isEdit) {
           const res = await getActif(id);
           const a2 = res.data;
