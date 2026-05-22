@@ -172,13 +172,13 @@ export default function ValidationOperateur() {
           </p>
         </div>
       ) : (
-        <div className=" flex-1 flex flex-row gap-4">
+        <div className=" grid grid-cols-1 md:grid-cols-3 gap-4">
           {ots.map((ot) => {
             const prio = prioriteStyles[ot.priorite] || prioriteStyles.normale;
             return (
               <div
                 key={ot.id}
-                className="bg-surface border border-border rounded-xl p-5 hover:bg-hover transition-colors">
+                className="bg-surface border border-border rounded-xl p-5 hover:bg-hover transition-colors flex flex-col">
                 {/* Card header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-start gap-3">
@@ -213,18 +213,15 @@ export default function ValidationOperateur() {
                 </div>
 
                 {/* Intervention details */}
-                <div className="bg-elevated rounded-lg border border-border-subtle p-3.5 mb-4 space-y-2">
+                <div className="bg-elevated rounded-lg border border-border-subtle p-3.5 mb-4 space-y-2 flex-1">
                   <p className="text-[10px] uppercase tracking-widest text-text-muted font-semibold mb-2">
                     Résumé de l'intervention
                   </p>
-
                   <Row label="Description" value={ot.description || "__"} />
-
                   <Row
                     label="Durée réelle"
                     value={`${ot.dureeReelleMin} min` || "__"}
                   />
-
                   <Row
                     label="Intervenant(s)"
                     value={
@@ -238,12 +235,10 @@ export default function ValidationOperateur() {
                         .join(", ") || "__"
                     }
                   />
-
                   <Row
                     label="Pièces utilisées"
                     value={`${ot.nb_pieces_utilisees} pièce(s)` || "__"}
                   />
-
                   <Row
                     label="Type clôture"
                     value={

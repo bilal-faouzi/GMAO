@@ -142,7 +142,6 @@ export default function ActifUnite() {
   const [userSite, setUserSite] = useState(null); // { id, code, libelle }
   const [userUnite, setUserUnite] = useState(null);
 
-  // Ajouter en haut du composant (après les useState)
   const hasDataRef = useRef(false);
 
   //  Chargement des référentiels org au montage

@@ -629,7 +629,7 @@ export default function Roles() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="mt-4 rounded-sm bg-gray-800/75 p-4 ">
+          <div className="mt-4 rounded-sm dark:bg-gray-800/75 p-4 ">
             <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {allInterfaces && allInterfaces.length > 0 ? (
                 allInterfaces.map((iface) => {

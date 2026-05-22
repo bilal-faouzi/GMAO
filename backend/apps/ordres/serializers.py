@@ -155,9 +155,23 @@ class AffectationEquipeSerializer(serializers.ModelSerializer):
 
     def get_soustraitant_detail(self, obj):
         if obj.idSousTraitant:
-            return {'id': str(obj.idSousTraitant.id), 'raisonSociale': obj.idSousTraitant.raisonSociale}
-        return None
-
+            st = obj.idSousTraitant
+            return {
+                'id':                    str(st.id),
+                'raisonSociale':         st.raisonSociale,
+                'contactPrincipalNom':   st.contactPrincipalNom,
+                'contactPrincipalTel':   st.contactPrincipalTel,
+                'contactPrincipalEmail': st.contactPrincipalEmail,
+                'specialites': [
+                    {'id': str(sp.id), 'libelle': getattr(sp, 'libelle', str(sp))}
+                    for sp in st.specialites.all()
+                ] if hasattr(st, 'specialites') else [],
+                'nbInterventionsTotal':   getattr(st, 'nbInterventionsTotal', 0),
+                'nbInterventionsEnCours': getattr(st, 'nbInterventionsEnCours', 0),
+                'evaluationMoyenne':      getattr(st, 'evaluationMoyenne', None),
+                'numeroContrat':          getattr(st, 'numeroContrat', None),
+            }
+        return None 
     def get_chefTechnicien_detail(self, obj):
         if obj.idChefTechnicien:
             return {

@@ -48,6 +48,8 @@ import {
   Send,
 } from "lucide-react";
 
+import { getSousTraitants } from "@/services/soustraitantService"; // adapter selon votre chemin
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const stripEmojis = (str) =>
@@ -62,6 +64,28 @@ const STATUT_AFFECTATION_LABEL = {
   en_cours: "En cours",
   termine: "Terminé",
   rejeter: "Rejeté",
+};
+
+// ─── Types d'affectation ─────────────────────────────────────────────────────
+const AFFECTATION_TYPE = {
+  equipe: {
+    border: "border-blue-200 dark:border-blue-500/30",
+    header: "bg-blue-50 dark:bg-blue-500/10",
+    badge:
+      "bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30",
+    dot: "bg-blue-500",
+    icon: "text-blue-500",
+    label: "Équipe interne",
+  },
+  soustraitant: {
+    border: "border-violet-200 dark:border-violet-500/30",
+    header: "bg-violet-50 dark:bg-violet-500/10",
+    badge:
+      "bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-500/30",
+    dot: "bg-violet-500",
+    icon: "text-violet-500",
+    label: "Sous-traitant",
+  },
 };
 
 // ─── Config audit ─────────────────────────────────────────────────────────────
@@ -282,6 +306,11 @@ export default function DetailOT() {
 
   const estVerrouille = ["DEPANNE", "CLOTURE", "REJETE"].includes(ot?.statut);
 
+  // Dans le composant, ajouter ces states :
+  const [modeAffectation, setModeAffectation] = useState("equipe"); // "equipe" | "sousTraitant"
+  const [sousTraitants, setSousTraitants] = useState([]);
+  const [selectedSousTraitant, setSelectedSousTraitant] = useState("");
+
   // ─── Chargement ──────────────────────────────────────────────────────────────
   const charger = async () => {
     try {
@@ -318,27 +347,42 @@ export default function DetailOT() {
     setMembresEquipe([]);
     setSelectedMembres([]);
     setEditStatut("");
+    setModeAffectation("equipe");
+    setSelectedSousTraitant("");
+
     try {
-      const r = await getEquipes({ estActif: true, no_page: true });
-      setEquipes(r.data.results ?? r.data ?? []);
+      const [reqEquipes, reqST] = await Promise.all([
+        getEquipes({ estActif: true, no_page: true }),
+        getSousTraitants({ statut: "actif", no_page: true }),
+      ]);
+      console.log("Equipes:", reqST.data.data);
+      setEquipes(reqEquipes.data.results ?? reqEquipes.data ?? []);
+      setSousTraitants(reqST.data.data ?? []);
     } catch (e) {
       console.error(e);
     }
+
     if (affectation) {
       setEditStatut(affectation.statut || "");
-      const eqId = affectation.equipe_detail?.id || affectation.idEquipe;
-      if (eqId) {
-        setSelectedEquipe(eqId);
-        try {
-          const r = await getMembresEquipe(eqId);
-          const data = r.data.results ?? r.data ?? [];
-          setMembresEquipe(data);
-          const currentIds = (affectation.membres || []).map(
-            (m) => m.utilisateur_detail?.id || m.idUtilisateur || m.id,
-          );
-          setSelectedMembres(currentIds);
-        } catch (e) {
-          console.error(e);
+      // Détecter si c'est un sous-traitant
+      if (affectation.soustraitant_detail) {
+        setModeAffectation("sousTraitant");
+        setSelectedSousTraitant(String(affectation.soustraitant_detail.id));
+      } else {
+        const eqId = affectation.equipe_detail?.id || affectation.idEquipe;
+        if (eqId) {
+          setSelectedEquipe(eqId);
+          try {
+            const r = await getMembresEquipe(eqId);
+            const data = r.data.results ?? r.data ?? [];
+            setMembresEquipe(data);
+            const currentIds = (affectation.membres || []).map(
+              (m) => m.utilisateur_detail?.id || m.idUtilisateur || m.id,
+            );
+            setSelectedMembres(currentIds);
+          } catch (e) {
+            console.error(e);
+          }
         }
       }
     }
@@ -367,14 +411,29 @@ export default function DetailOT() {
     );
 
   const handleAffecter = async () => {
-    if (!selectedEquipe || selectedMembres.length === 0) return;
+    if (
+      modeAffectation === "equipe" &&
+      (!selectedEquipe || selectedMembres.length === 0)
+    )
+      return;
+    if (modeAffectation === "sousTraitant" && !selectedSousTraitant) return;
+
     setLoadingAffectation(true);
     try {
-      await affecterEquipe(id, {
-        idEquipe: selectedEquipe,
-        dateDebut: new Date().toISOString(),
-        membres: selectedMembres,
-      });
+      const payload =
+        modeAffectation === "equipe"
+          ? {
+              idEquipe: selectedEquipe,
+              dateDebut: new Date().toISOString(),
+              membres: selectedMembres,
+            }
+          : {
+              idSousTraitant: selectedSousTraitant,
+              dateDebut: new Date().toISOString(),
+              membres: [],
+            };
+
+      await affecterEquipe(id, payload);
       closeAffectationModal();
       await charger();
     } catch (e) {
@@ -386,7 +445,8 @@ export default function DetailOT() {
   };
 
   const handleUpdateAffectation = async () => {
-    if (!editingAffectation || selectedMembres.length === 0) return;
+    if (!editingAffectation) return;
+    if (modeAffectation === "equipe" && selectedMembres.length === 0) return;
     setLoadingAffectation(true);
     try {
       await updateAffectation(editingAffectation.id, {
@@ -421,6 +481,8 @@ export default function DetailOT() {
     setMembresEquipe([]);
     setSelectedMembres([]);
     setEditStatut("");
+    setModeAffectation("equipe");
+    setSelectedSousTraitant("");
   };
 
   // ─── Actions statut ───────────────────────────────────────────────────────────
@@ -512,12 +574,12 @@ export default function DetailOT() {
             <>
               <Button
                 onClick={() => setModalDepanne(true)}
-                className="btn btn-warning bg-orange-500">
+                className="btn btn-warning bg-orange-500 text-white">
                 Dépanné
               </Button>
               <Button
                 onClick={() => setModalCloture(true)}
-                className="btn btn-success bg-green-600">
+                className="btn btn-success bg-green-600 text-white">
                 Clôturer
               </Button>
             </>
@@ -807,7 +869,7 @@ export default function DetailOT() {
                 <div className="flex justify-center">
                   <Button
                     onClick={() => openAffectationModal()}
-                    className="btn btn-outline  gap-1.5"
+                    className="btn btn-outline gap-1.5"
                     style={{ fontSize: "12px", padding: "5px 10px" }}>
                     <Plus size={14} /> Affecter une équipe
                   </Button>
@@ -816,31 +878,29 @@ export default function DetailOT() {
               {ot.affectations?.length === 0 ? (
                 <EmptyState message="Aucune affectation" />
               ) : (
-                ot.affectations?.map((a) => (
-                  <div
-                    key={a.id}
-                    className="bg-elevated rounded-xl p-4 border border-border-subtle">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <p className="text-sm font-semibold text-text">
-                          {a.equipe_detail?.libelle ??
-                            a.soustraitant_detail?.raisonSociale ??
-                            "—"}
-                        </p>
-                        <p className="text-xs text-text-muted mt-0.5">
-                          {new Date(a.dateDebut).toLocaleString("fr-FR")}
-                        </p>
-                        {a.chefTechnicien_detail && (
-                          <p className="text-[10px] text-text-muted mt-0.5">
-                            Affecté par{" "}
-                            <span className="text-text-secondary">
-                              {a.chefTechnicien_detail.prenom}{" "}
-                              {a.chefTechnicien_detail.nom}
-                            </span>
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end gap-1.5">
+                ot.affectations?.map((a) => {
+                  const isST = !!a.soustraitant_detail;
+                  const typeConfig = isST
+                    ? AFFECTATION_TYPE.soustraitant
+                    : AFFECTATION_TYPE.equipe;
+                  const st = a.soustraitant_detail;
+
+                  return (
+                    <div
+                      key={a.id}
+                      className={`bg-elevated rounded-xl border ${typeConfig.border} overflow-hidden`}>
+                      {/* ── En-tête coloré ── */}
+                      <div
+                        className={`${typeConfig.header} px-4 py-2.5 flex items-center justify-between border-b ${typeConfig.border}`}>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`w-2 h-2 rounded-full ${typeConfig.dot} flex-shrink-0`}
+                          />
+                          <span
+                            className={`text-[10px] font-semibold uppercase tracking-wider ${typeConfig.badge} px-2 py-0.5 rounded`}>
+                            {typeConfig.label}
+                          </span>
+                        </div>
                         <span
                           className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                             a.statut === "termine"
@@ -853,55 +913,150 @@ export default function DetailOT() {
                           }`}>
                           {STATUT_AFFECTATION_LABEL[a.statut] || a.statut}
                         </span>
-                        {!estVerrouille && (
-                          <div className="flex gap-1">
-                            <Button
-                              onClick={() => openAffectationModal(a)}
-                              className="text-[10px] px-2 py-0.5 rounded bg-primary-soft text-primary hover:bg-primary/20 transition">
-                              Modifier
-                            </Button>
-                            <Button
-                              onClick={() => handleDeleteAffectation(a.id)}
-                              className="text-[10px] px-2 py-0.5 rounded bg-danger-soft text-danger hover:bg-danger/20 transition">
-                              Supprimer
-                            </Button>
+                      </div>
+
+                      {/* ── Corps ── */}
+                      <div className="p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <p className="text-sm font-semibold text-text">
+                              {isST
+                                ? st?.raisonSociale
+                                : (a.equipe_detail?.libelle ?? "—")}
+                            </p>
+                            <p className="text-xs text-text-muted mt-0.5">
+                              Depuis le{" "}
+                              {new Date(a.dateDebut).toLocaleString("fr-FR")}
+                            </p>
+                            {!isST && a.chefTechnicien_detail && (
+                              <p className="text-[10px] text-text-muted mt-0.5">
+                                Affecté par{" "}
+                                <span className="text-text-secondary">
+                                  {a.chefTechnicien_detail.prenom}{" "}
+                                  {a.chefTechnicien_detail.nom}
+                                </span>
+                              </p>
+                            )}
+                          </div>
+                          {!estVerrouille && (
+                            <div className="flex gap-1">
+                              <Button
+                                onClick={() => openAffectationModal(a)}
+                                className="text-[10px] px-2 py-0.5 rounded bg-primary-soft text-primary hover:bg-primary/20 transition">
+                                Modifier
+                              </Button>
+                              <Button
+                                onClick={() => handleDeleteAffectation(a.id)}
+                                className="text-[10px] px-2 py-0.5 rounded bg-danger-soft text-danger hover:bg-danger/20 transition">
+                                Supprimer
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* ── Bloc sous-traitant ── */}
+                        {isST && st && (
+                          <div className="mt-2 rounded-lg border border-violet-100 dark:border-violet-500/20 bg-violet-50/50 dark:bg-violet-500/5 p-3 space-y-2">
+                            {console.log("ST:", st)}
+                            {/* Contact principal */}
+                            {st.contactPrincipalNom && (
+                              <div className="flex items-center gap-2">
+                                <User
+                                  size={12}
+                                  className="text-violet-500 flex-shrink-0"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[10px] text-text-muted uppercase tracking-wider">
+                                    Contact principal
+                                  </p>
+                                  <p className="text-xs font-medium text-text truncate">
+                                    {st.contactPrincipalNom}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2 text-[11px] text-text-muted">
+                                  {st.contactPrincipalTel && (
+                                    <a
+                                      href={`tel:${st.contactPrincipalTel}`}
+                                      className="text-violet-600 dark:text-violet-400 hover:underline font-mono">
+                                      {st.contactPrincipalTel}
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Email */}
+                            {st.contactPrincipalEmail && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-text-muted uppercase tracking-wider w-20 flex-shrink-0">
+                                  Email
+                                </span>
+                                <a
+                                  href={`mailto:${st.contactPrincipalEmail}`}
+                                  className="text-xs text-violet-600 dark:text-violet-400 hover:underline truncate">
+                                  {st.contactPrincipalEmail}
+                                </a>
+                              </div>
+                            )}
+
+                            {/* Spécialités */}
+                            {st.specialites?.length > 0 && (
+                              <div className="flex items-start gap-2 pt-1 border-t border-violet-100 dark:border-violet-500/20">
+                                <span className="text-[10px] text-text-muted uppercase tracking-wider w-20 flex-shrink-0 mt-0.5">
+                                  Spécialités
+                                </span>
+                                <div className="flex flex-wrap gap-1">
+                                  {st.specialites.map((sp, i) => (
+                                    <span
+                                      key={i}
+                                      className="text-[10px] bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-500/30 px-1.5 py-0.5 rounded">
+                                      {sp.libelle ?? sp.nom ?? sp}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── Bloc membres (équipe interne seulement) ── */}
+                        {!isST && (
+                          <div className="pt-3 border-t border-border-subtle">
+                            <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1">
+                              <User size={10} />
+                              {a.membres?.length > 0
+                                ? `Techniciens affectés (${a.membres.length})`
+                                : "Aucun membre affecté"}
+                            </p>
+                            {a.membres?.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {a.membres.map((m) => (
+                                  <span
+                                    key={m.id}
+                                    title={
+                                      m.dateDebut
+                                        ? `Affecté le ${new Date(m.dateDebut).toLocaleString("fr-FR")}`
+                                        : ""
+                                    }
+                                    className="text-[11px] bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-500/30 flex items-center gap-1">
+                                    <span className="w-4 h-4 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center text-[8px] font-bold border border-blue-200 dark:border-blue-500/30">
+                                      {m.utilisateur_detail
+                                        ? `${m.utilisateur_detail.prenom?.[0] || ""}${m.utilisateur_detail.nom?.[0] || ""}`.toUpperCase()
+                                        : "?"}
+                                    </span>
+                                    {m.utilisateur_detail
+                                      ? `${m.utilisateur_detail.prenom} ${m.utilisateur_detail.nom}`
+                                      : m.utilisateur_nom || "Technicien"}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
                     </div>
-                    <div className="pt-3 border-t border-border-subtle">
-                      <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1">
-                        <User size={10} />
-                        {a.membres?.length > 0
-                          ? `Techniciens affectés (${a.membres.length})`
-                          : "Aucun membre affecté"}
-                      </p>
-                      {a.membres?.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {a.membres.map((m) => (
-                            <span
-                              key={m.id}
-                              title={
-                                m.dateDebut
-                                  ? `Affecté le ${new Date(m.dateDebut).toLocaleString("fr-FR")}`
-                                  : ""
-                              }
-                              className="text-[11px] bg-hover text-text px-2 py-0.5 rounded-full border border-border-subtle flex items-center gap-1">
-                              <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[8px] font-bold border border-primary/20">
-                                {m.utilisateur_detail
-                                  ? `${m.utilisateur_detail.prenom?.[0] || ""}${m.utilisateur_detail.nom?.[0] || ""}`.toUpperCase()
-                                  : "?"}
-                              </span>
-                              {m.utilisateur_detail
-                                ? `${m.utilisateur_detail.prenom} ${m.utilisateur_detail.nom}`
-                                : m.utilisateur_nom || "Technicien"}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </TabsContent>
@@ -1210,36 +1365,104 @@ export default function DetailOT() {
             </DialogDescription>
           </DialogHeader>
           <div className="py-2 space-y-4">
-            <div>
-              <label className="text-xs font-medium mb-1.5 block">
-                Équipe <span className="text-red-500">*</span>
-              </label>
-              {editingAffectation ? (
-                <p className="text-sm text-text bg-elevated rounded-lg px-3 py-2 border border-border">
-                  {editingAffectation.equipe_detail?.libelle ?? "—"}
-                </p>
-              ) : (
-                <Select
-                  value={selectedEquipe}
-                  onValueChange={handleSelectEquipe}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="— Sélectionner une équipe —" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {equipes.map((eq) => (
-                      <SelectItem key={eq.id} value={String(eq.id)}>
-                        {eq.libelle} {eq.chef_nom ? `(${eq.chef_nom})` : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              {!editingAffectation && equipes.length === 0 && (
-                <p className="text-xs text-text-muted mt-2">
-                  Chargement des équipes…
-                </p>
-              )}
-            </div>
+            {/* Toggle équipe / sous-traitant */}
+            {!editingAffectation && (
+              <div className="flex rounded-lg overflow-hidden border border-border text-sm">
+                <button
+                  onClick={() => {
+                    setModeAffectation("equipe");
+                    setSelectedSousTraitant("");
+                  }}
+                  className={`flex-1 py-2 transition ${
+                    modeAffectation === "equipe"
+                      ? "bg-primary text-white"
+                      : "bg-elevated text-text-muted hover:text-text"
+                  }`}>
+                  Équipe interne
+                </button>
+                <button
+                  onClick={() => {
+                    setModeAffectation("sousTraitant");
+                    setSelectedEquipe("");
+                    setMembresEquipe([]);
+                    setSelectedMembres([]);
+                  }}
+                  className={`flex-1 py-2 transition ${
+                    modeAffectation === "sousTraitant"
+                      ? "bg-primary text-white"
+                      : "bg-elevated text-text-muted hover:text-text"
+                  }`}>
+                  Sous-traitant
+                </button>
+              </div>
+            )}
+
+            {/* Sélection équipe */}
+            {modeAffectation === "equipe" && (
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">
+                  Équipe <span className="text-red-500">*</span>
+                </label>
+                {editingAffectation ? (
+                  <p className="text-sm text-text bg-elevated rounded-lg px-3 py-2 border border-border">
+                    {editingAffectation.equipe_detail?.libelle ?? "—"}
+                  </p>
+                ) : (
+                  <Select
+                    value={selectedEquipe}
+                    onValueChange={handleSelectEquipe}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="— Sélectionner une équipe —" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {equipes.map((eq) => (
+                        <SelectItem key={eq.id} value={String(eq.id)}>
+                          {eq.libelle} {eq.chef_nom ? `(${eq.chef_nom})` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
+
+            {/* Sélection sous-traitant */}
+            {modeAffectation === "sousTraitant" && (
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">
+                  Sous-traitant <span className="text-red-500">*</span>
+                </label>
+                {editingAffectation ? (
+                  <p className="text-sm text-text bg-elevated rounded-lg px-3 py-2 border border-border">
+                    {editingAffectation.soustraitant_detail?.raisonSociale ??
+                      "—"}
+                  </p>
+                ) : (
+                  <Select
+                    value={selectedSousTraitant}
+                    onValueChange={setSelectedSousTraitant}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="— Sélectionner un sous-traitant —" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(sousTraitants ?? []).map((st) => (
+                        <SelectItem key={st.id} value={String(st.id)}>
+                          {st.raisonSociale}
+                          {st.contactPrincipalNom
+                            ? ` — ${st.contactPrincipalNom}`
+                            : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {!editingAffectation && sousTraitants.length === 0 && (
+                  <p className="text-xs text-text-muted mt-2">
+                    Aucun sous-traitant actif disponible.
+                  </p>
+                )}
+              </div>
+            )}
             {editingAffectation && (
               <div>
                 <label className="text-xs font-medium mb-1.5 block">
@@ -1261,7 +1484,8 @@ export default function DetailOT() {
                 </Select>
               </div>
             )}
-            {(selectedEquipe || editingAffectation) && (
+            {(selectedEquipe ||
+              (editingAffectation && modeAffectation === "equipe")) && (
               <div>
                 <label className="text-xs font-medium mb-1.5 block">
                   Membres participants <span className="text-red-500">*</span>
@@ -1348,7 +1572,10 @@ export default function DetailOT() {
             {editingAffectation ? (
               <Button
                 onClick={handleUpdateAffectation}
-                disabled={loadingAffectation || selectedMembres.length === 0}
+                disabled={
+                  loadingAffectation ||
+                  (modeAffectation === "equipe" && selectedMembres.length === 0)
+                }
                 className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg transition text-white font-medium">
                 {loadingAffectation ? "Enregistrement…" : "Enregistrer"}
               </Button>
@@ -1357,8 +1584,9 @@ export default function DetailOT() {
                 onClick={handleAffecter}
                 disabled={
                   loadingAffectation ||
-                  !selectedEquipe ||
-                  selectedMembres.length === 0
+                  (modeAffectation === "equipe" &&
+                    (!selectedEquipe || selectedMembres.length === 0)) ||
+                  (modeAffectation === "sousTraitant" && !selectedSousTraitant)
                 }
                 className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg transition text-white font-medium">
                 {loadingAffectation ? "Affectation en cours…" : "Affecter"}

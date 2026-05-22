@@ -442,7 +442,7 @@ export default function Appartenances() {
                   </td>
                   <td className="px-4 py-3">
                     {a.estPrincipale ? (
-                      <span className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400  dark:bg-amber-500/10 px-2 py-0.5 rounded-full w-fit">
+                      <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-100 dark:text-amber-400  dark:bg-amber-500/10 px-2 py-0.5 rounded-full w-fit">
                         <Star size={10} fill="currentColor" /> Principale
                       </span>
                     ) : (

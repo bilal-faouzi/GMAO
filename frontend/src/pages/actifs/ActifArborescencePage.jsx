@@ -741,7 +741,7 @@ export function ActifFormModal({
               disabled={loading}>
               Annuler
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="text-white">
               {loading ? (
                 "En cours…"
               ) : (

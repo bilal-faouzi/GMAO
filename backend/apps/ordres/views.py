@@ -586,23 +586,35 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
     def affecter_equipe(self, request, pk=None):
         ot = self.get_object()
         equipe_id = request.data.get('idEquipe')
+        soustraitant_id = request.data.get('idSousTraitant')
         membres_ids = request.data.get('membres', [])
 
-        if not equipe_id:
+        # Au moins l'un des deux est requis
+        if not equipe_id and not soustraitant_id:
             return Response(
-                {'detail': "L'équipe est obligatoire."},
+                {'detail': "Une équipe ou un sous-traitant est obligatoire."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # --- Vérifier que l'équipe n'est pas déjà affectée à cet OT ---
-        if AffectationEquipe.objects.filter(idOrdreTravail=ot, idEquipe_id=equipe_id).exists():
+        # Vérifier qu'une affectation identique n'existe pas déjà
+        if equipe_id and AffectationEquipe.objects.filter(
+            idOrdreTravail=ot, idEquipe_id=equipe_id
+        ).exists():
             return Response(
                 {'detail': "Cette équipe est déjà affectée à cet OT."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # --- Vérifier que les membres ne sont pas déjà affectés à cet OT ---
-        if isinstance(membres_ids, list) and len(membres_ids) > 0:
+        if soustraitant_id and AffectationEquipe.objects.filter(
+            idOrdreTravail=ot, idSousTraitant_id=soustraitant_id
+        ).exists():
+            return Response(
+                {'detail': "Ce sous-traitant est déjà affecté à cet OT."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Vérifier les doublons de membres (uniquement si équipe interne)
+        if equipe_id and isinstance(membres_ids, list) and len(membres_ids) > 0:
             existing = MembreIntervention.objects.filter(
                 idAffectationEquipe__idOrdreTravail=ot,
                 idUtilisateur_id__in=membres_ids
@@ -617,16 +629,16 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
         chef_id = request.data.get('idChefTechnicien') or str(request.user.id)
         aff = AffectationEquipe.objects.create(
             idOrdreTravail=ot,
-            idEquipe_id=equipe_id,
-            idSousTraitant_id=request.data.get('idSousTraitant'),
-            idChefTechnicien_id=chef_id,
+            idEquipe_id=equipe_id,           # None si sous-traitant
+            idSousTraitant_id=soustraitant_id,  # None si équipe
+            idChefTechnicien_id=chef_id if equipe_id else None,
             dateDebut=request.data.get('dateDebut', timezone.now()),
             statut='en_attente'
         )
 
-        # --- Créer les MembreIntervention pour chaque utilisateur sélectionné ---
+        # Créer les membres uniquement pour les équipes internes
         created_count = 0
-        if isinstance(membres_ids, list) and len(membres_ids) > 0:
+        if equipe_id and isinstance(membres_ids, list) and len(membres_ids) > 0:
             from apps.securite.models import Utilisateur
             for uid in membres_ids:
                 try:
@@ -638,24 +650,23 @@ class OrdreTravailViewSet(viewsets.ModelViewSet):
                     )
                     created_count += 1
                 except Utilisateur.DoesNotExist:
-                    pass  # Ignorer les IDs invalides
+                    pass
 
-        if created_count == 0:
-            aff.delete()
-            return Response(
-                {'detail': "Aucun membre valide n'a été trouvé. Vérifiez les identifiants."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            if created_count == 0:
+                aff.delete()
+                return Response(
+                    {'detail': "Aucun membre valide trouvé. Vérifiez les identifiants."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         log_audit(request, 'CREATE', 'ORDRES', 'AffectationEquipe', aff.id,
-                  nouvelle_valeur={
-                      'equipe': str(aff.idEquipe_id) if aff.idEquipe_id else None,
-                      'soustraitant': str(aff.idSousTraitant_id) if aff.idSousTraitant_id else None,
-                      'membres': created_count
-                  })
+                nouvelle_valeur={
+                    'equipe': str(aff.idEquipe_id) if aff.idEquipe_id else None,
+                    'soustraitant': str(aff.idSousTraitant_id) if aff.idSousTraitant_id else None,
+                    'membres': created_count
+                })
 
         return Response(AffectationEquipeSerializer(aff).data, status=status.HTTP_201_CREATED)
-
     @action(detail=True, methods=['post'])
     def enregistrer_piece(self, request, pk=None):
         ot = self.get_object()
